@@ -1,6 +1,6 @@
 [submodule "ArduinoCmakeBuilder"]
-	path = ArduinoCmakeBuilder
+	path = Firmware/ArduinoCmakeBuilder
 	url = https://github.com/DarkCaster/ArduinoCmakeBuilder.git
 [submodule "Libraries/UIPEthernet"]
-	path = Libraries/UIPEthernet
+	path = Firmware/Libraries/UIPEthernet
 	url = https://github.com/UIPEthernet/UIPEthernet.git

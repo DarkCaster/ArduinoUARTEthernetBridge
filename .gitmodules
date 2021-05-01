@@ -1,0 +1,3 @@
+[submodule "ArduinoCmakeBuilder"]
+	path = ArduinoCmakeBuilder
+	url = https://github.com/DarkCaster/ArduinoCmakeBuilder.git

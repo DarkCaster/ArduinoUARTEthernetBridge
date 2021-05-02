@@ -14,58 +14,45 @@
 #define RX_PIN_PREP() (__extension__({}))
 #endif
 
-#ifdef LED_SYNC
-#define SYNC_OK() (__extension__({digitalWrite(LED_SYNC, HIGH);}))
-#define SYNC_ERR() (__extension__({digitalWrite(LED_SYNC, LOW);}))
-#define SYNC_LED_PREP() (__extension__({pinMode(LED_SYNC, OUTPUT);}))
-#else
-#define SYNC_OK() (__extension__({}))
-#define SYNC_ERR() (__extension__({}))
-#define SYNC_LED_PREP() (__extension__({}))
-#endif
-
 //create main logic blocks and perform "poor man's" dependency injection
 //static EEPROMSettingsManager settingsManager(EEPROM_SETTINGS_ADDR, EEPROM_SETTINGS_LEN, cipher, encKey, encTweak);
-static WatchdogAVR watchdog(SYNC_WATCHDOG_TIMEOUT);
-
-//stuff needed for requests, commands and responses parsing
-//static uint8_t commandBuffer[COMMAND_BUFFER_SIZE];
-//static uint8_t responseBuffer[RESPONSE_BUFFER_SIZE];
-//static CMDRSP_BUFF_TYPE cmdBuffPos=0;
-//static CMDRSP_BUFF_TYPE rspBuffPos=0;
-//static CMDRSP_BUFF_TYPE rspSize=0;
-//static uint8_t cmdType=0;
-//static uint8_t rspType=0;
-
-static unsigned long lastTime=0;
+static WatchdogAVR watchdog;
 
 void setup()
 {
+    //setup serial port for debugging
+    SERIAL_PORT.begin(SERIAL_PORT_SPEED);
+    SERIAL_PORT.setTimeout(1000);
+    RX_PIN_PREP(); // enable pullup on serial RX-pin
+
+    //setup SPI pins
+    pinMode(PIN_SPI_MISO,INPUT_PULLUP);
+    pinMode(PIN_SPI_MOSI,OUTPUT);
+    digitalWrite(PIN_SPI_MOSI,LOW);
+    pinMode(PIN_SPI_ENC28J60_CS,OUTPUT);
+    digitalWrite(PIN_SPI_ENC28J60_CS,LOW);
+    pinMode(PIN_SPI_SCK,OUTPUT);
+    digitalWrite(PIN_SPI_SCK,LOW);
+
+    //TODO: setup software UART pins
+
+    //blink LED pin indicating startup
+    pinMode(LED_BUILTIN,OUTPUT);
+    digitalWrite(LED_BUILTIN,HIGH);
+    delay(500);
+    digitalWrite(LED_BUILTIN,LOW);
+
 	//read settings
     //settingsManager.Init();
 
-	//deactivate watchdog
-	watchdog.Disable();
-	SYNC_LED_PREP();
-	SYNC_ERR();
+    //initialize network, reset if no network cable detected
 
-	SERIAL_PORT.begin(SERIAL_PORT_SPEED);
-    SERIAL_PORT.setTimeout(1000);
-	RX_PIN_PREP(); // enable pullup on serial RX-pin
-
-    // initialize digital pin LED_BUILTIN as an output.
-    pinMode(LED_BUILTIN, OUTPUT);
-
-	//reset last-time
-	lastTime=millis();
 	STATUS();
 	LOG(F("Setup complete!"));
 }
 
 void loop()
 {
-    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(10);                       // wait for a second
-    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-    delay(1000);
+    delay(5000);
+    watchdog.SystemReset();
 }

@@ -19,14 +19,13 @@ include(ArduinoCmakeBuilder/arduino-build-helper.cmake)
 
 set_avr_compiler_flags()
 
+# add some internal and external libraries
 add_arduino_library(SPI ${ARDUINO_LIBS_PATH})
-add_arduino_library(Wire ${ARDUINO_LIBS_PATH})
-add_arduino_library(EEPROM ${ARDUINO_LIBS_PATH})
 add_arduino_library(EEPROM ${ARDUINO_LIBS_PATH})
 add_arduino_library(UIPEthernet ${CMAKE_SOURCE_DIR}/Libraries SPI)
+target_compile_options(UIPEthernet PRIVATE "-Wno-cpp" "-Wno-sign-compare" "-Wno-unused-label")
 
-#add_arduino_library(UIPEthernet ${CMAKE_SOURCE_DIR}/Libraries SPI Wire)
-
+# add main sketdh definitions
 add_arduino_sketch(UARTEthernetBridge ${CMAKE_SOURCE_DIR} EEPROM UIPEthernet)
 add_arduino_post_target(UARTEthernetBridge)
 add_arduino_upload_target(UARTEthernetBridge)

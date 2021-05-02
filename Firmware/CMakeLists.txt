@@ -27,5 +27,6 @@ target_compile_options(UIPEthernet PRIVATE "-Wno-cpp" "-Wno-sign-compare" "-Wno-
 
 # add main sketdh definitions
 add_arduino_sketch(UARTEthernetBridge ${CMAKE_SOURCE_DIR} EEPROM UIPEthernet)
+target_compile_options(UARTEthernetBridge PRIVATE "-Wno-cpp")
 add_arduino_post_target(UARTEthernetBridge)
 add_arduino_upload_target(UARTEthernetBridge)

@@ -15,7 +15,7 @@ void FAIL(uint16_t blinkTime, uint16_t pauseTime);
 #else
 #define LOG(...) ({})
 #define STATUS(...) ({})
-#define FAIL(...) ({})
+void FAIL(uint16_t blinkTime, uint16_t pauseTime);
 #endif
 
 #endif

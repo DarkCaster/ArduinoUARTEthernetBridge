@@ -91,17 +91,17 @@ void LOG(const uint32_t intNumber, const bool nl)
 #if __AVR__
 void FAIL(uint16_t blinkTime, uint16_t pauseTime)
 {
-	pinMode(LED_SYNC, OUTPUT);
+    pinMode(LED_DEBUG, OUTPUT);
 	blinkTime/=10;
 	pauseTime/=10;
 	// << will halt there forever, blinking with led >>
 	while(true)
 	{
-		digitalWrite(LED_SYNC,1);
+        digitalWrite(LED_DEBUG,1);
 		uint16_t cnt=0;
 		for(cnt=0; cnt<blinkTime; ++cnt)
 			_delay_ms(10);
-		digitalWrite(LED_SYNC,0);
+        digitalWrite(LED_DEBUG,0);
 		for(cnt=0; cnt<pauseTime; ++cnt)
 			_delay_ms(10);
 	}

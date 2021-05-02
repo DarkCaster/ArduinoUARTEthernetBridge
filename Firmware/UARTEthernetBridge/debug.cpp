@@ -45,15 +45,8 @@ uint32_t get_free_memory()
     return free_memory;
 }
 
-static bool debug_serial_init_done=false;
-
-#define SERIAL_CHECK (&DEBUG_SERIAL_PORT!=&SERIAL_PORT)
-
 void STATUS(const bool nl)
 {
-    if(!debug_serial_init_done && SERIAL_CHECK)
-        DEBUG_SERIAL_PORT.begin(SERIAL_PORT_SPEED);
-    debug_serial_init_done=true;
     auto milliseconds=millis();
     auto seconds=milliseconds/1000UL;
     DEBUG_SERIAL_PORT.print(F("["));
@@ -92,19 +85,19 @@ void LOG(const uint32_t intNumber, const bool nl)
 
 void BLINK(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 {
-    pinMode(LED_DEBUG, OUTPUT);
+    pinMode(DEBUG_LED, OUTPUT);
     blinkTime/=10;
     pauseTime/=10;
 
     while(true)
     {
-        digitalWrite(LED_DEBUG,HIGH);
+        digitalWrite(DEBUG_LED,HIGH);
         uint16_t cnt=0;
         for(cnt=0; cnt<blinkTime; ++cnt)
             _delay_ms(10);
         if(pauseTime>0)
         {
-            digitalWrite(LED_DEBUG,LOW);
+            digitalWrite(DEBUG_LED,LOW);
             for(cnt=0; cnt<pauseTime; ++cnt)
                 _delay_ms(10);
         }
@@ -118,4 +111,19 @@ void BLINK(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 void FAIL(uint16_t blinkTime, uint16_t pauseTime)
 {
     BLINK(blinkTime,pauseTime,0);
+}
+
+//If SERIAL_RX_PIN defined, define macro to enable pullup on serial rx-pin
+#ifdef DEBUG_SERIAL_RX_PIN
+#define RX_PIN_PREP() (__extension__({pinMode(DEBUG_SERIAL_RX_PIN,INPUT_PULLUP);}))
+#else
+#define RX_PIN_PREP() (__extension__({}))
+#endif
+
+void SETUP_DEBUG_SERIAL()
+{
+    //setup serial port for debugging
+    DEBUG_SERIAL_PORT.begin(DEBUG_SERIAL_PORT_SPEED);
+    DEBUG_SERIAL_PORT.setTimeout(100);
+    RX_PIN_PREP(); // enable pullup on serial RX-pin
 }

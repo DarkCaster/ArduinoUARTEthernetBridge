@@ -16,6 +16,7 @@ void STATUS(const bool nl=false);
 #define STATUS(...) ({})
 #endif
 
+void SETUP_DEBUG_SERIAL();
 void FAIL(uint16_t blinkTime, uint16_t pauseTime);
 void BLINK(uint16_t blinkTime, uint16_t pauseTime, uint8_t count);
 

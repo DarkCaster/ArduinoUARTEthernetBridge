@@ -88,26 +88,31 @@ void LOG(const uint32_t intNumber, const bool nl)
 		DEBUG_SERIAL_PORT.print(F("\n"));
 }
 
-#if __AVR__
-void FAIL(uint16_t blinkTime, uint16_t pauseTime)
-{
-    pinMode(LED_DEBUG, OUTPUT);
-	blinkTime/=10;
-	pauseTime/=10;
-	// << will halt there forever, blinking with led >>
-	while(true)
-	{
-        digitalWrite(LED_DEBUG,1);
-		uint16_t cnt=0;
-		for(cnt=0; cnt<blinkTime; ++cnt)
-			_delay_ms(10);
-        digitalWrite(LED_DEBUG,0);
-		for(cnt=0; cnt<pauseTime; ++cnt)
-			_delay_ms(10);
-	}
-}
-#else
-#error TODO
 #endif
 
-#endif
+void BLINK(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
+{
+    pinMode(LED_DEBUG, OUTPUT);
+    blinkTime/=10;
+    pauseTime/=10;
+
+    while(true)
+    {
+        digitalWrite(LED_DEBUG,HIGH);
+        uint16_t cnt=0;
+        for(cnt=0; cnt<blinkTime; ++cnt)
+            _delay_ms(10);
+        digitalWrite(LED_DEBUG,LOW);
+        for(cnt=0; cnt<pauseTime; ++cnt)
+            _delay_ms(10);
+        if(count==1)
+            return;
+        if(count>0)
+            count--;
+    }
+}
+
+void FAIL(uint16_t blinkTime, uint16_t pauseTime)
+{
+    BLINK(blinkTime,pauseTime,0);
+}

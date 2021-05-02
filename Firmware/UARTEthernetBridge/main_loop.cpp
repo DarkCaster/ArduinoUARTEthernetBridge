@@ -34,18 +34,24 @@ void setup()
     pinMode(PIN_SPI_SCK,OUTPUT);
     digitalWrite(PIN_SPI_SCK,LOW);
 
-    //TODO: setup software UART pins
+    //perform ENC28J60 reset, https://github.com/njh/EtherCard/issues/238
+    pinMode(PIN_ENC28J60_RST, OUTPUT);
+    digitalWrite(PIN_ENC28J60_RST, LOW);
+    delay(100);
+    digitalWrite(PIN_ENC28J60_RST, HIGH);
+    pinMode(PIN_ENC28J60_RST, INPUT);
 
-    //blink LED pin indicating startup
-    pinMode(LED_BUILTIN,OUTPUT);
-    digitalWrite(LED_BUILTIN,HIGH);
-    delay(500);
-    digitalWrite(LED_BUILTIN,LOW);
+    //setup UART
+
+    //blink LED pin indicating hardware setup is complete
+    BLINK(1000,1000,3);
 
 	//read settings
     //settingsManager.Init();
 
     //initialize network, reset if no network cable detected
+
+
 
 	STATUS();
 	LOG(F("Setup complete!"));
@@ -53,6 +59,6 @@ void setup()
 
 void loop()
 {
-    delay(5000);
+    //delay(5000);
     watchdog.SystemReset();
 }

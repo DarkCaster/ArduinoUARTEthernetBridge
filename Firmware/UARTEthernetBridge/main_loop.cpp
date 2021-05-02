@@ -67,6 +67,23 @@ void setup()
 
 void loop()
 {
+    //possible states and actions performed
+
+    //no client connected
+    //    -> check for link state
+    //    -> trying to accept new client connection
+    //    -> enable watchdog on client connection to default value
+
+    //client connected
+    //    -> reading data from enabled UARTs
+    //    -> rearm watchdog on incoming data
+    //    -> send it to client
+    //    -> read incoming data, decode package type:
+    //    -> perform uart setup, buffer setup, watchdog params setup
+    //    -> perform client disconnect
+    //    -> write incoming data to designated uart port
+    //    -> force disconnect on error
+
     delay(60000);
     watchdog.SystemReset();
 }

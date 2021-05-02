@@ -1,42 +1,62 @@
 #include <avr/wdt.h>
 #include "watchdog_AVR.h"
 
-WatchdogAVR::WatchdogAVR(uint16_t defaultDelayMS)
+WatchdogAVR::WatchdogAVR()
 {
-	SetDelay(defaultDelayMS);
+    Disable();
 }
 
-void WatchdogAVR::SetDelay(uint16_t maxDelayMS)
+bool WatchdogAVR::IsEnabled()
 {
-	if(maxDelayMS>1000)
-		delay=WDTO_2S;
-	else if(maxDelayMS>500)
-		delay=WDTO_1S;
-	else if(maxDelayMS>250)
-		delay=WDTO_500MS;
-	else if(maxDelayMS>120)
-		delay=WDTO_250MS;
-	else if(maxDelayMS>60)
-		delay=WDTO_120MS;
-	else if(maxDelayMS>30)
-		delay=WDTO_60MS;
-	else if(maxDelayMS>15)
-		delay=WDTO_30MS;
+    return isEnabled;
+}
+
+static uint8_t GetDelayParam(uint16_t reqDelay)
+{
+    if(reqDelay>4000)
+        return WDTO_8S;
+    if(reqDelay>2000)
+        return WDTO_4S;
+    if(reqDelay>1000)
+        return WDTO_2S;
+    if(reqDelay>500)
+        return WDTO_1S;
+    if(reqDelay>250)
+        return WDTO_500MS;
+    if(reqDelay>120)
+        return WDTO_250MS;
+    if(reqDelay>60)
+        return WDTO_120MS;
+    if(reqDelay>30)
+        return WDTO_60MS;
+    if(reqDelay>15)
+        return WDTO_30MS;
 	else
-		delay=WDTO_15MS;
+        return WDTO_15MS;
 }
 
-void WatchdogAVR::Enable()
+void WatchdogAVR::Enable(uint16_t maxDelayMS)
 {
-	wdt_enable(delay);
+    wdt_enable(GetDelayParam(maxDelayMS));
+    isEnabled=true;
 }
 
 void WatchdogAVR::Disable()
 {
 	wdt_disable();
+    isEnabled=false;
 }
 
 void WatchdogAVR::Ping()
 {
-	wdt_reset();
+    if(isEnabled)
+        wdt_reset();
+}
+
+void WatchdogAVR::SystemReset()
+{
+    wdt_disable();
+    isEnabled=false; //prohibit interrupts to perform pings on watchdog while we are awaiting for reset
+    wdt_enable(1);
+    while(true){}; //there is no return, await for reset
 }

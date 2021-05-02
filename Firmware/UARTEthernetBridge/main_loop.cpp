@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <UIPEthernet.h>
+
 #include "debug.h"
 #include "configuration.h"
 #include "main_loop.h"
@@ -6,24 +8,21 @@
 #include "watchdog_AVR.h"
 #include "settings_manager.h"
 
-//If SERIAL_RX_PIN defined, define macro to enable pullup on serial rx-pin
-//We need this in order to prevent false incoming connection events when device enabled and not connected to PC
-#ifdef SERIAL_RX_PIN
-#define RX_PIN_PREP() (__extension__({pinMode(SERIAL_RX_PIN,INPUT_PULLUP);}))
-#else
-#define RX_PIN_PREP() (__extension__({}))
-#endif
+static uint8_t macaddr[] = ENC28J60_MACADDR;
+static bool connected = false;
 
-//create main logic blocks and perform "poor man's" dependency injection
+//create some helpers
 //static EEPROMSettingsManager settingsManager(EEPROM_SETTINGS_ADDR, EEPROM_SETTINGS_LEN, cipher, encKey, encTweak);
 static WatchdogAVR watchdog;
+EthernetServer server(TCP_PORT);
 
 void setup()
 {
-    //setup serial port for debugging
-    SERIAL_PORT.begin(SERIAL_PORT_SPEED);
-    SERIAL_PORT.setTimeout(1000);
-    RX_PIN_PREP(); // enable pullup on serial RX-pin
+    SETUP_DEBUG_SERIAL();
+    STATUS(); LOG(F("Startup"));
+
+    //TODO: read settings
+    //settingsManager.Init();
 
     //setup SPI pins
     pinMode(PIN_SPI_MISO,INPUT_PULLUP);
@@ -41,24 +40,33 @@ void setup()
     digitalWrite(PIN_ENC28J60_RST, HIGH);
     pinMode(PIN_ENC28J60_RST, INPUT);
 
-    //setup UART
+    //TODO: setup UART
 
     //blink LED pin indicating hardware setup is complete
-    BLINK(1000,1000,3);
-
-	//read settings
-    //settingsManager.Init();
+    BLINK(50,50,10);
 
     //initialize network, reset if no network cable detected
+    STATUS(); LOG(F("DHCP start"));
+    Ethernet.init(PIN_SPI_ENC28J60_CS);
+    if (Ethernet.begin(macaddr) == 0)
+    {
+        if (Ethernet.hardwareStatus() == EthernetNoHardware)
+            FAIL(250,250);
+        if (Ethernet.linkStatus() == LinkOFF)
+        {
+            BLINK(500,500,10);
+            watchdog.SystemReset();
+        }
+    }
 
-
-
-	STATUS();
-	LOG(F("Setup complete!"));
+    STATUS(); LOG(F("Server start"));
+    server.begin();
+    BLINK(10,0,1);
+    STATUS(); LOG(F("Init complete!"));
 }
 
 void loop()
 {
-    //delay(5000);
+    delay(60000);
     watchdog.SystemReset();
 }

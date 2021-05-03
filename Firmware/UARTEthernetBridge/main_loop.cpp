@@ -8,6 +8,15 @@
 #include "watchdog.h"
 #include "watchdog_AVR.h"
 
+#define PORTS_BUFFER_SIZE (1+UART_COUNT*(1+UART_BUFFER_SIZE))
+#define CMD_BUFFER_SIZE (1+64)
+
+#if PORTS_BUFFER_SIZE > CMD_BUFFER_SIZE
+#define NET_BUFFER_SIZE PORTS_BUFFER_SIZE
+#else
+#define NET_BUFFER_SIZE CMD_BUFFER_SIZE
+#endif
+
 static uint8_t macaddr[] = ENC28J60_MACADDR;
 static IPAddress remoteIP(0,0,0,0);
 static uint16_t remotePort=0;
@@ -16,7 +25,7 @@ static uint16_t remotePort=0;
 static WatchdogAVR watchdog;
 static UIPUDP server;
 
-static uint8_t buff[100];
+static uint8_t buff[NET_BUFFER_SIZE];
 
 void setup()
 {
@@ -62,7 +71,7 @@ void setup()
     }
 
     STATUS(); LOG(F("Server start"));
-    server.begin(TCP_PORT);
+    server.begin(UDP_PORT);
     BLINK(10,0,1);
     STATUS(); LOG(F("Init complete!"));
 }

@@ -19,6 +19,8 @@ include(ArduinoCmakeBuilder/arduino-build-helper.cmake)
 
 set_avr_compiler_flags()
 
+add_definitions(-DUIP_CLIENT_TIMER=0)
+
 # add some internal and external libraries
 add_arduino_library(SPI ${ARDUINO_LIBS_PATH})
 add_arduino_library(EEPROM ${ARDUINO_LIBS_PATH})

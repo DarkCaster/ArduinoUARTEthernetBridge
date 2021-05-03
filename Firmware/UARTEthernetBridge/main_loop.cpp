@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <UIPEthernet.h>
-#include <UIPUdp.h>
+#include <UIPServer.h>
+#include <UIPClient.h>
 
 #include "debug.h"
 #include "configuration.h"
@@ -18,12 +19,12 @@
 #endif
 
 static uint8_t macaddr[] = ENC28J60_MACADDR;
-static IPAddress remoteIP(0,0,0,0);
-static uint16_t remotePort=0;
+static bool isConnected=false;
+static UIPClient remote;
 
 //create some helpers
 static WatchdogAVR watchdog;
-static UIPUDP server;
+static UIPServer server(NET_PORT);
 
 static uint8_t buff[NET_BUFFER_SIZE];
 
@@ -71,7 +72,7 @@ void setup()
     }
 
     STATUS(); LOG(F("Server start"));
-    server.begin(NET_PORT);
+    server.begin();
     BLINK(10,0,1);
     STATUS(); LOG(F("Init complete!"));
 }
@@ -108,6 +109,31 @@ void loop()
 
 
 
+    // check for any new client connecting, and say hello (before any incoming data)
+    if(!isConnected)
+    {
+        remote = server.accept();
+        if (remote)
+            isConnected=true;
+    }
+
+    if(isConnected)
+    {
+        auto avail=remote.available();
+        if(avail>NET_BUFFER_SIZE)
+            avail=NET_BUFFER_SIZE;
+        auto read=remote.read(buff,avail);
+        if(read>0)
+        {
+            remote.write(buff,NET_BUFFER_SIZE);
+        }
+
+        if(!remote.connected())
+        {
+            remote.stop();
+            isConnected=false;
+        }
+    }
 
 
 

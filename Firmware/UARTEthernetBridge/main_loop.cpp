@@ -8,6 +8,7 @@
 #include "main_loop.h"
 #include "watchdog.h"
 #include "watchdog_AVR.h"
+#include "uart_helper.h"
 
 #define PORTS_BUFFER_SIZE (1+UART_COUNT*(1+UART_BUFFER_SIZE))
 #define CMD_BUFFER_SIZE (1+64)
@@ -18,23 +19,29 @@
 #define NET_BUFFER_SIZE CMD_BUFFER_SIZE
 #endif
 
+
 static uint8_t macaddr[] = ENC28J60_MACADDR;
 static bool isConnected=false;
 static UIPClient remote;
+static uint8_t rxBuff[NET_BUFFER_SIZE];
+static uint8_t txBuff[NET_BUFFER_SIZE];
+static int wdInterval = 1000;
 
-//create some helpers
+//helper classes
+static UARTHelper uartHelpers[UART_COUNT];
 static WatchdogAVR watchdog;
 static UIPServer server(NET_PORT);
 
-static uint8_t buff[NET_BUFFER_SIZE];
+#define CMD_NONE 0x00
+#define CMD_CONNECT 0x01
+#define CMD_DISCONNECT 0x02
+#define CMD_DATA 0x03
+#define CMD_PING 0x04
 
 void setup()
 {
     SETUP_DEBUG_SERIAL();
     STATUS(); LOG(F("Startup"));
-
-    //TODO: read settings
-    //settingsManager.Init();
 
     //setup SPI pins
     pinMode(PIN_SPI_MISO,INPUT_PULLUP);
@@ -52,7 +59,11 @@ void setup()
     digitalWrite(PIN_ENC28J60_RST, HIGH);
     pinMode(PIN_ENC28J60_RST, INPUT);
 
-    //TODO: setup UART
+    //setup UART
+    HardwareSerial *extUARTs[] = UART_DEFS;
+    uint8_t extUARTPins[] = UART_RX_PINS;
+    for(int i=0;i<UART_COUNT;++i)
+        uartHelpers[i].Setup(extUARTs[i],extUARTPins[i]);
 
     //blink LED pin indicating hardware setup is complete
     BLINK(50,50,10);
@@ -66,7 +77,7 @@ void setup()
             FAIL(250,250);
         if (UIPEthernet.linkStatus() == LinkOFF)
         {
-            BLINK(500,500,10);
+            BLINK(500,500,3);
             watchdog.SystemReset();
         }
     }
@@ -77,47 +88,43 @@ void setup()
     STATUS(); LOG(F("Init complete!"));
 }
 
-void loop()
+void connect()
 {
-    // if there's data available, read a packet
-    /*int packetSize = Udp.parsePacket();
-    if (packetSize) {
-        //Serial.print("Received packet of size ");
-        //Serial.println(packetSize);
-        //Serial.print("From ");
-        //IPAddress remote = Udp.remoteIP();
-        for (int i=0; i < 4; i++) {
-            Serial.print(remote[i], DEC);
-            if (i < 3) {
-                Serial.print(".");
-            }
-        }
-        //Serial.print(", port ");
-        //Serial.println(Udp.remotePort());
-
-        // read the packet into packetBufffer
-        auto dr=Udp.read(buff, 100);
-        //Serial.println("Contents:");
-        //Serial.println(packetBuffer);
-
-        // send a reply to the IP address and port that sent us the packet we received
-        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-        Udp.write(buff,dr);
-        Udp.endPacket();
-    }*/
-
-
-
-
-    // check for any new client connecting, and say hello (before any incoming data)
-    if(!isConnected)
+    //check link state
+    if(UIPEthernet.linkStatus()!=LinkON)
     {
-        remote = server.accept();
-        if (remote)
-            isConnected=true;
+        STATUS(); LOG(F("Link disconnected! Rebooting"));
+        BLINK(500,500,3);
+        watchdog.SystemReset();
+    }
+    //trying to accept new client connection
+    remote = server.accept();
+    if (remote)
+    {
+        STATUS(); LOG(F("Client connected, awaiting configuration"));
+        isConnected=true;
+        //TODO: reset read/write counters
+        //enable watchdog on client connection to default value
+        watchdog.Enable(wdInterval);
+    }
+}
+
+uint8_t read_command()
+{
+    if(!remote.connected())
+    {
+        remote.stop();
+        isConnected=false;
+        //do not closing serial port
     }
 
-    if(isConnected)
+    return CMD_NONE;
+    //auto avail=remote.available();
+}
+
+void loop()
+{
+    /*if(isConnected)
     {
         auto avail=remote.available();
         if(avail>NET_BUFFER_SIZE)
@@ -133,31 +140,22 @@ void loop()
             remote.stop();
             isConnected=false;
         }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-    //possible states and actions performed
+    }*/
 
     //no client connected
-    //    -> check for link state
-    //    -> trying to accept new client connection
-    //    -> enable watchdog on client connection to default value
+    if(!isConnected)
+    {
+        connect();
+        return;
+    }
 
+    //client connected, try to read the command
+    if(read_command()==CMD_NONE)
+        return;
 
-
-    //client connected
     //    -> reading data from enabled UARTs
     //    -> rearm watchdog on incoming data
+
     //    -> send it to client
     //    -> read incoming data, decode package type:
     //    -> perform uart setup, buffer setup, watchdog params setup

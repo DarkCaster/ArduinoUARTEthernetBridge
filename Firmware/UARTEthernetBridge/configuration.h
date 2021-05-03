@@ -8,8 +8,11 @@
 #define DEBUG_LED LED_BUILTIN
 
 //ext serial config
-#define UART_COUNT 3
 #define UART_BUFFER_SIZE 64
+#define UART_COUNT 3
+#define UART_DEFS { &Serial1, &Serial2, &Serial3 }
+#define UART_RX_PINS { 19, 17, 15 }
+#define UART_MAX_POLL_INTERVAL_MS 5
 
 //params for ENC28J60 ethernet shield
 #define PIN_SPI_ENC28J60_CS PIN_SPI_SS

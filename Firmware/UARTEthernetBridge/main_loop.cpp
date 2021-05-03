@@ -1,20 +1,22 @@
 #include <Arduino.h>
 #include <UIPEthernet.h>
+#include <UIPUdp.h>
 
 #include "debug.h"
 #include "configuration.h"
 #include "main_loop.h"
 #include "watchdog.h"
 #include "watchdog_AVR.h"
-#include "settings_manager.h"
 
 static uint8_t macaddr[] = ENC28J60_MACADDR;
-static bool connected = false;
+static IPAddress remoteIP(0,0,0,0);
+static uint16_t remotePort=0;
 
 //create some helpers
-//static EEPROMSettingsManager settingsManager(EEPROM_SETTINGS_ADDR, EEPROM_SETTINGS_LEN, cipher, encKey, encTweak);
 static WatchdogAVR watchdog;
-EthernetServer server(TCP_PORT);
+static UIPUDP server;
+
+static uint8_t buff[100];
 
 void setup()
 {
@@ -47,12 +49,12 @@ void setup()
 
     //initialize network, reset if no network cable detected
     STATUS(); LOG(F("DHCP start"));
-    Ethernet.init(PIN_SPI_ENC28J60_CS);
-    if (Ethernet.begin(macaddr) == 0)
+    UIPEthernet.init(PIN_SPI_ENC28J60_CS);
+    if (UIPEthernet.begin(macaddr) == 0)
     {
-        if (Ethernet.hardwareStatus() == EthernetNoHardware)
+        if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
             FAIL(250,250);
-        if (Ethernet.linkStatus() == LinkOFF)
+        if (UIPEthernet.linkStatus() == LinkOFF)
         {
             BLINK(500,500,10);
             watchdog.SystemReset();
@@ -60,13 +62,55 @@ void setup()
     }
 
     STATUS(); LOG(F("Server start"));
-    server.begin();
+    server.begin(TCP_PORT);
     BLINK(10,0,1);
     STATUS(); LOG(F("Init complete!"));
 }
 
 void loop()
 {
+    // if there's data available, read a packet
+    /*int packetSize = Udp.parsePacket();
+    if (packetSize) {
+        //Serial.print("Received packet of size ");
+        //Serial.println(packetSize);
+        //Serial.print("From ");
+        //IPAddress remote = Udp.remoteIP();
+        for (int i=0; i < 4; i++) {
+            Serial.print(remote[i], DEC);
+            if (i < 3) {
+                Serial.print(".");
+            }
+        }
+        //Serial.print(", port ");
+        //Serial.println(Udp.remotePort());
+
+        // read the packet into packetBufffer
+        auto dr=Udp.read(buff, 100);
+        //Serial.println("Contents:");
+        //Serial.println(packetBuffer);
+
+        // send a reply to the IP address and port that sent us the packet we received
+        Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+        Udp.write(buff,dr);
+        Udp.endPacket();
+    }*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //possible states and actions performed
 
     //no client connected
@@ -74,16 +118,15 @@ void loop()
     //    -> trying to accept new client connection
     //    -> enable watchdog on client connection to default value
 
+
+
     //client connected
     //    -> reading data from enabled UARTs
     //    -> rearm watchdog on incoming data
     //    -> send it to client
     //    -> read incoming data, decode package type:
     //    -> perform uart setup, buffer setup, watchdog params setup
-    //    -> perform client disconnect
+    //    -> perform client disconnect -> diactivate watchdog on proper disconnect
     //    -> write incoming data to designated uart port
     //    -> force disconnect on error
-
-    delay(60000);
-    watchdog.SystemReset();
 }

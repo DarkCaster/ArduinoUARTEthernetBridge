@@ -17,7 +17,7 @@
 #define ENC28J60_MACADDR { 0x00,0x16,0x3E,0x65,0xE3,0x66 }
 
 //network params
-#define UDP_PORT 50000
-#define DEV_NAME "ENC28J65E366"
+#define NET_PORT 50000
+#define NET_NAME "ENC28J65E366"
 
 #endif

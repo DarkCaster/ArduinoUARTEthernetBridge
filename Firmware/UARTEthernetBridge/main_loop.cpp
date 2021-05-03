@@ -71,7 +71,7 @@ void setup()
     }
 
     STATUS(); LOG(F("Server start"));
-    server.begin(UDP_PORT);
+    server.begin(NET_PORT);
     BLINK(10,0,1);
     STATUS(); LOG(F("Init complete!"));
 }

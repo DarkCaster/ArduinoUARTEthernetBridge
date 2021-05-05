@@ -16,8 +16,9 @@ void UARTHelper::Setup(HardwareSerial* const _port, const uint8_t _rxPin)
     PrepareRXPin();
 }
 
-void UARTHelper::Activate(int speed, uint8_t config)
+void UARTHelper::Activate(int speed, uint8_t config, uint8_t _collectIntMS)
 {
+    collectIntMS=_collectIntMS;
     port->begin(speed,config);
     PrepareRXPin();
 }

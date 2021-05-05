@@ -19,6 +19,12 @@
 #define NET_BUFFER_SIZE CMD_BUFFER_SIZE
 #endif
 
+#define CMD_NONE 0x00
+#define CMD_CONNECT 0x01
+#define CMD_DISCONNECT 0x02
+#define CMD_DATA 0x03
+#define CMD_PING 0x04
+#define CMD_EOF 0xFF
 
 static uint8_t macaddr[] = ENC28J60_MACADDR;
 static bool isConnected=false;
@@ -27,16 +33,15 @@ static uint8_t rxBuff[NET_BUFFER_SIZE];
 static uint8_t txBuff[NET_BUFFER_SIZE];
 static int wdInterval = 1000;
 
+static uint8_t cmdPending = CMD_NONE;
+static uint8_t cmdLeft = 0;
+
 //helper classes
 static UARTHelper uartHelpers[UART_COUNT];
 static WatchdogAVR watchdog;
 static UIPServer server(NET_PORT);
 
-#define CMD_NONE 0x00
-#define CMD_CONNECT 0x01
-#define CMD_DISCONNECT 0x02
-#define CMD_DATA 0x03
-#define CMD_PING 0x04
+
 
 void setup()
 {
@@ -101,11 +106,11 @@ void connect()
     remote = server.accept();
     if (remote)
     {
-        STATUS(); LOG(F("Client connected, awaiting configuration"));
+        STATUS(); LOG(F("Client connected"));
+        cmdPending=CMD_NONE;
+        cmdLeft=0;
         isConnected=true;
-        //TODO: reset read/write counters
-        //enable watchdog on client connection to default value
-        watchdog.Enable(wdInterval);
+        watchdog.Enable(wdInterval); //enable watchdog on client connection to default value
     }
 }
 
@@ -115,12 +120,19 @@ uint8_t read_command()
     {
         remote.stop();
         isConnected=false;
-        //do not closing serial port
+        return CMD_EOF;
+    }
+
+    auto avail=remote.available();
+    if(cmdPending==CMD_NONE && avail>0)
+    {
+
     }
 
     return CMD_NONE;
-    //auto avail=remote.available();
 }
+
+#define GET_UART_COLLECT_TIME(speed, bsz) (((uint)1000000000/(uint)(speed/8)*(uint)bsz)/(uint)1000000)
 
 void loop()
 {

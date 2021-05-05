@@ -44,6 +44,6 @@
 #define REQ_WD_LEN 1 //ping watchdog
 
 #define ANS_DATA_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT)
-#define AND_PING_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT) //same as data, to test total latency
+#define ANS_PING_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT) //same as data, to test total latency
 
 #endif

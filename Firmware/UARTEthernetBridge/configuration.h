@@ -23,4 +23,27 @@
 #define NET_PORT 50000
 #define NET_NAME "ENC28J65E366"
 
+//defs for requests and answers, do not change please
+#define REQ_NONE 0x00 //never sent over line, used to notify that no data ready to process
+#define REQ_EOF 0xFF //never sent over line, used to notify client disconnect
+#define REQ_CONNECT 0x01
+#define REQ_DISCONNECT 0x02
+#define REQ_DATA 0x03
+#define REQ_PING 0x04
+#define REQ_WD 0xFE
+
+#define ANS_DATA 0x03
+#define ANS_PING 0x04
+
+#define REQ_NONE_LEN 0
+#define REQ_EOF 0
+#define REQ_CONNECT_LEN (1+2+(3+1)*UART_COUNT) //1byte - cmd header, 2 - bytes - watchdog interval ms, (3byte - uart speed, 1byte - mode) * uart count
+#define REQ_DISCONNECT_LEN 1
+#define REQ_DATA_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT)
+#define REQ_PING_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT) //same as data, to test total latency
+#define REQ_WD_LEN 1 //ping watchdog
+
+#define ANS_DATA_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT)
+#define AND_PING_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT) //same as data, to test total latency
+
 #endif

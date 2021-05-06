@@ -36,6 +36,7 @@ static UIPServer server(NET_PORT);
 //stuff for reading data
 static uint8_t reqBuff[NET_BUFFER_SIZE];
 static uint8_t reqLeft = 0;
+static uint8_t reqLen = 0;
 #define READER_CLEANUP() (__extension__({reqBuff[0]=REQ_NONE;reqLeft=0;}))
 
 //stuff for remote client state
@@ -139,29 +140,32 @@ uint8_t read_command()
         switch (reqBuff[0])
         {
             case REQ_CONNECT:
-                reqLeft=REQ_CONNECT_LEN-1;
+                reqLen=REQ_CONNECT_LEN;
                 break;
             case REQ_DISCONNECT:
-                reqLeft=REQ_DISCONNECT_LEN-1;
+                reqLen=REQ_DISCONNECT_LEN;
                 break;
             case REQ_DATA:
-                reqLeft=REQ_DATA_LEN-1;
+                reqLen=REQ_DATA_LEN;
                 break;
             case REQ_PING:
-                reqLeft=REQ_PING_LEN-1;
+                reqLen=REQ_PING_LEN;
                 break;
             case REQ_WD:
-                reqLeft=REQ_WD_LEN-1;
+                reqLen=REQ_WD_LEN;
                 break;
             default:
                 return read_fail();
         }
+        reqLeft=reqLen-1;
+        avail--;
     }
 
+    if(avail>reqLeft)
+        avail=reqLeft;
+
     if(reqLeft>0)
-    {
-        //TODO: try to read as much as possible
-    }
+        reqLeft-=remote.read(reqBuff+reqLen-reqLeft,avail);
 
     if(reqLeft<1)
     {

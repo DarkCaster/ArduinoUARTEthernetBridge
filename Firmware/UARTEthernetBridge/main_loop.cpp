@@ -10,8 +10,15 @@
 #include "watchdog_AVR.h"
 #include "uart_helper.h"
 
-#define PORTS_BUFFER_SIZE (1+UART_COUNT*(1+UART_BUFFER_SIZE))
 #define CMD_BUFFER_SIZE (1+64)
+
+#define PORTS_BUFFER_SIZE1 REQ_DATA_LEN
+#define PORTS_BUFFER_SIZE2 ANS_DATA_LEN
+#if PORTS_BUFFER_SIZE1 > PORTS_BUFFER_SIZE2
+#define PORTS_BUFFER_SIZE PORTS_BUFFER_SIZE1
+#else
+#define PORTS_BUFFER_SIZE PORTS_BUFFER_SIZE2
+#endif
 
 #if PORTS_BUFFER_SIZE > CMD_BUFFER_SIZE
 #define NET_BUFFER_SIZE PORTS_BUFFER_SIZE
@@ -19,29 +26,22 @@
 #define NET_BUFFER_SIZE CMD_BUFFER_SIZE
 #endif
 
-#define CMD_NONE 0x00
-#define CMD_CONNECT 0x01
-#define CMD_DISCONNECT 0x02
-#define CMD_DATA 0x03
-#define CMD_PING 0x04
-#define CMD_EOF 0xFF
-
 static uint8_t macaddr[] = ENC28J60_MACADDR;
-static bool isConnected=false;
-static UIPClient remote;
-static uint8_t rxBuff[NET_BUFFER_SIZE];
-static uint8_t txBuff[NET_BUFFER_SIZE];
-static int wdInterval = 1000;
-
-static uint8_t cmdPending = CMD_NONE;
-static uint8_t cmdLeft = 0;
 
 //helper classes
 static UARTHelper uartHelpers[UART_COUNT];
 static WatchdogAVR watchdog;
 static UIPServer server(NET_PORT);
 
+//stuff for reading data
+static uint8_t reqBuff[NET_BUFFER_SIZE];
+static uint8_t reqLeft = 0;
+#define READER_CLEANUP() (__extension__({reqBuff[0]=REQ_NONE;reqLeft=0;}))
 
+//stuff for remote client state
+static UIPClient remote;
+static int wdInterval = DEFAULT_WD_INTERVAL;
+static bool isConnected=false;
 
 void setup()
 {
@@ -102,58 +102,81 @@ void connect()
         BLINK(500,500,3);
         watchdog.SystemReset();
     }
+
     //trying to accept new client connection
     remote = server.accept();
     if (remote)
     {
         STATUS(); LOG(F("Client connected"));
-        cmdPending=CMD_NONE;
-        cmdLeft=0;
+        READER_CLEANUP();
         isConnected=true;
-        watchdog.Enable(wdInterval); //enable watchdog on client connection to default value
+        //enable watchdog on client connection to default value
+        watchdog.Enable(wdInterval);
     }
+}
+
+uint8_t read_fail()
+{
+    remote.stop();
+    isConnected=false;
+    return REQ_EOF;
 }
 
 uint8_t read_command()
 {
-    if(!remote.connected())
-    {
-        remote.stop();
-        isConnected=false;
-        return CMD_EOF;
-    }
-
     auto avail=remote.available();
-    if(cmdPending==CMD_NONE && avail>0)
+    if(avail<1)
     {
-
+        if(!remote.connected())
+            return read_fail();
+        return REQ_NONE;
     }
 
-    return CMD_NONE;
+    if(avail>0 && reqBuff[0]==REQ_NONE)
+    {
+        if(remote.read(reqBuff,1)<1)
+            return read_fail();
+        switch (reqBuff[0])
+        {
+            case REQ_CONNECT:
+                reqLeft=REQ_CONNECT_LEN-1;
+                break;
+            case REQ_DISCONNECT:
+                reqLeft=REQ_DISCONNECT_LEN-1;
+                break;
+            case REQ_DATA:
+                reqLeft=REQ_DATA_LEN-1;
+                break;
+            case REQ_PING:
+                reqLeft=REQ_PING_LEN-1;
+                break;
+            case REQ_WD:
+                reqLeft=REQ_WD_LEN-1;
+                break;
+            default:
+                return read_fail();
+        }
+    }
+
+    if(reqLeft>0)
+    {
+        //TODO: try to read as much as possible
+    }
+
+    if(reqLeft<1)
+    {
+        auto result=reqBuff[0];
+        READER_CLEANUP();
+        return result;
+    }
+
+    return REQ_NONE;
 }
 
 #define GET_UART_COLLECT_TIME(speed, bsz) (((uint)1000000000/(uint)(speed/8)*(uint)bsz)/(uint)1000000)
 
 void loop()
 {
-    /*if(isConnected)
-    {
-        auto avail=remote.available();
-        if(avail>NET_BUFFER_SIZE)
-            avail=NET_BUFFER_SIZE;
-        auto read=remote.read(buff,avail);
-        if(read>0)
-        {
-            remote.write(buff,NET_BUFFER_SIZE);
-        }
-
-        if(!remote.connected())
-        {
-            remote.stop();
-            isConnected=false;
-        }
-    }*/
-
     //no client connected
     if(!isConnected)
     {
@@ -162,8 +185,11 @@ void loop()
     }
 
     //client connected, try to read the command
-    if(read_command()==CMD_NONE)
+    auto cmd=read_command();
+    if(cmd==REQ_EOF) //not attempting to do anything on client disconnect
         return;
+
+    //TODO: parse completed request
 
     //    -> reading data from enabled UARTs
     //    -> rearm watchdog on incoming data

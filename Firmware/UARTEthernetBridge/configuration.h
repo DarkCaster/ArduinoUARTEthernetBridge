@@ -23,6 +23,9 @@
 #define NET_PORT 50000
 #define NET_NAME "ENC28J65E366"
 
+//other params
+#define DEFAULT_WD_INTERVAL 1000
+
 //defs for requests and answers, do not change please
 #define REQ_NONE 0x00 //never sent over line, used to notify that no data ready to process
 #define REQ_EOF 0xFF //never sent over line, used to notify client disconnect
@@ -36,7 +39,7 @@
 #define ANS_PING 0x04
 
 #define REQ_NONE_LEN 0
-#define REQ_EOF 0
+#define REQ_EOF_LEN 0
 #define REQ_CONNECT_LEN (1+2+(3+1)*UART_COUNT) //1byte - cmd header, 2 - bytes - watchdog interval ms, (3byte - uart speed, 1byte - mode) * uart count
 #define REQ_DISCONNECT_LEN 1
 #define REQ_DATA_LEN (1+(1+UART_BUFFER_SIZE)*UART_COUNT)

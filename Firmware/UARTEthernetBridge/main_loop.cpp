@@ -10,39 +10,11 @@
 #include "watchdog_AVR.h"
 #include "uart_helper.h"
 
-#define CMD_BUFFER_SIZE (1+64)
-
-#define PORTS_BUFFER_SIZE1 REQ_DATA_LEN
-#define PORTS_BUFFER_SIZE2 ANS_DATA_LEN
-#if PORTS_BUFFER_SIZE1 > PORTS_BUFFER_SIZE2
-#define PORTS_BUFFER_SIZE PORTS_BUFFER_SIZE1
-#else
-#define PORTS_BUFFER_SIZE PORTS_BUFFER_SIZE2
-#endif
-
-#if PORTS_BUFFER_SIZE > CMD_BUFFER_SIZE
-#define NET_BUFFER_SIZE PORTS_BUFFER_SIZE
-#else
-#define NET_BUFFER_SIZE CMD_BUFFER_SIZE
-#endif
-
 static uint8_t macaddr[] = ENC28J60_MACADDR;
 
 //helper classes
-static UARTHelper uartHelpers[UART_COUNT];
 static WatchdogAVR watchdog;
-static UIPServer server(NET_PORT);
-
-//stuff for reading data
-static uint8_t reqBuff[NET_BUFFER_SIZE];
-static uint8_t reqLeft = 0;
-static uint8_t reqLen = 0;
-#define READER_CLEANUP() (__extension__({reqBuff[0]=REQ_NONE;reqLeft=0;}))
-
-//stuff for remote client state
-static UIPClient remote;
-static int wdInterval = DEFAULT_WD_INTERVAL;
-static bool isConnected=false;
+static UARTHelper uartHelpers[UART_COUNT];
 
 void setup()
 {
@@ -65,11 +37,12 @@ void setup()
     digitalWrite(PIN_ENC28J60_RST, HIGH);
     pinMode(PIN_ENC28J60_RST, INPUT);
 
-    //setup UART
+    //setup UART-helpers
     HardwareSerial *extUARTs[] = UART_DEFS;
     uint8_t extUARTPins[] = UART_RX_PINS;
+    uint16_t ports[]= NET_PORTS;
     for(int i=0;i<UART_COUNT;++i)
-        uartHelpers[i].Setup(extUARTs[i],extUARTPins[i]);
+        uartHelpers[i].Setup(extUARTs[i], extUARTPins[i], ports[i]);
 
     //blink LED pin indicating hardware setup is complete
     BLINK(50,50,10);
@@ -88,13 +61,11 @@ void setup()
         }
     }
 
-    STATUS(); LOG(F("Server start"));
-    server.begin();
-    BLINK(10,0,1);
     STATUS(); LOG(F("Init complete!"));
+    BLINK(10,0,1);
 }
 
-void connect()
+void check_link_state()
 {
     //check link state
     if(UIPEthernet.linkStatus()!=LinkON)
@@ -104,104 +75,29 @@ void connect()
         watchdog.SystemReset();
     }
 
-    //trying to accept new client connection
-    remote = server.accept();
-    if (remote)
-    {
-        STATUS(); LOG(F("Client connected"));
-        READER_CLEANUP();
-        isConnected=true;
-        //enable watchdog on client connection to default value
-        watchdog.Enable(wdInterval);
-    }
 }
-
-uint8_t read_fail()
-{
-    remote.stop();
-    isConnected=false;
-    return REQ_EOF;
-}
-
-uint8_t read_command()
-{
-    auto avail=remote.available();
-    if(avail<1)
-    {
-        if(!remote.connected())
-            return read_fail();
-        return REQ_NONE;
-    }
-
-    if(avail>0 && reqBuff[0]==REQ_NONE)
-    {
-        if(remote.read(reqBuff,1)<1)
-            return read_fail();
-        switch (reqBuff[0])
-        {
-            case REQ_CONNECT:
-                reqLen=REQ_CONNECT_LEN;
-                break;
-            case REQ_DISCONNECT:
-                reqLen=REQ_DISCONNECT_LEN;
-                break;
-            case REQ_DATA:
-                reqLen=REQ_DATA_LEN;
-                break;
-            case REQ_PING:
-                reqLen=REQ_PING_LEN;
-                break;
-            case REQ_WD:
-                reqLen=REQ_WD_LEN;
-                break;
-            default:
-                return read_fail();
-        }
-        reqLeft=reqLen-1;
-        avail--;
-    }
-
-    if(avail>reqLeft)
-        avail=reqLeft;
-
-    if(reqLeft>0)
-        reqLeft-=remote.read(reqBuff+reqLen-reqLeft,avail);
-
-    if(reqLeft<1)
-    {
-        auto result=reqBuff[0];
-        READER_CLEANUP();
-        return result;
-    }
-
-    return REQ_NONE;
-}
-
-#define GET_UART_COLLECT_TIME(speed, bsz) (((uint)1000000000/(uint)(speed/8)*(uint)bsz)/(uint)1000000)
 
 void loop()
 {
-    //no client connected
-    if(!isConnected)
-    {
-        connect();
-        return;
-    }
+    bool result=false;
 
-    //client connected, try to read the command
-    auto cmd=read_command();
-    if(cmd==REQ_EOF) //not attempting to do anything on client disconnect
-        return;
+    //receive data incoming from TCP client
+    for(uint8_t p=0;p<UART_COUNT;++p)
+        result|=uartHelpers[p].RXStep1();
 
-    //TODO: parse completed request
+    //write data to UART
+    for(uint8_t p=0;p<UART_COUNT;++p)
+        uartHelpers[p].RXStep2();
 
-    //    -> reading data from enabled UARTs
-    //    -> rearm watchdog on incoming data
+    //read data incoming from UART
+    for(uint8_t p=0;p<UART_COUNT;++p)
+        uartHelpers[p].TXStep1();
 
-    //    -> send it to client
-    //    -> read incoming data, decode package type:
-    //    -> perform uart setup, buffer setup, watchdog params setup
-    //    -> perform client disconnect -> diactivate watchdog on proper disconnect
-    //    -> write incoming data to designated uart port
-    //    -> force disconnect on error
+    //transmit data back to TCP client
+    for(uint8_t p=0;p<UART_COUNT;++p)
+        uartHelpers[p].TXStep2();
+
+    //if there are no connected uart-helpers, then check link status
+    if(!result)
+        check_link_state();
 }

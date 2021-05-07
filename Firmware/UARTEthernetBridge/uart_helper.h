@@ -19,7 +19,7 @@ class UARTHelper
         //main operation divided into non-blocking steps to ensure better concurrency
         bool RXStep1(); //read data from client, check client connection
         void RXStep2(); //write data to uart
-        void TXStep1(); //collect data from uart
+        void TXStep1(unsigned long curTime); //collect data from uart
         void TXStep2(); //send data to client
 };
 

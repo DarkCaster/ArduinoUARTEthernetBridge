@@ -53,12 +53,21 @@ void setup()
     if (UIPEthernet.begin(macaddr) == 0)
     {
         if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
-            FAIL(250,250);
-        if (UIPEthernet.linkStatus() == LinkOFF)
         {
-            BLINK(500,500,3);
-            watchdog.SystemReset();
+            STATUS(); LOG(F("Ethernet controller not detected or failed!"));
+            BLINK(50,1950,3);
         }
+        else if (UIPEthernet.linkStatus() == LinkOFF)
+        {
+            STATUS(); LOG(F("No link detected! Rebooting"));
+            BLINK(250,1750,3);
+        }
+        else
+        {
+            STATUS(); LOG(F("DHCP failed"));
+            BLINK(500,1500,3);
+        }
+        watchdog.SystemReset();
     }
 
     STATUS(); LOG(F("Init complete!"));
@@ -89,9 +98,10 @@ void loop()
     for(uint8_t p=0;p<UART_COUNT;++p)
         uartHelpers[p].RXStep2();
 
+    auto time=millis();
     //read data incoming from UART
     for(uint8_t p=0;p<UART_COUNT;++p)
-        uartHelpers[p].TXStep1();
+        uartHelpers[p].TXStep1(time);
 
     //transmit data back to TCP client
     for(uint8_t p=0;p<UART_COUNT;++p)

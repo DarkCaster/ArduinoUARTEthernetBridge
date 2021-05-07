@@ -27,7 +27,7 @@ void UARTHelper::RXStep2()
 
 }
 
-void UARTHelper::TXStep1()
+void UARTHelper::TXStep1(unsigned long curTime)
 {
 
 }

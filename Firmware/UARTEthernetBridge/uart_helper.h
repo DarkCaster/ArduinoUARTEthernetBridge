@@ -16,6 +16,7 @@ class UARTHelper
         UIPServer server=UIPServer(0);
         HardwareSerial* uart;
         uint8_t rxPin;
+        uint16_t netPort;
         //mutable fields
         UIPClient client;
         SegmentedBuffer rxStorage;
@@ -31,6 +32,7 @@ class UARTHelper
     public:
         //run only once
         void Setup(HardwareSerial* const uart, const uint8_t rxPin, const uint16_t netPort);
+        void Start();
         //main operation divided into non-blocking steps to ensure better concurrency
         bool RXStep1(); //read data from client, check client connection
         void RXStep2(); //write data to uart

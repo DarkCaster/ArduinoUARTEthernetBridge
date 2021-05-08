@@ -28,14 +28,18 @@ static void PrepareRXPin(uint8_t rxPin)
     pinMode(rxPin,INPUT_PULLUP);
 }
 
-void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const uint16_t netPort)
+void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const uint16_t _netPort)
 {
     uart=_uart;
     rxPin=_rxPin;
+    netPort=_netPort;
     PrepareRXPin(rxPin);
-    //TODO: set start state
-    server.begin(netPort);
     state=STATE_NOT_CONNECTED;
+}
+
+void UARTHelper::Start()
+{
+    server.begin(netPort);
 }
 
 bool UARTHelper::Connect()

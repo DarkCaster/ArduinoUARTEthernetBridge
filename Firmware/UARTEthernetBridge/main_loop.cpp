@@ -70,6 +70,10 @@ void setup()
         watchdog.SystemReset();
     }
 
+    //start TCP server-listeners
+    for(int i=0;i<UART_COUNT;++i)
+        uartHelpers[i].Start();
+
     STATUS(); LOG(F("Init complete!"));
     BLINK(10,0,1);
 }

@@ -157,12 +157,12 @@ bool UARTHelper::RXStep1()
                 return true;
             }
         }
-        if(!client.connected())
-        {
-            state=STATE_CONN_FAILED;
-            return true;
-        }
     }
+
+    //begin disconnection routine if needed - no more TCP reads will be performed
+    if(!client.connected())
+        state=STATE_CONN_FAILED;
+
     return true;
 }
 

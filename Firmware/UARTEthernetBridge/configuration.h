@@ -25,21 +25,6 @@
 
 //other params
 #define DEFAULT_WD_INTERVAL 1000
-
-//defs for requests and answers, do not change please
-#define REQ_NONE 0x00 //never sent over line, used to notify that no data ready to process
-#define REQ_EOF 0xFF //never sent over line, used to notify client disconnect
-
-#define REQ_CONNECT 0x01
-#define REQ_DISCONNECT 0x02
-#define REQ_DATA 0x03
-
-#define ANS_DATA 0x03
-
-#define REQ_CONNECT_LEN 4 //3byte - uart speed, 1byte - mode (including dummy mode for testing latency)
-#define REQ_DISCONNECT_LEN 0 //proper close uart
-#define REQ_DATA_LEN (1+UART_BUFFER_SIZE) //1byte - actual data len, rest - data
-
-#define ANS_DATA_LEN (REQ_DATA_LEN+1) //same as REQ_DATA_LEN + 1 byte header
+#define BACK_BUFFER_SEGMENTS 5
 
 #endif

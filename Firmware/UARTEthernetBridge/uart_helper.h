@@ -3,16 +3,31 @@
 
 #include <Arduino.h>
 #include <UIPServer.h>
+#include <UIPClient.h>
+
+#include "configuration.h"
+#include "segmented_buffer.h"
+#include "uart_config.h"
 
 class UARTHelper
 {
     private:
+        //fields set with Setup call
         UIPServer server=UIPServer(0);
         HardwareSerial* uart;
         uint8_t rxPin;
-
-        uint8_t collectIntMS;
-        void PrepareRXPin();
+        //mutable fields
+        UIPClient client;
+        SegmentedBuffer rxStorage;
+        uint8_t txBuffer[UART_BUFFER_SIZE];
+        UARTConfig config;
+        uint8_t state; //0 - not connected, 1-254 - configuration steps, 255 - ready to transfer data
+        bool Connect();
+        bool ReadConfig();
+        bool UARTOpen();
+        bool ResetBegin();
+        bool ResetEnd();
+        bool Disconnect();
     public:
         //run only once
         void Setup(HardwareSerial* const uart, const uint8_t rxPin, const uint16_t netPort);
@@ -22,27 +37,5 @@ class UARTHelper
         void TXStep1(unsigned long curTime); //collect data from uart
         void TXStep2(); //send data to client
 };
-
-/*
- *
- *
-    private:
-
-        //TODO: remove garbage
-
-        static uint8_t reqBuff[REQ_BUFFER_LEN];
-        static uint8_t reqPending = REQ_NONE;
-        static uint8_t reqCurrent = REQ_NONE;
-        static uint8_t reqLeft = 0;
-        static uint8_t reqLen = 0;
-
-        //stuff for writing data
-        static uint8_t ansBuff[ANS_DATA_LEN];
-
-        //stuff for remote client state
-        static UIPClient remote;
-        static int wdInterval = DEFAULT_WD_INTERVAL;
-        static bool isConnected=false;
-        */
 
 #endif //UART_HELPER_H

@@ -10,11 +10,13 @@
 #include "watchdog_AVR.h"
 #include "uart_helper.h"
 
-static uint8_t macaddr[] = ENC28J60_MACADDR;
-
 //helper classes
 static WatchdogAVR watchdog;
 static UARTHelper uartHelpers[UART_COUNT];
+
+//other stuff
+static uint8_t macaddr[] = ENC28J60_MACADDR;
+static unsigned long time;
 
 void setup()
 {
@@ -76,6 +78,7 @@ void setup()
 
     STATUS(); LOG(F("Init complete!"));
     BLINK(10,0,1);
+    time=millis();
 }
 
 void check_link_state()
@@ -96,13 +99,12 @@ void loop()
 
     //receive data incoming from TCP client
     for(uint8_t p=0;p<UART_COUNT;++p)
-        result|=uartHelpers[p].RXStep1();
+        result|=uartHelpers[p].RXStep1(time);
 
     //write data to UART
     for(uint8_t p=0;p<UART_COUNT;++p)
         uartHelpers[p].RXStep2();
 
-    auto time=millis();
     //read data incoming from UART
     for(uint8_t p=0;p<UART_COUNT;++p)
         uartHelpers[p].TXStep1(time);
@@ -114,4 +116,6 @@ void loop()
     //if there are no connected uart-helpers, then check link status
     if(!result)
         check_link_state();
+
+    time=millis();
 }

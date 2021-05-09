@@ -56,7 +56,7 @@ bool UARTHelper::Connect()
     return false;
 }
 
-bool UARTHelper::ReadConfig()
+bool UARTHelper::ReadConfig(unsigned long curTime)
 {
     if(!client.connected())
     {
@@ -82,6 +82,7 @@ bool UARTHelper::ReadConfig()
     config.collectIntMS=(((unsigned long)1000000000/((unsigned long)config.speed/(unsigned long)8)*(unsigned long)UART_BUFFER_SIZE)/(unsigned long)1000000);
     if(!CFG_TEST_MODE(config))
         config.collectIntMS/=2;
+    targetTxTime=curTime+config.collectIntMS;
     state=STATE_CONFIG;
     return true;
 }
@@ -114,14 +115,14 @@ bool UARTHelper::ResetEnd()
 }
 
 //receive data incoming from TCP client
-bool UARTHelper::RXStep1()
+bool UARTHelper::RXStep1(unsigned long curTime)
 {
     if(CONNECT_ROUTINE)
     {
         if(AWAITING_CONNECTED)
             return Connect();
         if(AWAITING_CONFIG)
-            return ReadConfig();
+            return ReadConfig(curTime);
         if(AWAITING_UART_OPEN)
             return UARTOpen();
         if(AWAITING_RESET_BEGIN)

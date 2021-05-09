@@ -26,7 +26,7 @@ class UARTHelper
         uint8_t state; //0 - not connected, 1-254 - configuration steps, 255 - ready to transfer data
         unsigned long targetTxTime;
         bool Connect();
-        bool ReadConfig();
+        bool ReadConfig(unsigned long curTime);
         bool UARTOpen();
         bool ResetBegin();
         bool ResetEnd();
@@ -36,7 +36,7 @@ class UARTHelper
         void Setup(HardwareSerial* const uart, const uint8_t rxPin, const uint16_t netPort);
         void Start();
         //main operation divided into non-blocking steps to ensure better concurrency
-        bool RXStep1(); //read data from client, check client connection
+        bool RXStep1(unsigned long curTime); //read data from client, check client connection
         void RXStep2(); //write data to uart
         void TXStep1(unsigned long curTime); //collect data from uart
         void TXStep2(); //send data to client

@@ -135,6 +135,8 @@ bool UARTHelper::RXStep1()
         //just wait for all buffered data to finalize
         if(AWAITING_DATA_FINALIZE)
             return true;
+        //close uart
+        uart->end();
         //we may try to connect again from here
         state=STATE_NOT_CONNECTED;
         return false;
@@ -189,7 +191,6 @@ void UARTHelper::RXStep2()
 //read data incoming from UART
 void UARTHelper::TXStep1(unsigned long curTime)
 {
-
 }
 
 //transmit data back to TCP client

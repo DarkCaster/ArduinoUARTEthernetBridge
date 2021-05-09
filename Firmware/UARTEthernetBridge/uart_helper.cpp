@@ -34,6 +34,7 @@ void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const 
     rxPin=_rxPin;
     netPort=_netPort;
     PrepareRXPin(rxPin);
+    targetTxTime=0;
     state=STATE_NOT_CONNECTED;
 }
 
@@ -180,11 +181,12 @@ void UARTHelper::RXStep2()
             return;
         if(CFG_FAKE_UART_MODE(config))
         {
+            avail=0;
             rxStorage.CommitUsedSegment(segment);
-            return;
+            continue;
         }
         auto dw=avail>segment->usedSize?segment->usedSize:avail;
-        uart->write(segment->buffer+segment->startPos,dw); //TODO: do we need to check return value of write call ?
+        uart->write(segment->buffer+segment->startPos,dw); //TODO: do I need to check return value of write call ?
         avail-=dw;
         segment->startPos+=dw;
         segment->usedSize-=dw;
@@ -192,11 +194,18 @@ void UARTHelper::RXStep2()
         if(segment->usedSize<1)
             rxStorage.CommitUsedSegment(segment);
     }
+    //finalize data reading
+    if(AWAITING_DATA_FINALIZE && avail<1)
+        state=STATE_DATA_FINALIZED;
 }
 
 //read data incoming from UART
 void UARTHelper::TXStep1(unsigned long curTime)
 {
+    if(!CFG_FAKE_UART_MODE(config) && curTime>=targetTxTime)
+    {
+        targetTxTime=curTime+config.collectIntMS;
+    }
 }
 
 //transmit data back to TCP client

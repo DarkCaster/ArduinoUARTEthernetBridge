@@ -23,6 +23,7 @@ class UARTHelper
         uint8_t txBuffer[UART_BUFFER_SIZE];
         UARTConfig config;
         uint8_t state; //0 - not connected, 1-254 - configuration steps, 255 - ready to transfer data
+        unsigned long targetTxTime;
         bool Connect();
         bool ReadConfig();
         bool UARTOpen();

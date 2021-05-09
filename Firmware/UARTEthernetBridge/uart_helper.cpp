@@ -207,17 +207,26 @@ void UARTHelper::TXStep1(unsigned long curTime)
     if(curTime>=targetTxTime)
     {
         targetTxTime=curTime+config.collectIntMS;
+        txSize=DISCONNECT_ROUTINE?UART_BUFFER_SIZE:client.availableForWrite();
+        if(txSize>UART_BUFFER_SIZE)
+            txSize=UART_BUFFER_SIZE;
         if(CFG_FAKE_UART_MODE(config))
             return;
-        auto avail=uart->available();
-        if(avail>UART_BUFFER_SIZE)
-            avail=UART_BUFFER_SIZE;
-        txSize=uart->readBytes(txBuffer,avail);
+        auto uavail=uart->available();
+        if(txSize>uavail)
+            txSize=uavail;
+        txSize=uart->readBytes(txBuffer,txSize);
     }
 }
 
 //transmit data back to TCP client
 void UARTHelper::TXStep2()
 {
-
+    //do not attempt to send data when disconnecting
+    if(DISCONNECT_ROUTINE)
+        return;
+    //send data, should not block because we checked client.availableForWrite() on previous step
+    auto dataLeft=txSize;
+    while(dataLeft>0&&client.connected())
+        dataLeft-=client.write(txBuffer+txSize-dataLeft,dataLeft);
 }

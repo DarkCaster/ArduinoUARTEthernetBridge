@@ -136,7 +136,8 @@ bool UARTHelper::RXStep1()
         if(AWAITING_DATA_FINALIZE)
             return true;
         //close uart
-        uart->end();
+        if(!CFG_FAKE_UART_MODE(config))
+            uart->end();
         //we may try to connect again from here
         state=STATE_NOT_CONNECTED;
         return false;
@@ -171,12 +172,17 @@ bool UARTHelper::RXStep1()
 //write data to UART
 void UARTHelper::RXStep2()
 {
-    auto avail=uart->availableForWrite();
+    auto avail=(CFG_FAKE_UART_MODE(config))?UART_BUFFER_SIZE:uart->availableForWrite();
     while(avail>0)
     {
         auto segment=rxStorage.GetUsedSegment();
         if(segment==nullptr)
             return;
+        if(CFG_FAKE_UART_MODE(config))
+        {
+            rxStorage.CommitUsedSegment(segment);
+            return;
+        }
         auto dw=avail>segment->usedSize?segment->usedSize:avail;
         uart->write(segment->buffer+segment->startPos,dw); //TODO: do we need to check return value of write call ?
         avail-=dw;

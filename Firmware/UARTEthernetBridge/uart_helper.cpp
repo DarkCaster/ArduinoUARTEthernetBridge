@@ -80,7 +80,7 @@ bool UARTHelper::ReadConfig()
     config.mode=tmp[3];
     config.flags=tmp[4];
     config.collectIntMS=(((unsigned long)1000000000/((unsigned long)config.speed/(unsigned long)8)*(unsigned long)UART_BUFFER_SIZE)/(unsigned long)1000000);
-    if(!CFG_FAKE_UART_MODE(config))
+    if(!CFG_TEST_MODE(config))
         config.collectIntMS/=2;
     state=STATE_CONFIG;
     return true;
@@ -88,7 +88,7 @@ bool UARTHelper::ReadConfig()
 
 bool UARTHelper::UARTOpen()
 {
-    if(!CFG_FAKE_UART_MODE(config))
+    if(!CFG_TEST_MODE(config))
         uart->begin(config.speed,config.mode);
     state=STATE_UART_OPEN;
     return true;
@@ -96,7 +96,7 @@ bool UARTHelper::UARTOpen()
 
 bool UARTHelper::ResetBegin()
 {
-    if(CFG_FAKE_UART_MODE(config))
+    if(CFG_TEST_MODE(config))
     {
         state=STATE_RESET_END;
         return true;
@@ -139,7 +139,7 @@ bool UARTHelper::RXStep1()
         if(AWAITING_DATA_FINALIZE)
             return true;
         //close uart
-        if(!CFG_FAKE_UART_MODE(config))
+        if(!CFG_TEST_MODE(config))
             uart->end();
         //we may try to connect again from here
         state=STATE_NOT_CONNECTED;
@@ -175,17 +175,20 @@ bool UARTHelper::RXStep1()
 //write data to UART
 void UARTHelper::RXStep2()
 {
-    auto avail=(CFG_FAKE_UART_MODE(config))?UART_BUFFER_SIZE:uart->availableForWrite();
+    auto avail=(CFG_TEST_MODE(config))?UART_BUFFER_SIZE:uart->availableForWrite();
     while(avail>0)
     {
         auto segment=rxStorage.GetUsedSegment();
         if(segment==nullptr)
             return;
-        if(CFG_FAKE_UART_MODE(config))
+        if(CFG_TEST_MODE(config))
         {
+            //copy data directly to tx buffer in test mode
             avail=0;
+            txSize=segment->usedSize;
+            memcpy(txBuffer,segment->buffer+segment->startPos,txSize);
             rxStorage.CommitUsedSegment(segment);
-            continue;
+            break;
         }
         auto dw=avail>segment->usedSize?segment->usedSize:avail;
         uart->write(segment->buffer+segment->startPos,dw); //TODO: do I need to check return value of write call ?
@@ -197,36 +200,36 @@ void UARTHelper::RXStep2()
             rxStorage.CommitUsedSegment(segment);
     }
     //finalize data reading
-    if(AWAITING_DATA_FINALIZE && avail<1)
+    if(AWAITING_DATA_FINALIZE && avail<1 && rxStorage.GetUsedSegment()==nullptr)
         state=STATE_DATA_FINALIZED;
 }
 
 //read data incoming from UART
 void UARTHelper::TXStep1(unsigned long curTime)
 {
-    if(curTime>=targetTxTime)
-    {
-        targetTxTime=curTime+config.collectIntMS;
-        txSize=DISCONNECT_ROUTINE?UART_BUFFER_SIZE:client.availableForWrite();
-        if(txSize>UART_BUFFER_SIZE)
-            txSize=UART_BUFFER_SIZE;
-        if(CFG_FAKE_UART_MODE(config))
-            return;
-        auto uavail=uart->available();
-        if(txSize>uavail)
-            txSize=uavail;
+    if(curTime<targetTxTime)
+        return;
+    targetTxTime=curTime+config.collectIntMS;
+    if(CFG_TEST_MODE(config))
+        return;
+    txSize=DISCONNECT_ROUTINE?UART_BUFFER_SIZE:client.availableForWrite();
+    if(txSize>UART_BUFFER_SIZE)
+        txSize=UART_BUFFER_SIZE;
+    auto uavail=uart->available();
+    if(txSize>uavail)
+        txSize=uavail;
+    if(txSize>0)
         txSize=uart->readBytes(txBuffer,txSize);
-    }
 }
 
 //transmit data back to TCP client
 void UARTHelper::TXStep2()
 {
-    //do not attempt to send data when disconnecting
-    if(DISCONNECT_ROUTINE)
+    if(txSize<1||DISCONNECT_ROUTINE)
         return;
     //send data, should not block because we checked client.availableForWrite() on previous step
     auto dataLeft=txSize;
     while(dataLeft>0&&client.connected())
         dataLeft-=client.write(txBuffer+txSize-dataLeft,dataLeft);
+    txSize=0;
 }

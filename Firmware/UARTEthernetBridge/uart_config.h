@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 #define CFG_RESET_REQUESTED(cfg) ((cfg.flags&0x1)!=0)
-#define CFG_FAKE_UART_MODE(cfg) ((cfg.flags&0x2)!=0)
+#define CFG_TEST_MODE(cfg) ((cfg.flags&0x2)!=0)
 
 struct UARTConfig
 {

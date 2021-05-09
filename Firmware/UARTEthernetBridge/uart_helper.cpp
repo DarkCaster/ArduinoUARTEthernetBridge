@@ -35,6 +35,7 @@ void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const 
     netPort=_netPort;
     PrepareRXPin(rxPin);
     targetTxTime=0;
+    txSize=0;
     state=STATE_NOT_CONNECTED;
 }
 
@@ -202,9 +203,15 @@ void UARTHelper::RXStep2()
 //read data incoming from UART
 void UARTHelper::TXStep1(unsigned long curTime)
 {
-    if(!CFG_FAKE_UART_MODE(config) && curTime>=targetTxTime)
+    if(curTime>=targetTxTime)
     {
         targetTxTime=curTime+config.collectIntMS;
+        if(CFG_FAKE_UART_MODE(config))
+            return;
+        auto avail=uart->available();
+        if(avail>UART_BUFFER_SIZE)
+            avail=UART_BUFFER_SIZE;
+        txSize=uart->readBytes(txBuffer,avail);
     }
 }
 

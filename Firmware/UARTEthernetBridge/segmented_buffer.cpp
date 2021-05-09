@@ -27,10 +27,14 @@ Segment* SegmentedBuffer::GetUsedSegment()
     return tail;
 }
 
-void SegmentedBuffer::CommitSegment(Segment* segment)
+void SegmentedBuffer::CommitFreeSegment(Segment* segment)
 {
-    if(segment==head) //trying to commit head
-        head=segment->nextSegment;
-    else if(segment==tail) //trying to commit tail
-        tail=segment->nextSegment;
+    head=segment->nextSegment;
+}
+
+void SegmentedBuffer::CommitUsedSegment(Segment* segment)
+{
+    segment->startPos=0;
+    segment->usedSize=0;
+    tail=segment->nextSegment;
 }

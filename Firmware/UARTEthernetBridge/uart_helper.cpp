@@ -149,11 +149,11 @@ bool UARTHelper::RXStep1()
         {
             if(avail>UART_BUFFER_SIZE)
                 avail=UART_BUFFER_SIZE;
-            segment->usedSize=(client.read(segment->buffer,avail));
+            segment->usedSize=client.read(segment->buffer,avail);
             //commit segment only if we successfully read some data
             if(segment->usedSize>0)
             {
-                rxStorage.CommitSegment(segment);
+                rxStorage.CommitFreeSegment(segment);
                 return true;
             }
         }
@@ -166,16 +166,33 @@ bool UARTHelper::RXStep1()
     return true;
 }
 
+//write data to UART
 void UARTHelper::RXStep2()
 {
-
+    auto avail=uart->availableForWrite();
+    while(avail>0)
+    {
+        auto segment=rxStorage.GetUsedSegment();
+        if(segment==nullptr)
+            return;
+        //send the whole segment, and proceed next
+        auto dw=avail>segment->usedSize?segment->usedSize:avail;
+        uart->write(segment->buffer+segment->startPos,dw);
+        avail-=dw;
+        segment->startPos+=dw;
+        segment->usedSize-=dw;
+        if(segment->usedSize<1)
+            rxStorage.CommitUsedSegment(segment);
+    }
 }
 
+//read data incoming from UART
 void UARTHelper::TXStep1(unsigned long curTime)
 {
 
 }
 
+//if there are no connected uart-helpers, then check link status
 void UARTHelper::TXStep2()
 {
 

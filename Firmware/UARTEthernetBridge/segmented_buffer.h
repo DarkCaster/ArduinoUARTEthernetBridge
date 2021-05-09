@@ -7,7 +7,8 @@
 struct Segment
 {
     uint8_t buffer[UART_BUFFER_SIZE];
-    size_t usedSize;
+    int usedSize;
+    int startPos;
     Segment* nextSegment;
 };
 
@@ -21,7 +22,8 @@ class SegmentedBuffer
         SegmentedBuffer();
         Segment* GetFreeSegment();
         Segment* GetUsedSegment();
-        void CommitSegment(Segment* segment);
+        void CommitFreeSegment(Segment* segment);
+        void CommitUsedSegment(Segment* segment);
 };
 
 #endif // SEGMENTED_BUFFER_H

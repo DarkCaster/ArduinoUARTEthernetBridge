@@ -2,6 +2,7 @@ project(UARTClient CXX)
 cmake_minimum_required(VERSION 3.1)
 
 message(STATUS "Building for ${CMAKE_SYSTEM_NAME}. Processor architecture is ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "C compiler is ${CMAKE_C_COMPILER}")
 message(STATUS "CXX compiler is ${CMAKE_CXX_COMPILER}")
 
 #set some custom options and default values

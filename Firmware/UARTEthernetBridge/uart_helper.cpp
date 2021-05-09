@@ -180,6 +180,7 @@ void UARTHelper::RXStep2()
         avail-=dw;
         segment->startPos+=dw;
         segment->usedSize-=dw;
+        //commit segment for reuse by RXStep1
         if(segment->usedSize<1)
             rxStorage.CommitUsedSegment(segment);
     }

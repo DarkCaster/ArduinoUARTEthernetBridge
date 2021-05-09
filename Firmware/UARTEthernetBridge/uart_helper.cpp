@@ -175,9 +175,8 @@ void UARTHelper::RXStep2()
         auto segment=rxStorage.GetUsedSegment();
         if(segment==nullptr)
             return;
-        //send the whole segment, and proceed next
         auto dw=avail>segment->usedSize?segment->usedSize:avail;
-        uart->write(segment->buffer+segment->startPos,dw);
+        uart->write(segment->buffer+segment->startPos,dw); //TODO: do we need to check return value of write call ?
         avail-=dw;
         segment->startPos+=dw;
         segment->usedSize-=dw;
@@ -192,7 +191,7 @@ void UARTHelper::TXStep1(unsigned long curTime)
 
 }
 
-//if there are no connected uart-helpers, then check link status
+//transmit data back to TCP client
 void UARTHelper::TXStep2()
 {
 

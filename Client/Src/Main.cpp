@@ -7,6 +7,7 @@
 
 //#include "TCPServerListener.h"
 #include "Config.h"
+#include "RemoteConfig.h"
 
 #include <cstdint>
 #include <memory>
@@ -191,6 +192,20 @@ int main (int argc, char *argv[])
             return param_error(argv[0],"Flush timeout value is invalid");
         config.SetLingerSec(time);
     }
+
+    //create remote-config objects
+    std::vector<RemoteConfig> remoteConfigs;
+    for(size_t i=0; i<remotePorts.size(); ++i)
+        remoteConfigs.push_back(
+            RemoteConfig(uartSpeeds[i],
+                         static_cast<uint8_t>(uartModes[i]),
+                         static_cast<uint8_t>((rstFlags[i]?1:0)|(uartModes[i]==255?1:0)<<1),
+                         static_cast<uint8_t>(
+                             (static_cast<unsigned long>(1000000000)/(static_cast<unsigned long>(uartSpeeds[i])/
+                              static_cast<unsigned long>(8))*static_cast<unsigned long>(UART_BUFFER_SIZE))/static_cast<unsigned long>(1000000)),
+                         IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
+                         remote,
+                         static_cast<uint16_t>(remotePorts[i])));
 
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");

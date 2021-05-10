@@ -29,14 +29,14 @@ void usage(const std::string &self)
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
     std::cerr<<"  mandatory parameters:"<<std::endl;
     std::cerr<<"    -ra <addr, or name> remote address to connect"<<std::endl;
-    std::cerr<<"    -rp{n} <port> remote port to connect, example -rp1 50000 -rp2 50001 -rp2 50003"<<std::endl;
+    std::cerr<<"    -rp{n} <port> remote port to connect, example -rp1 50000 -rp2 50001 -rp2 50002"<<std::endl;
+    std::cerr<<"    -lp{n} <port> local TCP port number to listen, example -lp1 40000 -lp2 40001 -lp2 40002"<<std::endl;
+    std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
+    std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
+    std::cerr<<"    -rst{n} <0,1> perform reset on connection"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
     std::cerr<<"    -fc <0,1> connect to remote address and open uart port on program start"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen, default: 127.0.0.1"<<std::endl;
-    std::cerr<<"    -lp{n} <port> local TCP port number to listen, example -lp1 40000 -lp2 40001 -lp2 40003"<<std::endl;
-    std::cerr<<"    -ps{n} remote uart port speed"<<std::endl;
-    std::cerr<<"    -pm{n} remote uart port mode, '6' by default, equals to SERIAL_8N1 arduino-define"<<std::endl;
-    std::cerr<<"    -rst{n} perform reset on connection"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data"<<std::endl;
@@ -79,51 +79,76 @@ int main (int argc, char *argv[])
         return param_error(argv[0],"Mandatory parameters are missing!");
 
     Config config;
+    if(args.find("-ra")==args.end())
+        return param_error(argv[0],"remote address or DNS is missing");
+    std::string remote=args["-ra"];
 
-    //parse port number
-    if(args.find("-p")==args.end())
-        return param_error(argv[0],"TCP port number is missing!");
-    auto port=std::atoi(args["-p"].c_str());
-    if(port<1||port>65535)
-        return param_error(argv[0],"TCP port number is invalid!");
-
-    //TODO: support for providing multiple ip-addresses
-    //parse listen address
-    ImmutableStorage<IPEndpoint> localEP(IPEndpoint(IPAddress("127.0.0.1"),static_cast<uint16_t>(port)));
-    if(args.find("-l")!=args.end())
+    //parse remote ports numbers
+    std::vector<int> remotePorts;
+    while(args.find("-rp"+std::to_string(remotePorts.size()+1))!=args.end())
     {
-        if(!IPAddress(args["-l"]).isValid||IPAddress(args["-l"]).isV6)
+        auto port=std::atoi(args["-rp"+std::to_string(remotePorts.size()+1)].c_str());
+        if(port<1||port>65535)
+            return param_error(argv[0],"remote TCP port number is invalid!");
+        remotePorts.push_back(port);
+    }
+    if(remotePorts.size()<1)
+        return param_error(argv[0],"no valid remote ports provided!");
+
+    //parse local ports numbers
+    std::vector<int> localPorts;
+    while(args.find("-lp"+std::to_string(localPorts.size()+1))!=args.end())
+    {
+        auto port=std::atoi(args["-lp"+std::to_string(localPorts.size()+1)].c_str());
+        if(port<1||port>65535)
+            return param_error(argv[0],"local TCP port number is invalid!");
+        localPorts.push_back(port);
+    }
+    if(localPorts.size()<remotePorts.size())
+        return param_error(argv[0],"local ports count must be equals to remote ports count");
+
+    //parse uart speeds
+    std::vector<int> uartSpeeds;
+    while(args.find("-ps"+std::to_string(uartSpeeds.size()+1))!=args.end())
+    {
+        auto port=std::atoi(args["-ps"+std::to_string(uartSpeeds.size()+1)].c_str());
+        if(port<1)
+            return param_error(argv[0],"uart speed is invalid!");
+        uartSpeeds.push_back(port);
+    }
+    if(uartSpeeds.size()<remotePorts.size())
+        return param_error(argv[0],"provided uart speeds count must be equal to remote ports count");
+
+    //parse uart modes
+    std::vector<int> uartModes;
+    while(args.find("-pm"+std::to_string(uartModes.size()+1))!=args.end())
+    {
+        auto port=std::atoi(args["-pm"+std::to_string(uartModes.size()+1)].c_str());
+        if(port<0)
+            return param_error(argv[0],"uart mode is invalid!");
+        uartModes.push_back(port);
+    }
+    if(uartModes.size()<remotePorts.size())
+        return param_error(argv[0],"provided uart modes count must be equal to remote ports count");
+
+    //parse reset-needed flag
+    std::vector<bool> rstFlags;
+    while(args.find("-rst"+std::to_string(rstFlags.size()+1))!=args.end())
+        rstFlags.push_back(std::atoi(args["-rst"+std::to_string(rstFlags.size()+1)].c_str())==1);
+    if(rstFlags.size()<remotePorts.size())
+        return param_error(argv[0],"provided reset-flags count must be equal to remote ports count");
+
+    //connect to remote and uarts at start
+    bool connectAtStart=false;
+    if(args.find("-fc")!=args.end())
+        connectAtStart=std::atoi(args["-fc"].c_str())==1;
+
+    ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
+    if(args.find("-la")!=args.end())
+    {
+        if(!IPAddress(args["-la"]).isValid||IPAddress(args["-la"]).isV6)
             return param_error(argv[0],"listen IP address is invalid!");
-        localEP.Set(IPEndpoint(IPAddress(args["-l"]),static_cast<uint16_t>(port)));
-    }
-
-    config.SetServiceIntervalMS(500);
-    if(args.find("-mt")!=args.end())
-    {
-        int cnt=std::atoi(args["-mt"].c_str());
-        if(cnt<100 || cnt>10000)
-            return param_error(argv[0],"workers management interval is invalid!");
-        config.SetServiceIntervalMS(cnt);
-    }
-
-    //tcp buff size
-    config.SetTCPBuffSz(65536);
-    if(args.find("-bsz")!=args.end())
-    {
-        auto bsz=std::atoi(args["-bsz"].c_str());
-        if(bsz<128||bsz>524288)
-            return param_error(argv[0],"TCP buffer size is invalid");
-        config.SetTCPBuffSz(bsz);
-    }
-
-    //linger
-    config.SetLingerSec(30);
-    if(args.find("-cf")!=args.end())
-    {
-        auto time=std::atoi(args["-cf"].c_str());
-        if(time<-1||time>600)
-            return param_error(argv[0],"Flush timeout value is invalid");
-        config.SetLingerSec(time);
+        localAddr.Set(IPAddress(args["-la"]));
     }
 
     //connection timeouts
@@ -136,12 +161,38 @@ int main (int argc, char *argv[])
         config.SetMaxCTimeSec(time);
     }
 
+    //tcp buff size
+    config.SetTCPBuffSz(65536);
+    if(args.find("-bsz")!=args.end())
+    {
+        auto bsz=std::atoi(args["-bsz"].c_str());
+        if(bsz<128||bsz>524288)
+            return param_error(argv[0],"TCP buffer size is invalid");
+        config.SetTCPBuffSz(bsz);
+    }
+
+    //management interval
+    config.SetServiceIntervalMS(500);
+    if(args.find("-mt")!=args.end())
+    {
+        int cnt=std::atoi(args["-mt"].c_str());
+        if(cnt<100 || cnt>10000)
+            return param_error(argv[0],"workers management interval is invalid!");
+        config.SetServiceIntervalMS(cnt);
+    }
+
+    //linger
+    config.SetLingerSec(30);
+    if(args.find("-cf")!=args.end())
+    {
+        auto time=std::atoi(args["-cf"].c_str());
+        if(time<-1||time>600)
+            return param_error(argv[0],"Flush timeout value is invalid");
+        config.SetLingerSec(time);
+    }
+
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");
-    auto dispLogger=logFactory.CreateLogger("Dispatcher");
-    auto jobFactoryLogger=logFactory.CreateLogger("JobFactory");
-    auto listenerLogger=logFactory.CreateLogger("Listener");
-    auto tcpServiceLogger=logFactory.CreateLogger("TCPCommSvc");
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
 
     mainLogger->Info()<<"Starting up";

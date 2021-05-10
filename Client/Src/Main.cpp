@@ -28,12 +28,18 @@ void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
     std::cerr<<"  mandatory parameters:"<<std::endl;
-    std::cerr<<"    -p <port-num> TCP port number to listen at"<<std::endl;
+    std::cerr<<"    -ra <addr, or name> remote address to connect"<<std::endl;
+    std::cerr<<"    -rp{n} <port> remote port to connect, example -rp1 50000 -rp2 50001 -rp2 50003"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
-    std::cerr<<"    -l <ip-addr> IP to listen at, default: 127.0.0.1"<<std::endl;
+    std::cerr<<"    -fc <0,1> connect to remote address and open uart port on program start"<<std::endl;
+    std::cerr<<"    -la <ip-addr> local IP to listen, default: 127.0.0.1"<<std::endl;
+    std::cerr<<"    -lp{n} <port> local TCP port number to listen, example -lp1 40000 -lp2 40001 -lp2 40003"<<std::endl;
+    std::cerr<<"    -ps{n} remote uart port speed"<<std::endl;
+    std::cerr<<"    -pm{n} remote uart port mode, '6' by default, equals to SERIAL_8N1 arduino-define"<<std::endl;
+    std::cerr<<"    -rst{n} perform reset on connection"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
-    std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 65536"<<std::endl;
+    std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
     std::cerr<<"    -cf <seconds> timeout for flushing data when closing sockets, -1 to disable, 0 - close without flushing, default: 30"<<std::endl;
 }

@@ -5,10 +5,11 @@
 #include "MessageBroker.h"
 #include "ShutdownHandler.h"
 
-//#include "TCPServerListener.h"
+#include "TCPListener.h"
 #include "Config.h"
 #include "RemoteConfig.h"
 
+#include <memory>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -219,6 +220,13 @@ int main (int argc, char *argv[])
     messageBroker.AddSubscriber(shutdownHandler);
 
     //create instances for main logic
+    std::vector<std::shared_ptr<TCPServerListener>> tcpListeners;
+    for(auto &remoteConfig:remoteConfigs)
+    {
+        auto logger=logFactory.CreateLogger("TCPLsnr:"+std::to_string(remoteConfig.listener.port));
+        tcpListeners.push_back(std::make_shared<TCPServerListener>(logger,messageBroker,config,remoteConfig));
+    }
+
     /*JobWorkerFactory jobWorkerFactory;
     TCPCommService tcpCommService(tcpServiceLogger,messageBroker,config);
     JobFactory jobFactory(jobFactoryLogger,config,tcpCommService,tcpCommService);
@@ -243,12 +251,8 @@ int main (int argc, char *argv[])
     }
 
     //startup for priveleged operations
-    /*for(auto &listener:serverListeners)
+    for(auto &listener:tcpListeners)
         listener->Startup();
-
-    //start background workers, or perform post-setup init
-    jobDispatcher.Startup();
-    tcpCommService.Startup();*/
 
     //main loop, awaiting for signal
     while(true)
@@ -277,14 +281,12 @@ int main (int argc, char *argv[])
     }
 
     //request shutdown of background workers
-    /*for(auto &listener:serverListeners) //server TCP listeners will be shutdown first
+    for(auto &listener:tcpListeners) //server TCP listeners will be shutdown first
         listener->RequestShutdown();
 
     //wait for background workers shutdown complete
-    for(auto &listener:serverListeners)
+    for(auto &listener:tcpListeners)
         listener->Shutdown();
-    tcpCommService.Shutdown();
-    jobDispatcher.Shutdown();*/
 
     return  0;
 }

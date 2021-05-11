@@ -220,11 +220,11 @@ int main (int argc, char *argv[])
     messageBroker.AddSubscriber(shutdownHandler);
 
     //create instances for main logic
-    std::vector<std::shared_ptr<TCPServerListener>> tcpListeners;
+    std::vector<std::shared_ptr<TCPListener>> tcpListeners;
     for(auto &remoteConfig:remoteConfigs)
     {
         auto logger=logFactory.CreateLogger("TCPLsnr:"+std::to_string(remoteConfig.listener.port));
-        tcpListeners.push_back(std::make_shared<TCPServerListener>(logger,messageBroker,config,remoteConfig));
+        tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfig));
     }
 
     /*JobWorkerFactory jobWorkerFactory;

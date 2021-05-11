@@ -13,7 +13,7 @@
 #include <atomic>
 #include <sys/time.h>
 
-class TCPServerListener final : public WorkerBase
+class TCPListener final : public WorkerBase
 {
     private:
         std::shared_ptr<ILogger> logger;
@@ -24,7 +24,7 @@ class TCPServerListener final : public WorkerBase
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
     public:
-        TCPServerListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config,  const RemoteConfig &remoteConfig);
+        TCPListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config,  const RemoteConfig &remoteConfig);
     protected:
         //WorkerBase
         void Worker() final;

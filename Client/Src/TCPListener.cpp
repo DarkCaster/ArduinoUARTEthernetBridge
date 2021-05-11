@@ -12,7 +12,7 @@
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class NewClientMessage: public INewClientMessage { public: NewClientMessage(int _fd, const RemoteConfig &_remoteConfig):INewClientMessage(_fd,_remoteConfig){} };
 
-TCPServerListener::TCPServerListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig):
+TCPListener::TCPListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig):
     logger(_logger),
     sender(_sender),
     config(_config),
@@ -21,19 +21,19 @@ TCPServerListener::TCPServerListener(std::shared_ptr<ILogger> &_logger, IMessage
     shutdownPending.store(false);
 }
 
-void TCPServerListener::HandleError(const std::string &message)
+void TCPListener::HandleError(const std::string &message)
 {
     logger->Error()<<message<<std::endl;
     sender.SendMessage(this,ShutdownMessage(1));
 }
 
-void TCPServerListener::HandleError(int ec, const std::string &message)
+void TCPListener::HandleError(int ec, const std::string &message)
 {
     logger->Error()<<message<<strerror(ec)<<std::endl;
     sender.SendMessage(this,ShutdownMessage(ec));
 }
 
-void TCPServerListener::Worker()
+void TCPListener::Worker()
 { 
     if(!remoteConfig.listener.address.isValid)
     {
@@ -151,7 +151,7 @@ void TCPServerListener::Worker()
     logger->Info()<<"Shuting down DNSReceiver worker thread"<<std::endl;
 }
 
-void TCPServerListener::OnShutdown()
+void TCPListener::OnShutdown()
 {
     shutdownPending.store(true);
 }

@@ -1,4 +1,5 @@
 #include "TCPListener.h"
+#include "TCPConnection.h"
 
 #include <cstdint>
 #include <cstring>
@@ -10,13 +11,14 @@
 #include <poll.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
-class NewClientMessage: public INewClientMessage { public: NewClientMessage(int _fd, const RemoteConfig &_remoteConfig):INewClientMessage(_fd,_remoteConfig){} };
+class NewClientMessage: public INewClientMessage { public: NewClientMessage(std::shared_ptr<Connection> _client, int _pathID):INewClientMessage(_client,_pathID){} };
 
-TCPListener::TCPListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig):
+TCPListener::TCPListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig, int _pathID):
     logger(_logger),
     sender(_sender),
     config(_config),
-    remoteConfig(_remoteConfig)
+    remoteConfig(_remoteConfig),
+    pathID(_pathID)
 {
     shutdownPending.store(false);
 }
@@ -139,7 +141,7 @@ void TCPListener::Worker()
         }
 
         logger->Info()<<"New TCP client connected, fd: "<<cSockFd;
-        sender.SendMessage(this, NewClientMessage(cSockFd,remoteConfig));
+        sender.SendMessage(this, NewClientMessage(std::make_shared<TCPConnection>(cSockFd),pathID));
     }
 
     if(close(lSockFd)!=0)

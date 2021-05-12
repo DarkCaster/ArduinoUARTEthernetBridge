@@ -2,6 +2,8 @@
 #define IMESSAGE_H
 
 #include "RemoteConfig.h"
+#include "Connection.h"
+#include <memory>
 
 enum MsgType
 {
@@ -28,10 +30,11 @@ class IShutdownMessage : public IMessage
 class INewClientMessage : public IMessage
 {
     protected:
-        INewClientMessage(int _fd, const RemoteConfig &_remoteConfig):IMessage(MSG_NEW_CLIENT),fd(_fd),remoteConfig(&_remoteConfig){}
+        INewClientMessage(const std::shared_ptr<Connection> &_client, const int _pathID):
+            IMessage(MSG_NEW_CLIENT),client(_client),pathID(_pathID){}
     public:
-        const int fd;
-        const RemoteConfig * const remoteConfig;
+        const std::shared_ptr<Connection> client;
+        const int pathID;
 };
 
 #endif // IMESSAGE_H

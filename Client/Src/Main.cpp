@@ -6,6 +6,7 @@
 #include "ShutdownHandler.h"
 
 #include "TCPListener.h"
+#include "TCPClient.h"
 #include "Config.h"
 #include "RemoteConfig.h"
 
@@ -221,10 +222,17 @@ int main (int argc, char *argv[])
 
     //create instances for main logic
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
-    for(auto &remoteConfig:remoteConfigs)
+    for(size_t i=0;i<remoteConfigs.size();++i)
     {
-        auto logger=logFactory.CreateLogger("TCPLsnr:"+std::to_string(remoteConfig.listener.port));
-        tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfig));
+        auto logger=logFactory.CreateLogger("TCPLsnr:"+std::to_string(remoteConfigs[i].listener.port));
+        tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfigs[i],i));
+    }
+
+    std::vector<std::shared_ptr<TCPClient>> tcpClients;
+    for(size_t i=0;i<remoteConfigs.size();++i)
+    {
+        auto logger=logFactory.CreateLogger("TCPClnt:"+remoteConfigs[i].serverAddr+":"+std::to_string(remoteConfigs[i].serverPort));
+        tcpClients.push_back(std::make_shared<TCPClient>(logger,messageBroker,connectAtStart,config,remoteConfigs[i],i));
     }
 
     /*JobWorkerFactory jobWorkerFactory;

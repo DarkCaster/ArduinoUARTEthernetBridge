@@ -9,6 +9,8 @@ enum MsgType
 {
     MSG_SHUTDOWN,
     MSG_NEW_CLIENT,
+    MSG_PATH_ESTABLISHED,
+    MSG_PATH_COLLAPSED,
 };
 
 class IMessage
@@ -34,6 +36,28 @@ class INewClientMessage : public IMessage
             IMessage(MSG_NEW_CLIENT),client(_client),pathID(_pathID){}
     public:
         const std::shared_ptr<Connection> client;
+        const int pathID;
+};
+
+class IPathEstablishedMessage : public IMessage
+{
+    protected:
+        IPathEstablishedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID):
+            IMessage(MSG_PATH_ESTABLISHED),local(_local),remote(_remote),pathID(_pathID){}
+    public:
+        const std::shared_ptr<Connection> local;
+        const std::shared_ptr<Connection> remote;
+        const int pathID;
+};
+
+class IPathDisposedMessage : public IMessage
+{
+    protected:
+        IPathDisposedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID):
+            IMessage(MSG_PATH_COLLAPSED),local(_local),remote(_remote),pathID(_pathID){}
+    public:
+        const std::shared_ptr<Connection> local;
+        const std::shared_ptr<Connection> remote;
         const int pathID;
 };
 

@@ -9,6 +9,7 @@
 #include "IMessageSubscriber.h"
 #include "IPEndpoint.h"
 
+#include <mutex>
 #include <string>
 #include <atomic>
 #include <sys/time.h>
@@ -23,6 +24,7 @@ class TCPClient final : public WorkerBase, public IMessageSubscriber
         const RemoteConfig &remoteConfig;
         const int pathID;
         std::atomic<bool> shutdownPending;
+        std::mutex opLock;
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
     public:

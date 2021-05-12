@@ -14,11 +14,13 @@ TCPClient::TCPClient(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender,
 void TCPClient::OnShutdown()
 {
     shutdownPending.store(true);
+    std::lock_guard<std::mutex> opGuard(opLock);
+    //dispose remote if present
 }
 
 bool TCPClient::ReadyForMessage(const MsgType msgType)
 {
-    return msgType==MSG_NEW_CLIENT;
+    return msgType==MSG_NEW_CLIENT || msgType==MSG_PATH_COLLAPSED;
 }
 
 void TCPClient::Worker()
@@ -28,9 +30,24 @@ void TCPClient::Worker()
 
 void TCPClient::OnMessage(const void* const, const IMessage& message)
 {
-    //check if message designated for this particular client
-    //connect client if not already connected / check connection status / reconnect if failed
-    //produce result-message to the workers
+    std::lock_guard<std::mutex> opGuard(opLock);
+    if(message.msgType==MSG_NEW_CLIENT)
+    {
+        auto ncMessage=static_cast<const INewClientMessage&>(message);
+        if(ncMessage.pathID!=pathID)
+            return;
+        //if current connection already claimed and not failed - dispose new client, and return
+        //create remote connection if not present or failed
+        //send MSG_PATH_ESTABLISHED message
+    }
+    else if(message.msgType==MSG_PATH_COLLAPSED)
+    {
+        auto pdMessage=static_cast<const IPathDisposedMessage&>(message);
+        if(pdMessage.pathID!=pathID)
+            return;
+        //if provided "remote" part is not present locally or failed, dispose it
+        //create remote connection if not present or failed
+    }
 }
 
 

@@ -28,7 +28,7 @@ class TCPClient final : public WorkerBase, public IMessageSubscriber
         bool remoteActive;
         std::shared_ptr<Connection> remote;
         std::atomic<bool> shutdownPending;
-        std::mutex opLock;
+        std::recursive_mutex opLock;
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
         int _Connect();

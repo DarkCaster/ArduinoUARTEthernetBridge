@@ -158,7 +158,7 @@ void TCPClient::Worker()
     while(!shutdownPending)
     {
         {
-            std::lock_guard<std::mutex> opGuard(opLock);
+            std::lock_guard<std::recursive_mutex> opGuard(opLock);
             if(!remoteActive)
             {
                 auto fd=_Connect();
@@ -190,7 +190,7 @@ void TCPClient::Worker()
 
 void TCPClient::OnMessage(const void* const, const IMessage& message)
 {
-    std::lock_guard<std::mutex> opGuard(opLock);
+    std::lock_guard<std::recursive_mutex> opGuard(opLock);
     if(message.msgType==MSG_NEW_CLIENT)
     {
         auto ncMessage=static_cast<const INewClientMessage&>(message);
@@ -213,7 +213,13 @@ void TCPClient::OnMessage(const void* const, const IMessage& message)
                 remote=nullptr;
         }
         //send MSG_PATH_ESTABLISHED message
-        sender.SendMessage(this, PathEstablishedMessage(ncMessage.client,remote,pathID));
+        if(remoteActive && remote!=nullptr)
+            sender.SendMessage(this, PathEstablishedMessage(ncMessage.client,remote,pathID));
+        else
+        {
+            logger->Warning()<<"Failed to connect to remote, disposing local connection for uart port "<<pathID;
+            ncMessage.client->Dispose();
+        }
     }
     else if(message.msgType==MSG_PATH_COLLAPSED)
     {

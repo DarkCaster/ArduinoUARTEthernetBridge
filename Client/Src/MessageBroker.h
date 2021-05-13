@@ -31,6 +31,8 @@ class MessageBroker : public IMessageSender
     public:
         MessageBroker(std::shared_ptr<ILogger> &_logger);
         void AddSubscriber(IMessageSubscriber &subscriber);
+        void AddSubscriber(IMessageSubscriber* const subscriber);
+        void AddSubscriber(const std::shared_ptr<IMessageSubscriber> &subscriber);
         void SendMessage(const void* const source, const IMessage &message) final;
 };
 

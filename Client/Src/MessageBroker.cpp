@@ -41,6 +41,18 @@ void MessageBroker::AddSubscriber(IMessageSubscriber& subscriber)
     subscribers.insert(&subscriber);
 }
 
+void MessageBroker::AddSubscriber(IMessageSubscriber * const subscriber)
+{
+    const std::lock_guard<std::mutex> lock(opLock);
+    subscribers.insert(subscriber);
+}
+
+void MessageBroker::AddSubscriber(const std::shared_ptr<IMessageSubscriber> &subscriber)
+{
+    const std::lock_guard<std::mutex> lock(opLock);
+    subscribers.insert(subscriber.get());
+}
+
 void MessageBroker::SendMessage(const void* const source, const IMessage& message)
 {
     std::set<const void*> newSenders; //will not be used directly

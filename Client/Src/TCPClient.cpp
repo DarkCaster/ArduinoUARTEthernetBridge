@@ -80,11 +80,9 @@ int TCPClient::_Connect()
     if(!target.Get().isValid)
     {
         //TODO: perform host lookup
+        HandleError("TODO: Host lookup is not implemented!");
         return -1;
     }
-
-    if(!target.Get().isValid)
-        return -1;
 
     //create socket
     auto fd=socket(target.Get().isV6?AF_INET6:AF_INET,SOCK_STREAM,0);
@@ -150,8 +148,12 @@ int TCPClient::_Connect()
 void TCPClient::Worker()
 {
     if(!connectOnStart)
+    {
+        logger->Info()<<"Background remote-connection maintenance is disabled for uart port "<<pathID;
         return;
+    }
 
+    logger->Info()<<"Background remote-connection maintenance enabled for uart port "<<pathID;
     //maintain connection
     while(!shutdownPending)
     {
@@ -199,6 +201,7 @@ void TCPClient::OnMessage(const void* const, const IMessage& message)
         {
             if(remote!=nullptr)
                 remote->Dispose();
+            logger->Info()<<"Establishing new remote-connection for uart port "<<pathID;
             auto fd=_Connect();
             if(fd>=0)
             {

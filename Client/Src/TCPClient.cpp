@@ -127,12 +127,48 @@ int TCPClient::_Connect()
         return -1;
     }
 
+    //send configuration
+    uint8_t cfg[5];
+    cfg[0]=remoteConfig.speed&0x0000FF;
+    cfg[1]=(remoteConfig.speed&0x00FF00)>>8;
+    cfg[2]=(remoteConfig.speed&0xFF0000)>>16;
+    cfg[3]=remoteConfig.mode;
+    cfg[4]=remoteConfig.flags;
+
+    if(write(fd,cfg,5)!=5)
+    {
+        auto error=errno;
+        if(close(fd)!=0)
+            HandleError(error,"Failed to perform proper socket close after configuration failure: ");
+        return -1;
+    }
+
     return fd;
 }
 
 void TCPClient::Worker()
 {
-    //connect on start
+    if(!connectOnStart)
+        return;
+
+    //maintain connection
+    while(!shutdownPending)
+    {
+        {
+            std::lock_guard<std::mutex> opGuard(opLock);
+            if(!remoteActive)
+            {
+                auto fd=_Connect();
+                if(fd>=0)
+                {
+                    remote=std::make_shared<TCPConnection>(fd);
+                    remoteActive=true;
+                    logger->Info()<<"Established background connection to remote for port "<<pathID;
+                }
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
+    }
 }
 
 void TCPClient::OnMessage(const void* const, const IMessage& message)

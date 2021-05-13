@@ -246,9 +246,11 @@ int main (int argc, char *argv[])
         return 1;
     }
 
-    //startup for priveleged operations
+    //startup
     for(auto &listener:tcpListeners)
         listener->Startup();
+    for(auto &client:tcpClients)
+        client->Startup();
 
     //main loop, awaiting for signal
     while(true)
@@ -279,10 +281,14 @@ int main (int argc, char *argv[])
     //request shutdown of background workers
     for(auto &listener:tcpListeners) //server TCP listeners will be shutdown first
         listener->RequestShutdown();
+    for(auto &client:tcpClients)
+        client->RequestShutdown();
 
     //wait for background workers shutdown complete
     for(auto &listener:tcpListeners)
         listener->Shutdown();
+    for(auto &client:tcpClients)
+        client->Shutdown();
 
     return  0;
 }

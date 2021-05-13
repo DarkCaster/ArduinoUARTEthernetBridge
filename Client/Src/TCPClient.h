@@ -1,6 +1,7 @@
 #ifndef TCP_CLIENT_H
 #define TCP_CLIENT_H
 
+#include "TCPConnection.h"
 #include "RemoteConfig.h"
 #include "IConfig.h"
 #include "WorkerBase.h"
@@ -9,6 +10,7 @@
 #include "IMessageSubscriber.h"
 #include "IPEndpoint.h"
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <atomic>
@@ -23,10 +25,13 @@ class TCPClient final : public WorkerBase, public IMessageSubscriber
         const IConfig &config;
         const RemoteConfig &remoteConfig;
         const int pathID;
+        bool remoteActive;
+        std::shared_ptr<Connection> remote;
         std::atomic<bool> shutdownPending;
         std::mutex opLock;
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
+        int _Connect();
     public:
         TCPClient(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const bool connectOnStart, const IConfig &config,  const RemoteConfig &remoteConfig, const int pathID);
         //IMessageSubscriber

@@ -232,22 +232,10 @@ int main (int argc, char *argv[])
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
         auto logger=logFactory.CreateLogger("TCPClnt:"+remoteConfigs[i].serverAddr+":"+std::to_string(remoteConfigs[i].serverPort));
-        tcpClients.push_back(std::make_shared<TCPClient>(logger,messageBroker,connectAtStart,config,remoteConfigs[i],i));
+        auto client=std::make_shared<TCPClient>(logger,messageBroker,connectAtStart,config,remoteConfigs[i],i);
+        messageBroker.AddSubscriber(client);
+        tcpClients.push_back(client);
     }
-
-    /*JobWorkerFactory jobWorkerFactory;
-    TCPCommService tcpCommService(tcpServiceLogger,messageBroker,config);
-    JobFactory jobFactory(jobFactoryLogger,config,tcpCommService,tcpCommService);
-    JobDispatcher jobDispatcher(dispLogger,logFactory,jobWorkerFactory,jobFactory,messageBroker,config);
-    messageBroker.AddSubscriber(jobDispatcher);
-    std::vector<std::shared_ptr<TCPServerListener>> serverListeners;
-    for(auto &addr:config.GetListenAddrs())
-        serverListeners.push_back(std::make_shared<TCPServerListener>(listenerLogger,messageBroker,tcpCommService,config,addr));
-    for(auto &listener:serverListeners)
-    {
-        messageBroker.AddSubscriber(*(listener));
-        startupHandler.AddTarget(listener.get());
-    }*/
 
     //create sigset_t struct with signals
     sigset_t sigset;

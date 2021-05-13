@@ -129,10 +129,6 @@ void TCPListener::Worker()
             return;
         }
 
-        //accept single connection
-        //sockaddr_storage cAddr;
-        //socklen_t cAddrSz = sizeof(cAddr);
-        //auto cSockFd=accept(lSockFd,reinterpret_cast<sockaddr*>(&cAddr),&cAddrSz);
         auto cSockFd=accept(lSockFd,nullptr,nullptr);
         if(cSockFd<1)
         {

@@ -50,10 +50,10 @@ class IPathEstablishedMessage : public IMessage
         const int pathID;
 };
 
-class IPathDisposedMessage : public IMessage
+class IPathCollapsedMessage : public IMessage
 {
     protected:
-        IPathDisposedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID):
+        IPathCollapsedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID):
             IMessage(MSG_PATH_COLLAPSED),local(_local),remote(_remote),pathID(_pathID){}
     public:
         const std::shared_ptr<Connection> local;

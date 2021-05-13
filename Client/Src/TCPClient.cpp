@@ -217,7 +217,7 @@ void TCPClient::OnMessage(const void* const, const IMessage& message)
     }
     else if(message.msgType==MSG_PATH_COLLAPSED)
     {
-        auto pdMessage=static_cast<const IPathDisposedMessage&>(message);
+        auto pdMessage=static_cast<const IPathCollapsedMessage&>(message);
         if(pdMessage.pathID!=pathID)
             return;
         //dispose remote connection if it is not tracked at our side

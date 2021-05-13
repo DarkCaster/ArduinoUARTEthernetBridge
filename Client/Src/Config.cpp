@@ -51,3 +51,8 @@ int Config::GetMaxCTimeSec() const
 {
     return maxCtSec;
 }
+
+int Config::GetUARTBuffSz() const
+{
+    return uartBuffSize;
+}

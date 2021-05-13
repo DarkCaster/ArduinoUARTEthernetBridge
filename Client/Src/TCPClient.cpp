@@ -38,8 +38,6 @@ void TCPClient::HandleError(int ec, const std::string &message)
 void TCPClient::OnShutdown()
 {
     shutdownPending.store(true);
-    std::lock_guard<std::mutex> opGuard(opLock);
-    //dispose remote if present
 }
 
 bool TCPClient::ReadyForMessage(const MsgType msgType)

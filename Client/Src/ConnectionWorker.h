@@ -7,9 +7,12 @@
 #include "IMessageSender.h"
 #include "IMessageSubscriber.h"
 #include "WorkerBase.h"
+#include "Connection.h"
 
 #include <atomic>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 
 class ConnectionWorker final : public WorkerBase, public IMessageSubscriber
 {
@@ -20,7 +23,11 @@ class ConnectionWorker final : public WorkerBase, public IMessageSubscriber
         const RemoteConfig &remoteConfig;
         const int pathID;
         const int isReader;
+        std::condition_variable newPathTrigger;
+        std::mutex opLock;
         std::atomic<bool> shutdownPending;
+        std::shared_ptr<Connection> remote;
+        std::shared_ptr<Connection> local;
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
     public:

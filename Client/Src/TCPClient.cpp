@@ -9,6 +9,7 @@
 #include <cstring>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
+class PathEstablishedMessage: public IPathEstablishedMessage { public: PathEstablishedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID): IPathEstablishedMessage(_local,_remote,_pathID){}; };
 
 TCPClient::TCPClient(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const bool _connectOnStart, const IConfig &_config, const RemoteConfig &_remoteConfig, const int _pathID):
     logger(_logger),
@@ -163,8 +164,22 @@ void TCPClient::Worker()
                 {
                     remote=std::make_shared<TCPConnection>(fd);
                     remoteActive=true;
-                    logger->Info()<<"Established background connection to remote for port "<<pathID;
+                    logger->Info()<<"Established background connection to remote for uart port "<<pathID;
                 }
+            }
+            else
+            {
+                if(remote!=nullptr)
+                {
+                    if(remote->GetStatus()!=0)
+                    {
+                        remote->Dispose();
+                        remote=nullptr;
+                        remoteActive=false;
+                    }
+                }
+                else
+                    remoteActive=false;
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
@@ -179,18 +194,45 @@ void TCPClient::OnMessage(const void* const, const IMessage& message)
         auto ncMessage=static_cast<const INewClientMessage&>(message);
         if(ncMessage.pathID!=pathID)
             return;
-        //if current connection already claimed and not failed - dispose new client, and return
-        //create remote connection if not present or failed
+        //establish remote connection, or reuse current connection
+        if(!remoteActive)
+        {
+            if(remote!=nullptr)
+                remote->Dispose();
+            auto fd=_Connect();
+            if(fd>=0)
+            {
+                remote=std::make_shared<TCPConnection>(fd);
+                remoteActive=true;
+                logger->Info()<<"Established connection to remote for uart port "<<pathID;
+            }
+            else
+                remote=nullptr;
+        }
         //send MSG_PATH_ESTABLISHED message
+        sender.SendMessage(this, PathEstablishedMessage(ncMessage.client,remote,pathID));
     }
     else if(message.msgType==MSG_PATH_COLLAPSED)
     {
         auto pdMessage=static_cast<const IPathDisposedMessage&>(message);
         if(pdMessage.pathID!=pathID)
             return;
-        //if provided "remote" part is not present locally or failed, dispose it
-        //create remote connection if not present or failed
+        //dispose remote connection if it is not tracked at our side
+        if(pdMessage.remote!=nullptr && pdMessage.remote!=remote)
+            pdMessage.remote->Dispose();
+        //dispose local connection as precaution, after remote
+        if(pdMessage.local!=nullptr)
+            pdMessage.local->Dispose();
+        //stop if provided remote connection is not matched with ours
+        if(!remoteActive||remote==nullptr||pdMessage.remote==nullptr||pdMessage.remote!=remote)
+            return;
+        //disconnect remote if needed
+        if(!connectOnStart||remote->GetStatus()!=0)
+        {
+            logger->Info()<<"Disposing remote connection for uart port "<<pathID;
+            remote->Dispose();
+            remote=nullptr;
+            remoteActive=false;
+        }
     }
 }
-
-

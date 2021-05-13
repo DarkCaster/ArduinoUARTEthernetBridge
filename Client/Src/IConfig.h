@@ -14,6 +14,7 @@ class IConfig
         virtual int GetTCPBuffSz() const = 0;
         virtual int GetLingerSec() const = 0;
         virtual int GetMaxCTimeSec() const = 0;
+        virtual int GetUARTBuffSz() const = 0;
 };
 
 #endif

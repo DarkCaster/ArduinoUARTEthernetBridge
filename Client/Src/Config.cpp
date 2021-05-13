@@ -20,6 +20,11 @@ void Config::SetMaxCTimeSec(int time)
     maxCtSec=time;
 }
 
+void Config::SetUARTBuffSz(int sz)
+{
+    uartBuffSize=sz;
+}
+
 int Config::GetServiceIntervalMS() const
 {
     return serviceInterval;

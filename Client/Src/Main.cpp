@@ -7,6 +7,7 @@
 
 #include "TCPListener.h"
 #include "TCPClient.h"
+#include "ConnectionWorker.h"
 #include "Config.h"
 #include "RemoteConfig.h"
 
@@ -199,21 +200,19 @@ int main (int argc, char *argv[])
     std::vector<RemoteConfig> remoteConfigs;
     for(size_t i=0; i<remotePorts.size(); ++i)
         remoteConfigs.push_back(
-            RemoteConfig(uartSpeeds[i],
-                         static_cast<uint8_t>(uartModes[i]),
-                         static_cast<uint8_t>((rstFlags[i]?1:0)|(uartModes[i]==255?1:0)<<1),
-                         static_cast<uint8_t>(
-                             (static_cast<unsigned long>(1000000000)/(static_cast<unsigned long>(uartSpeeds[i])/
-                              static_cast<unsigned long>(8))*static_cast<unsigned long>(UART_BUFFER_SIZE))/static_cast<unsigned long>(1000000)),
-                         IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
-                         remote,
-                         static_cast<uint16_t>(remotePorts[i])));
+                    RemoteConfig(uartSpeeds[i],
+                                 static_cast<uint8_t>(uartModes[i]),
+                                 static_cast<uint8_t>((rstFlags[i]?1:0)|(uartModes[i]==255?1:0)<<1),
+                                 static_cast<uint8_t>(
+                                     (static_cast<unsigned long>(1000000000)/(static_cast<unsigned long>(uartSpeeds[i])/
+                                                                              static_cast<unsigned long>(8))*static_cast<unsigned long>(UART_BUFFER_SIZE))/static_cast<unsigned long>(1000000)),
+                                 IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
+                                 remote,
+                                 static_cast<uint16_t>(remotePorts[i])));
 
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
-
-    mainLogger->Info()<<"Starting up";
 
     //configure the most essential stuff
     MessageBroker messageBroker(messageBrokerLogger);
@@ -224,17 +223,30 @@ int main (int argc, char *argv[])
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
-        auto logger=logFactory.CreateLogger("TCPLsnr:"+std::to_string(remoteConfigs[i].listener.port));
+        auto logger=logFactory.CreateLogger("TCPListener:"+std::to_string(i));
         tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfigs[i],i));
     }
 
     std::vector<std::shared_ptr<TCPClient>> tcpClients;
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
-        auto logger=logFactory.CreateLogger("TCPClnt:"+remoteConfigs[i].serverAddr+":"+std::to_string(remoteConfigs[i].serverPort));
+        auto logger=logFactory.CreateLogger("TCPClient:"+std::to_string(i));
         auto client=std::make_shared<TCPClient>(logger,messageBroker,connectAtStart,config,remoteConfigs[i],i);
         messageBroker.AddSubscriber(client);
         tcpClients.push_back(client);
+    }
+
+    std::vector<std::shared_ptr<ConnectionWorker>> connWorkers;
+    for(size_t i=0;i<remoteConfigs.size();++i)
+    {
+        auto rLogger=logFactory.CreateLogger("ConnWorker:"+std::to_string(i)+"(r)");
+        auto rWorker=std::make_shared<ConnectionWorker>(rLogger,messageBroker,config,remoteConfigs[i],i,true);
+        messageBroker.AddSubscriber(rWorker);
+        connWorkers.push_back(rWorker);
+        auto wLogger=logFactory.CreateLogger("ConnWorker:"+std::to_string(i)+"(w)");
+        auto wWorker=std::make_shared<ConnectionWorker>(wLogger,messageBroker,config,remoteConfigs[i],i,false);
+        messageBroker.AddSubscriber(wWorker);
+        connWorkers.push_back(wWorker);
     }
 
     //create sigset_t struct with signals
@@ -251,6 +263,8 @@ int main (int argc, char *argv[])
         listener->Startup();
     for(auto &client:tcpClients)
         client->Startup();
+    for(auto &worker:connWorkers)
+        worker->Startup();
 
     //main loop, awaiting for signal
     while(true)
@@ -283,12 +297,16 @@ int main (int argc, char *argv[])
         listener->RequestShutdown();
     for(auto &client:tcpClients)
         client->RequestShutdown();
+    for(auto &worker:connWorkers)
+        worker->RequestShutdown();
 
     //wait for background workers shutdown complete
     for(auto &listener:tcpListeners)
         listener->Shutdown();
     for(auto &client:tcpClients)
         client->Shutdown();
+    for(auto &worker:connWorkers)
+        worker->Shutdown();
 
     return  0;
 }

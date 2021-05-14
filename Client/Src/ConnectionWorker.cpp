@@ -39,6 +39,7 @@ void ConnectionWorker::HandleError(int ec, const std::string &message)
 
 void ConnectionWorker::Worker()
 {
+    logger->Info()<<"Starting up connection worker";
     while(!shutdownPending)
     {
         std::unique_lock<std::mutex> lock(opLock);
@@ -96,6 +97,7 @@ void ConnectionWorker::Worker()
             }
         }
     }
+    logger->Info()<<"Shuting down connection worker";
 }
 
 bool ConnectionWorker::ReadyForMessage(const MsgType msgType)
@@ -106,6 +108,7 @@ bool ConnectionWorker::ReadyForMessage(const MsgType msgType)
 void ConnectionWorker::OnShutdown()
 {
     shutdownPending.store(true);
+    newPathTrigger.notify_one();
 }
 
 void ConnectionWorker::OnMessage(const void* const, const IMessage& message)

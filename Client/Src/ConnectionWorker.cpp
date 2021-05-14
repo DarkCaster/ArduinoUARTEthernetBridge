@@ -43,7 +43,11 @@ void ConnectionWorker::Worker()
     {
         std::unique_lock<std::mutex> lock(opLock);
         while(remote==nullptr||local==nullptr)
+        {
             newPathTrigger.wait(lock);
+            if(shutdownPending)
+                return;
+        }
         auto reader=isReader?remote:local;
         auto writer=isReader?local:remote;
         lock.unlock();

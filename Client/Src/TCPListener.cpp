@@ -176,7 +176,7 @@ void TCPListener::Worker()
         return;
     }
 
-    logger->Info()<<"Shuting down DNSReceiver worker thread"<<std::endl;
+    logger->Info()<<"Shuting down TCP listener"<<std::endl;
 }
 
 void TCPListener::OnShutdown()

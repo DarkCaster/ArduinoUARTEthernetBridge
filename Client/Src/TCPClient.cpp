@@ -2,11 +2,12 @@
 #include "ImmutableStorage.h"
 #include "IPAddress.h"
 
+#include <cstring>
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <cstring>
+#include <netdb.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class PathEstablishedMessage: public IPathEstablishedMessage { public: PathEstablishedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID): IPathEstablishedMessage(_local,_remote,_pathID){}; };
@@ -72,14 +73,35 @@ static void SetSocketCustomTimeouts(std::shared_ptr<ILogger> &logger, int fd, co
         logger->Warning()<<"Failed to set SO_SNDTIMEO option to socket: "<<strerror(errno);
 }
 
+// https://gist.github.com/jirihnidek/bf7a2363e480491da72301b228b35d5d
+static IPAddress Lookup(std::shared_ptr<ILogger> &logger, const std::string &target)
+{
+    addrinfo hints={};
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags |= AI_CANONNAME;
+
+    addrinfo *addrResults=nullptr;
+    if(getaddrinfo (target.c_str(), NULL, &hints, &addrResults)!=0)
+    {
+        logger->Warning()<<"Lookup of "<<target<<" is failed with: "<<strerror(errno);
+        return IPAddress();
+    }
+
+    IPAddress result(addrResults->ai_addr);
+    freeaddrinfo(addrResults);
+    return result;
+}
+
 int TCPClient::_Connect()
 {
     ImmutableStorage<IPAddress> target(IPAddress(remoteConfig.serverAddr));
     if(!target.Get().isValid)
     {
-        //TODO: perform host lookup
-        HandleError("TODO: Host lookup is not implemented!");
-        return -1;
+        target.Set(Lookup(logger,remoteConfig.serverAddr));
+        if(!target.Get().isValid)
+            return -1;
+        logger->Info()<<"Trying "<<target.Get();
     }
 
     //create socket

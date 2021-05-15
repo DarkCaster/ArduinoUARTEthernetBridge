@@ -56,6 +56,8 @@ void ConnectionWorker::Worker()
             continue;
         //perform reading/writing until shutdown or fail
         auto buffer=std::make_unique<uint8_t[]>(config.GetUARTBuffSz());
+
+        //TODO: rework for more robust, compact nonblocking read/write logic using poll/select
         while(!shutdownPending)
         {
             //read something

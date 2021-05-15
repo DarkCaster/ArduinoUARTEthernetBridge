@@ -5,6 +5,7 @@
 #include "MessageBroker.h"
 #include "ShutdownHandler.h"
 
+#include "PTYListener.h"
 #include "TCPListener.h"
 #include "TCPClient.h"
 #include "ConnectionWorker.h"
@@ -229,8 +230,19 @@ int main (int argc, char *argv[])
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
+        if(remoteConfigs[i].listener.port==0)
+            continue;
         auto logger=logFactory.CreateLogger("TCPListener:"+std::to_string(i));
         tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfigs[i],i));
+    }
+
+    std::vector<std::shared_ptr<PTYListener>> ptyListeners;
+    for(size_t i=0;i<remoteConfigs.size();++i)
+    {
+        if(remoteConfigs[i].ptsListener.empty())
+            continue;
+        auto logger=logFactory.CreateLogger("PTYListener:"+std::to_string(i));
+        ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,remoteConfigs[i],i));
     }
 
     std::vector<std::shared_ptr<TCPClient>> tcpClients;
@@ -267,6 +279,8 @@ int main (int argc, char *argv[])
     //startup
     for(auto &listener:tcpListeners)
         listener->Startup();
+    for(auto &listener:ptyListeners)
+        listener->Startup();
     for(auto &client:tcpClients)
         client->Startup();
     for(auto &worker:connWorkers)
@@ -301,6 +315,8 @@ int main (int argc, char *argv[])
     //request shutdown of background workers
     for(auto &listener:tcpListeners) //server TCP listeners will be shutdown first
         listener->RequestShutdown();
+    for(auto &listener:ptyListeners)
+        listener->RequestShutdown();
     for(auto &client:tcpClients)
         client->RequestShutdown();
     for(auto &worker:connWorkers)
@@ -308,6 +324,8 @@ int main (int argc, char *argv[])
 
     //wait for background workers shutdown complete
     for(auto &listener:tcpListeners)
+        listener->Shutdown();
+    for(auto &listener:ptyListeners)
         listener->Shutdown();
     for(auto &client:tcpClients)
         client->Shutdown();

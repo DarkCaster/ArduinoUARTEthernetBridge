@@ -71,9 +71,9 @@ static void SetSocketCustomTimeouts(std::shared_ptr<ILogger> &logger, int fd, co
 
 void TCPListener::Worker()
 { 
-    if(!remoteConfig.listener.address.isValid)
+    if(!remoteConfig.listener.address.isValid||remoteConfig.listener.port==0)
     {
-        HandleError("Listen IP address is invalid");
+        HandleError("Listen IP address or port is invalid");
         return;
     }
 

@@ -148,22 +148,22 @@ bool UARTHelper::RXStep1(unsigned long curTime)
         return false;
     }
 
-    //read some data to backbuffer if we hame some space
+    //read some data to backbuffer if we hame some space,  if no free segments available -> awaiting for uart to be available for write
     auto segment=rxStorage.GetFreeSegment();
-    if(segment!=nullptr) //nullptr if no free segments available -> awaiting for uart to be available for write
+    if(segment==nullptr)
+        return true;
+
+    auto avail=client.available();
+    if(avail>0)
     {
-        auto avail=client.available();
-        if(avail>0)
+        if(avail>UART_BUFFER_SIZE)
+            avail=UART_BUFFER_SIZE;
+        segment->usedSize=client.read(segment->buffer,avail);
+        //commit segment only if we successfully read some data
+        if(segment->usedSize>0)
         {
-            if(avail>UART_BUFFER_SIZE)
-                avail=UART_BUFFER_SIZE;
-            segment->usedSize=client.read(segment->buffer,avail);
-            //commit segment only if we successfully read some data
-            if(segment->usedSize>0)
-            {
-                rxStorage.CommitFreeSegment(segment);
-                return true;
-            }
+            rxStorage.CommitFreeSegment(segment);
+            return true;
         }
     }
 
@@ -172,9 +172,10 @@ bool UARTHelper::RXStep1(unsigned long curTime)
     {
         STATUS(); LOG(F("Client disconnected, finalizing"));
         state=STATE_CONN_FAILED;
+        return true; //skip check for link status while finalizing
     }
 
-    return true;
+    return false;
 }
 
 //write data to UART

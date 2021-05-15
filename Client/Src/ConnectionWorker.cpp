@@ -60,9 +60,14 @@ void ConnectionWorker::Worker()
         {
             //read something
             auto dr=read(reader->fd,buffer.get(),config.GetUARTBuffSz());
-            if(dr<0)
+            if(dr<=0)
             {
-                reader->Fail(errno);
+                auto error=errno;
+                if(dr<0 && (error==EWOULDBLOCK))
+                    continue;
+                if(dr==0)
+                    error=-1;
+                reader->Fail(error);
                 {
                     std::lock_guard<std::mutex> tmpGuard(opLock);
                     remote=nullptr;
@@ -71,8 +76,6 @@ void ConnectionWorker::Worker()
                 sender.SendMessage(this,PathCollapsedMessage(isReader?writer:reader,isReader?reader:writer,pathID));
                 break;
             }
-            if(dr==0)
-                continue;
 
             //write something
             auto dl=dr;

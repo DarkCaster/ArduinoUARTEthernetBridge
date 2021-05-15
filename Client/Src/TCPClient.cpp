@@ -258,7 +258,7 @@ void TCPClient::OnMessage(const void* const, const IMessage& message)
         //disconnect remote if needed
         if(!connectOnStart||remote->GetStatus()!=0)
         {
-            logger->Info()<<"Disposing remote connection for uart port "<<pathID<<"; status "<<strerror(remote->GetStatus());
+            logger->Info()<<"Disposing remote connection for uart port "<<pathID;//<<"; status "<<strerror(remote->GetStatus());
             remote->Dispose();
             remote=nullptr;
             remoteActive=false;

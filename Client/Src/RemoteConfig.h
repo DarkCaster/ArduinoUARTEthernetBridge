@@ -13,9 +13,17 @@ class RemoteConfig
         const uint8_t flags;
         const uint8_t collectIntMS;
         const IPEndpoint listener;
+        const std::string sockFileListener;
         const std::string serverAddr;
         const uint16_t serverPort;
-        RemoteConfig(const uint32_t speed, const uint8_t mode, const uint8_t flags, const uint8_t collectIntMS, const IPEndpoint& listener, const std::string& serverAddr, const uint16_t serverPort);
+        RemoteConfig(const uint32_t speed,
+                     const uint8_t mode,
+                     const uint8_t flags,
+                     const uint8_t collectIntMS,
+                     const IPEndpoint &listener,
+                     const std::string &sockFile,
+                     const std::string &serverAddr,
+                     const uint16_t serverPort);
 };
 
 #endif //REMOTE_CONFIG_H

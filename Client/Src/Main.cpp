@@ -35,7 +35,7 @@ void usage(const std::string &self)
     std::cerr<<"  mandatory parameters:"<<std::endl;
     std::cerr<<"    -ra <addr, or name> remote address to connect"<<std::endl;
     std::cerr<<"    -rp{n} <port> remote port to connect, example -rp1 50000 -rp2 50001 -rp2 50002"<<std::endl;
-    std::cerr<<"    -lp{n} <port> local TCP port number to listen, example -lp1 40000 -lp2 40001 -lp2 40002"<<std::endl;
+    std::cerr<<"    -lp{n} <port> local TCP port number OR socket path to listen, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
     std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
     std::cerr<<"    -rst{n} <0,1> perform reset on connection"<<std::endl;
@@ -102,12 +102,17 @@ int main (int argc, char *argv[])
 
     //parse local ports numbers
     std::vector<int> localPorts;
+    std::vector<std::string> localSockets;
     while(args.find("-lp"+std::to_string(localPorts.size()+1))!=args.end())
     {
-        auto port=std::atoi(args["-lp"+std::to_string(localPorts.size()+1)].c_str());
+        auto sockFile=args["-lp"+std::to_string(localPorts.size()+1)];
+        auto port=std::atoi(sockFile.c_str());
         if(port<1||port>65535)
-            return param_error(argv[0],"local TCP port number is invalid!");
+            port=0;
+        else
+            sockFile="";
         localPorts.push_back(port);
+        localSockets.push_back(sockFile);
     }
     if(localPorts.size()<remotePorts.size())
         return param_error(argv[0],"local ports count must be equals to remote ports count");
@@ -207,6 +212,7 @@ int main (int argc, char *argv[])
                                      (static_cast<unsigned long>(1000000000)/(static_cast<unsigned long>(uartSpeeds[i])/
                                                                               static_cast<unsigned long>(8))*static_cast<unsigned long>(UART_BUFFER_SIZE))/static_cast<unsigned long>(1000000)),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
+                                 localSockets[i],
                                  remote,
                                  static_cast<uint16_t>(remotePorts[i])));
 

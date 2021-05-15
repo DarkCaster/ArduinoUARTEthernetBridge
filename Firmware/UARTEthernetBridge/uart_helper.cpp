@@ -143,6 +143,7 @@ bool UARTHelper::RXStep1(unsigned long curTime)
         if(!CFG_TEST_MODE(config))
             uart->end();
         //we may try to connect again from here
+        STATUS(); LOG(F("Client disconnected, ready for new connection"));
         state=STATE_NOT_CONNECTED;
         return false;
     }
@@ -168,7 +169,10 @@ bool UARTHelper::RXStep1(unsigned long curTime)
 
     //begin disconnection routine if needed - no more TCP reads will be performed
     if(!client.connected())
+    {
+        STATUS(); LOG(F("Client disconnected, finalizing"));
         state=STATE_CONN_FAILED;
+    }
 
     return true;
 }
@@ -181,11 +185,10 @@ void UARTHelper::RXStep2()
     {
         auto segment=rxStorage.GetUsedSegment();
         if(segment==nullptr)
-            return;
+            break;
         if(CFG_TEST_MODE(config))
         {
             //copy data directly to tx buffer in test mode
-            avail=0;
             txSize=segment->usedSize;
             memcpy(txBuffer,segment->buffer+segment->startPos,txSize);
             rxStorage.CommitUsedSegment(segment);
@@ -201,7 +204,7 @@ void UARTHelper::RXStep2()
             rxStorage.CommitUsedSegment(segment);
     }
     //finalize data reading
-    if(AWAITING_DATA_FINALIZE && avail<1 && rxStorage.GetUsedSegment()==nullptr)
+    if(AWAITING_DATA_FINALIZE && rxStorage.GetUsedSegment()==nullptr)
         state=STATE_DATA_FINALIZED;
 }
 

@@ -49,5 +49,5 @@ endif(CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES)
 file(GLOB SOURCE_FILES ${PROJECT_SOURCE_DIR}/Src/*.cpp)
 
 add_executable(uartclient ${SOURCE_FILES})
-target_link_libraries(uartclient PRIVATE Threads::Threads)
+target_link_libraries(uartclient PRIVATE util Threads::Threads)
 install(TARGETS uartclient DESTINATION bin)

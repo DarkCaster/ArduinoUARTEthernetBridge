@@ -102,6 +102,7 @@ void PTYListener::Worker()
     lst.fd=inoFd;
     lst.events=POLLIN|POLLHUP;
     int openCount=0;
+
     while(!shutdownPending)
     {
         lst.revents=0;
@@ -164,9 +165,9 @@ void PTYListener::Worker()
         return;
     }
 
-    if(close(inoWatchFd)!=0)
+    if(inotify_rm_watch(inoFd,inoWatchFd)!=0)
     {
-        HandleError(errno,"Failed to close inoWatchFd: ");
+        HandleError(errno,"inotify_rm_watch failed: ");
         return;
     }
 

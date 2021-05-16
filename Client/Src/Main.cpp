@@ -332,5 +332,6 @@ int main (int argc, char *argv[])
     for(auto &worker:connWorkers)
         worker->Shutdown();
 
-    return  0;
+    mainLogger->Info()<<"Clean shutdown"<<std::endl;
+    return 0;
 }

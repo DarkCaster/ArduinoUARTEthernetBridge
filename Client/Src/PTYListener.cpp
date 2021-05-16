@@ -1,4 +1,5 @@
 #include "PTYListener.h"
+#include "PTYConnection.h"
 
 #include <cstdint>
 #include <cstring>
@@ -150,7 +151,7 @@ void PTYListener::Worker()
         if(openCount==1) //first client connected
         {
             logger->Info()<<"PTY client connected to "<<remoteConfig.ptsListener;
-            //sender.SendMessage(this, NewClientMessage(std::make_shared<TCPConnection>(cSockFd),pathID));
+            sender.SendMessage(this, NewClientMessage(std::make_shared<PTYConnection>(ptm),pathID));
         }
         else if(openCount==0) //last client disconnected
         {

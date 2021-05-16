@@ -12,6 +12,7 @@
 #define UART_COUNT 3
 #define UART_DEFS { &Serial1, &Serial2, &Serial3 }
 #define UART_RX_PINS { 19, 17, 15 }
+#define UART_RST_PINS { 22, 23, 24 }
 #define UART_MAX_POLL_INTERVAL_MS 5
 
 //params for ENC28J60 ethernet shield

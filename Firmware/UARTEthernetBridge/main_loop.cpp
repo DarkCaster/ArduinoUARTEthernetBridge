@@ -42,9 +42,10 @@ void setup()
     //setup UART-helpers
     HardwareSerial *extUARTs[] = UART_DEFS;
     uint8_t extUARTPins[] = UART_RX_PINS;
+    uint8_t extRSTPins[] = UART_RST_PINS;
     uint16_t ports[]= NET_PORTS;
     for(int i=0;i<UART_COUNT;++i)
-        uartHelpers[i].Setup(extUARTs[i], extUARTPins[i], ports[i]);
+        uartHelpers[i].Setup(extUARTs[i], extUARTPins[i], extRSTPins[i], ports[i]);
 
     //blink LED pin indicating hardware setup is complete
     BLINK(50,50,10);

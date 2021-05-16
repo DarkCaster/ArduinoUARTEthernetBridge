@@ -29,10 +29,11 @@ static void PrepareRXPin(uint8_t rxPin)
     pinMode(rxPin,INPUT_PULLUP);
 }
 
-void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const uint16_t _netPort)
+void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const uint8_t _rstPin, const uint16_t _netPort)
 {
     uart=_uart;
     rxPin=_rxPin;
+    rstPin=_rstPin;
     netPort=_netPort;
     PrepareRXPin(rxPin);
     targetTxTime=0;

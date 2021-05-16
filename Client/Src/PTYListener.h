@@ -22,10 +22,10 @@ class PTYListener final : public WorkerBase
         const RemoteConfig &remoteConfig;
         const int pathID;
         std::atomic<bool> shutdownPending;
-        void HandleError(const std::string& message);
-        void HandleError(int ec, const std::string& message);
+        void HandleError(const std::string &message);
+        void HandleError(int ec, const std::string &message);
     public:
-        PTYListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config,  const RemoteConfig &remoteConfig, int pathID);
+        PTYListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config, const RemoteConfig &remoteConfig, int pathID);
     protected:
         //WorkerBase
         void Worker() final;

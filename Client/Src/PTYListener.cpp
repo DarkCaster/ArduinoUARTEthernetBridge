@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <sys/inotify.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class NewClientMessage: public INewClientMessage { public: NewClientMessage(std::shared_ptr<Connection> _client, int _pathID):INewClientMessage(_client,_pathID){} };
@@ -58,16 +59,32 @@ void PTYListener::Worker()
         return;
     }
     std::string ptsName(ptrPTSName);
-    //open+close slave part before starting to poll
-    auto tmpFd=open(ptsName.c_str(), O_RDWR | O_NOCTTY);
-    if(tmpFd<0)
-    {
-        HandleError(errno,"Failed to open slave pty: ");
-        return;
-    }
-    if(close(tmpFd)<0)
+
+    //close slave part before starting poll
+    if(close(pts)<0)
     {
         HandleError(errno,"Failed to close slave pty: ");
+        return;
+    }
+
+    //create inotify events
+    auto inoFd=inotify_init();
+    if(inoFd<0)
+    {
+        HandleError(errno,"inotify_init failed: ");
+        return;
+    }
+
+    if(fcntl(inoFd, F_SETFL, O_NONBLOCK) < 0)
+    {
+        HandleError(errno,"fcntl for inoFd failed: ");
+        return;
+    }
+
+    auto inoWatchFd=inotify_add_watch(inoFd,ptsName.c_str(),IN_OPEN|IN_CLOSE);
+    if(inoWatchFd<0)
+    {
+        HandleError(errno,"inotify_add_watch failed: ");
         return;
     }
 
@@ -82,10 +99,9 @@ void PTYListener::Worker()
     logger->Info()<<"Listening for incoming connection (PTY) at "<<remoteConfig.ptsListener.c_str()<<std::endl;
 
     pollfd lst={};
-    lst.fd=ptm;
-    lst.events=POLLHUP;
-    bool ptsConnected=false;
-    bool ptsDisconnectPending=false;
+    lst.fd=inoFd;
+    lst.events=POLLIN|POLLHUP;
+    int openCount=0;
     while(!shutdownPending)
     {
         lst.revents=0;
@@ -95,35 +111,74 @@ void PTYListener::Worker()
             auto error=errno;
             if(error==EINTR)//interrupted by signal
                 break;
-            close(ptm);
-            HandleError(error,"Error awaiting incoming connection: ");
+            HandleError(error,"Error processing inotify event: ");
             return;
         }
-        ptsConnected=(lst.events&POLLHUP)==0;
-        logger->Info()<<lst.events;
-        if(ptsDisconnectPending)
+        //logger->Info()<<"inotify poll tick";
+        if((lst.revents&(POLLHUP|POLLERR))!=0)
         {
-            if(ptsConnected)
-                continue;
-            logger->Info()<<"Slave PTY disconnected at "<<remoteConfig.ptsListener;
-            ptsDisconnectPending=false;
-            continue;
+            HandleError("Error processing inotify watch: ");
+            return;
         }
-        if(!ptsConnected)
+        if((lst.revents&POLLIN)!=0)
+        {
+            //read all events awailable
+            while(true)
+            {
+                inotify_event event={};
+                if(read(inoFd,&event,sizeof(inotify_event))!=sizeof(inotify_event))
+                {
+                    auto error=errno;
+                    if(error!=EWOULDBLOCK)
+                    {
+                        HandleError(error,"Error reading inotify event: ");
+                        return;
+                    }
+                    else
+                        break;
+                }
+                if((event.mask&IN_OPEN)!=0)
+                    openCount++;
+                if((event.mask&IN_CLOSE)!=0)
+                    openCount--;
+            }
+        }
+        else
             continue;
-        logger->Info()<<"New PTY client connected at "<<remoteConfig.ptsListener;
-        //sender.SendMessage(this, NewClientMessage(std::make_shared<TCPConnection>(cSockFd),pathID));
-    }
 
-    if(close(ptm)!=0)
-    {
-        HandleError(errno,"Failed to close master PTY: ");
-        return;
+        if(openCount==1) //first client connected
+        {
+            logger->Info()<<"PTY client connected to "<<remoteConfig.ptsListener;
+            //sender.SendMessage(this, NewClientMessage(std::make_shared<TCPConnection>(cSockFd),pathID));
+        }
+        else if(openCount==0) //last client disconnected
+        {
+            logger->Info()<<"PTY closed at "<<remoteConfig.ptsListener;
+            //nothing to do, should be processed
+        }
     }
 
     if(unlink(remoteConfig.ptsListener.c_str())!=0)
     {
         HandleError(errno,"Failed to remove PTY symlink: ");
+        return;
+    }
+
+    if(close(inoWatchFd)!=0)
+    {
+        HandleError(errno,"Failed to close inoWatchFd: ");
+        return;
+    }
+
+    if(close(inoFd)!=0)
+    {
+        HandleError(errno,"Failed to close inoFd: ");
+        return;
+    }
+
+    if(close(ptm)!=0)
+    {
+        HandleError(errno,"Failed to close master PTY: ");
         return;
     }
 

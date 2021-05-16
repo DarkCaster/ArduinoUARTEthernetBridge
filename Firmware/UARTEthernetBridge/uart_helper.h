@@ -26,11 +26,12 @@ class UARTHelper
         UARTConfig config;
         uint8_t state; //0 - not connected, 1-254 - configuration steps, 255 - ready to transfer data
         unsigned long targetTxTime;
+        unsigned long targetRstTime;
         bool Connect();
         bool ReadConfig(unsigned long curTime);
         bool UARTOpen();
-        bool ResetBegin();
-        bool ResetEnd();
+        bool ResetBegin(unsigned long curTime);
+        bool ResetEnd(unsigned long curTime);
         bool Disconnect();
     public:
         //run only once

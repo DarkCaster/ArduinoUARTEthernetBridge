@@ -27,5 +27,6 @@
 //other params
 #define DEFAULT_WD_INTERVAL 1000
 #define BACK_BUFFER_SEGMENTS 5
+#define RESET_TIME_MS 100
 
 #endif

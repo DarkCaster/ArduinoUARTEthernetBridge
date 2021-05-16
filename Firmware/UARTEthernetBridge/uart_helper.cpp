@@ -29,6 +29,17 @@ static void PrepareRXPin(uint8_t rxPin)
     pinMode(rxPin,INPUT_PULLUP);
 }
 
+static void StartReset(uint8_t rstPin)
+{
+    pinMode(rstPin, OUTPUT);
+    digitalWrite(rstPin, LOW);
+}
+
+static void StopReset(uint8_t rstPin)
+{
+    pinMode(rstPin, INPUT);
+}
+
 void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const uint8_t _rstPin, const uint16_t _netPort)
 {
     uart=_uart;
@@ -36,6 +47,7 @@ void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const 
     rstPin=_rstPin;
     netPort=_netPort;
     PrepareRXPin(rxPin);
+    StopReset(rstPin);
     targetTxTime=0;
     txSize=0;
     state=STATE_NOT_CONNECTED;
@@ -96,21 +108,24 @@ bool UARTHelper::UARTOpen()
     return true;
 }
 
-bool UARTHelper::ResetBegin()
+bool UARTHelper::ResetBegin(unsigned long curTime)
 {
     if(CFG_TEST_MODE(config))
     {
         state=STATE_RESET_END;
         return true;
     }
-    //TODO: begin reset
+    targetRstTime=curTime+RESET_TIME_MS;
+    StartReset(rstPin);
     state=STATE_RESET_BEGIN;
     return true;
 }
 
-bool UARTHelper::ResetEnd()
+bool UARTHelper::ResetEnd(unsigned long curTime)
 {
-    //TODO: end reset
+    if(curTime<targetRstTime)
+        return true;
+    StopReset(rstPin);
     state=STATE_RESET_END;
     return true;
 }
@@ -127,9 +142,9 @@ bool UARTHelper::RXStep1(unsigned long curTime)
         if(AWAITING_UART_OPEN)
             return UARTOpen();
         if(AWAITING_RESET_BEGIN)
-            return ResetBegin();
+            return ResetBegin(curTime);
         if(AWAITING_RESET_END)
-            return ResetEnd();
+            return ResetEnd(curTime);
         STATUS(); LOG(F("Client connected, config complete!"));
         //TODO: more configuration steps
         state=STATE_READY;

@@ -22,6 +22,22 @@ void MessageBroker::AddSubscriber(IMessageSubscriber &subscriber)
     curSubs.Set(subs);
 }
 
+void MessageBroker::AddSubscriber(IMessageSubscriber * const subscriber)
+{
+    const std::lock_guard<std::mutex> guard(opLock);
+    auto subs=curSubs.Get();
+    subs.insert(subscriber);
+    curSubs.Set(subs);
+}
+
+void MessageBroker::AddSubscriber(const std::shared_ptr<IMessageSubscriber> &subscriber)
+{
+    const std::lock_guard<std::mutex> guard(opLock);
+    auto subs=curSubs.Get();
+    subs.insert(subscriber.get());
+    curSubs.Set(subs);
+}
+
 void MessageBroker::SendMessage(const void* const source, const IMessage& message)
 {
     opLock.lock();

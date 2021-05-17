@@ -29,7 +29,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-// example command line: -ra ENC28J65E366.lan -rp1 50000 -rp2 50001 -rp3 50002 -lp1 40000 -lp2 40001 -lp3 /tmp/ttyETH3 -ps1 250000 -ps2 250000 -ps3 115200 -pm1 255 -pm2 255 -pm3 6 -rst1 1 -rst2 1 -rst3 1
+// example command line: -nd 1 -ra ENC28J65E366.lan -rp1 50000 -rp2 50001 -rp3 50002 -lp1 40000 -lp2 40001 -lp3 /tmp/ttyETH3 -ps1 250000 -ps2 250000 -ps3 115200 -pm1 255 -pm2 255 -pm3 6 -rst1 1 -rst2 1 -rst3 1
 void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;

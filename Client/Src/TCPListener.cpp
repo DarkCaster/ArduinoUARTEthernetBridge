@@ -144,7 +144,7 @@ void TCPListener::Worker()
         return;
     }
 
-    logger->Info()<<"Listening for incoming connection"<<std::endl;
+    logger->Info()<<"Listening for incoming connection (TCP) at "<<remoteConfig.listener<<std::endl;
 
     pollfd lst;
     lst.fd=lSockFd;

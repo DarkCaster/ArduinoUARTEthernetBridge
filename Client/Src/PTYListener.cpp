@@ -23,6 +23,26 @@ PTYListener::PTYListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sen
     pathID(_pathID)
 {
     shutdownPending.store(false);
+    ptm=-1;
+    pts=-1;
+}
+
+bool PTYListener::Startup()
+{
+    if(remoteConfig.ptsListener.empty()||remoteConfig.listener.port!=0)
+    {
+        HandleError("PTY symlink name is invalid or configuration mismatch");
+        return false;
+    }
+
+    //create new PTY with openpty and get it's dev-filename
+    if(openpty(&ptm,&pts,NULL,NULL,NULL)<0)
+    {
+        HandleError(errno,"openpty failed: ");
+        return false;
+    }
+
+    return WorkerBase::Startup();
 }
 
 void PTYListener::HandleError(const std::string &message)
@@ -39,20 +59,6 @@ void PTYListener::HandleError(int ec, const std::string &message)
 
 void PTYListener::Worker()
 {
-    if(remoteConfig.ptsListener.empty()||remoteConfig.listener.port!=0)
-    {
-        HandleError("PTY symlink name is invalid or configuration mismatch");
-        return;
-    }
-
-    //create new PTY with openpty and get it's dev-filename
-    int ptm=-1;
-    int pts=-1;
-    if(openpty(&ptm,&pts,NULL,NULL,NULL)<0)
-    {
-        HandleError(errno,"openpty failed: ");
-        return;
-    }
     auto ptrPTSName=ttyname(pts);
     if(ptrPTSName==nullptr)
     {
@@ -97,7 +103,7 @@ void PTYListener::Worker()
         return;
     }
 
-    logger->Info()<<"Listening for incoming connection (PTY) at "<<remoteConfig.ptsListener.c_str()<<std::endl;
+    logger->Info()<<"Listening for incoming connection (PTY) at "<<remoteConfig.ptsListener<<" (PTS: "<<ptsName<<")"<<std::endl;
 
     pollfd lst={};
     lst.fd=inoFd;

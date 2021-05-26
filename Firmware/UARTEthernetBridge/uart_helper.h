@@ -42,6 +42,9 @@ class UARTHelper
         void RXStep2(); //write data to uart
         void TXStep1(unsigned long curTime); //collect data from uart
         void TXStep2(); //send data to client
+        //reset
+        void StartReset();
+        void StopReset();
 };
 
 #endif //UART_HELPER_H

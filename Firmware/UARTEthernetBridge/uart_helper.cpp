@@ -29,13 +29,13 @@ static void PrepareRXPin(uint8_t rxPin)
     pinMode(rxPin,INPUT_PULLUP);
 }
 
-static void StartReset(uint8_t rstPin)
+void UARTHelper::StartReset()
 {
     pinMode(rstPin, OUTPUT);
     digitalWrite(rstPin, LOW);
 }
 
-static void StopReset(uint8_t rstPin)
+void UARTHelper::StopReset()
 {
     pinMode(rstPin, INPUT);
 }
@@ -47,7 +47,7 @@ void UARTHelper::Setup(HardwareSerial* const _uart, const uint8_t _rxPin, const 
     rstPin=_rstPin;
     netPort=_netPort;
     PrepareRXPin(rxPin);
-    StopReset(rstPin);
+    StopReset();
     targetTxTime=0;
     txSize=0;
     state=STATE_NOT_CONNECTED;
@@ -116,7 +116,7 @@ bool UARTHelper::ResetBegin(unsigned long curTime)
         return true;
     }
     targetRstTime=curTime+RESET_TIME_MS;
-    StartReset(rstPin);
+    StartReset();
     state=STATE_RESET_BEGIN;
     return true;
 }
@@ -125,7 +125,7 @@ bool UARTHelper::ResetEnd(unsigned long curTime)
 {
     if(curTime<targetRstTime)
         return true;
-    StopReset(rstPin);
+    StopReset();
     state=STATE_RESET_END;
     return true;
 }

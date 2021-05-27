@@ -32,11 +32,7 @@ void setup()
     pinMode(PIN_SPI_SCK,OUTPUT);
     digitalWrite(PIN_SPI_SCK,LOW);
 
-    //perform ENC28J60 reset, https://github.com/njh/EtherCard/issues/238
-    pinMode(PIN_ENC28J60_RST, OUTPUT);
-    digitalWrite(PIN_ENC28J60_RST, LOW);
-    delay(100);
-    digitalWrite(PIN_ENC28J60_RST, HIGH);
+    //setup ENC28J60 reset pin (as precaution)
     pinMode(PIN_ENC28J60_RST, INPUT);
 
     //setup UART-helpers
@@ -47,8 +43,30 @@ void setup()
     for(int i=0;i<UART_COUNT;++i)
         uartHelpers[i].Setup(extUARTs[i], extUARTPins[i], extRSTPins[i], ports[i]);
 
-    //blink LED pin indicating hardware setup is complete
-    BLINK(50,50,10);
+    //wait PSU to become stable on cold boot
+    if(!watchdog.IsSystemResetBoot())
+        delay(COLD_BOOT_WARMUP);
+
+    //perform ENC28J60 reset, https://github.com/njh/EtherCard/issues/238
+    pinMode(PIN_ENC28J60_RST, OUTPUT);
+    digitalWrite(PIN_ENC28J60_RST, LOW);
+    delay(RESET_TIME_MS);
+    digitalWrite(PIN_ENC28J60_RST, HIGH);
+    pinMode(PIN_ENC28J60_RST, INPUT);
+
+    //perform reset of connected MCUs on cold boot
+    if(!watchdog.IsSystemResetBoot())
+    {
+        for(int i=0;i<UART_COUNT;++i)
+            uartHelpers[i].StartReset();
+        delay(RESET_TIME_MS);
+        for(int i=0;i<UART_COUNT;++i)
+            uartHelpers[i].StopReset();
+        //blink LED pin indicating hardware setup is complete
+        BLINK(25,75,5);
+    }
+    else
+        BLINK(10,10,1);
 
     //initialize network, reset if no network cable detected
     STATUS(); LOG(F("DHCP start"));

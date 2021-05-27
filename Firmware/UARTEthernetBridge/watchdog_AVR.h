@@ -7,9 +7,12 @@
 class WatchdogAVR final : Watchdog
 {
     private:
+        uint8_t * const srBootSig;
+        const bool srBootFlag;
         volatile bool isEnabled;
 	public:
         WatchdogAVR();
+        bool IsSystemResetBoot() final;
         bool IsEnabled() final;
         void Enable(uint16_t maxDelayMS) final;
 		void Disable() final;

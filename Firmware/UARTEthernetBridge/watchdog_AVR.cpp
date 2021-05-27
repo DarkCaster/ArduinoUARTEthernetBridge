@@ -1,9 +1,31 @@
 #include <avr/wdt.h>
 #include "watchdog_AVR.h"
 
-WatchdogAVR::WatchdogAVR()
+const uint8_t rstSig[] PROGMEM = { 0xFE, 0xED, 0xBE, 0xEF, 0xAA, 0xBB, 0xCC, 0xDD };
+
+// https://forum.arduino.cc/t/watchdog-reset-detection/351423/3
+WatchdogAVR::WatchdogAVR():
+    srBootSig(reinterpret_cast<uint8_t*>(malloc(sizeof(rstSig)))),
+    srBootFlag(memcmp_P(srBootSig,rstSig,sizeof(rstSig))==0)
 {
     Disable();
+    //reset boot-signature to guarantee that we start from scratch on hardware or watchdog-timeout reset
+    memset(srBootSig,0,sizeof(rstSig));
+}
+
+void WatchdogAVR::SystemReset()
+{
+    Disable();
+    //set signature to detect software-initiated reboot
+    memcpy_P(srBootSig,rstSig,sizeof(rstSig));
+    //rearm watchdog and wait for reset
+    wdt_enable(1);
+    while(true){};
+}
+
+bool WatchdogAVR::IsSystemResetBoot()
+{
+    return srBootFlag;
 }
 
 bool WatchdogAVR::IsEnabled()
@@ -31,7 +53,7 @@ static uint8_t GetDelayParam(uint16_t reqDelay)
         return WDTO_60MS;
     if(reqDelay>15)
         return WDTO_30MS;
-	else
+    else
         return WDTO_15MS;
 }
 
@@ -43,20 +65,12 @@ void WatchdogAVR::Enable(uint16_t maxDelayMS)
 
 void WatchdogAVR::Disable()
 {
-	wdt_disable();
     isEnabled=false;
+    wdt_disable();
 }
 
 void WatchdogAVR::Ping()
 {
     if(isEnabled)
         wdt_reset();
-}
-
-void WatchdogAVR::SystemReset()
-{
-    wdt_disable();
-    isEnabled=false; //prohibit interrupts to perform pings on watchdog while we are awaiting for reset
-    wdt_enable(1);
-    while(true){}; //there is no return, await for reset
 }

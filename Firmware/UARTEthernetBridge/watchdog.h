@@ -6,6 +6,7 @@
 class Watchdog
 {
 	public:
+        virtual bool IsSystemResetBoot() = 0;
         virtual bool IsEnabled() = 0;
         virtual void Enable(uint16_t maxDelayMS) = 0;
 		virtual void Disable() = 0;

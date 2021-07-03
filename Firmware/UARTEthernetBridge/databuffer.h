@@ -14,16 +14,15 @@ class DataBuffer
 {
     private:
         uint8_t storage[DATA_BUFFER_SIZE];
-        const uint8_t *begin;
-        const uint8_t *end;
-        uint8_t* head;
-        uint8_t* tail;
+        uint8_t * const begin;
+        uint8_t * const end;
+        uint8_t *head;
+        uint8_t *tail;
     public:
         DataBuffer();
         Handle GetHead();
         Handle GetTail();
-        void CommitHead(uint16_t sz);
-        void CommitTail(uint16_t sz);
+        void Commit(const Handle &handle, uint16_t usedSz);
 };
 
 #endif // DATABUFFER_H

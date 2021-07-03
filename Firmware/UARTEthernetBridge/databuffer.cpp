@@ -20,18 +20,10 @@ Handle DataBuffer::GetTail()
     return result;
 }
 
-void DataBuffer::CommitHead(uint16_t sz)
+void DataBuffer::Commit(const Handle& handle, uint16_t usedSz)
 {
-    //move head to the right
-    head+=sz;
-    if(head>=end)
-        head=0;
-}
-
-void DataBuffer::CommitTail(uint16_t sz)
-{
-    //move tail to the right
-    tail+=sz;
-    if(tail>=end)
-        tail=0;
+    uint8_t ** const target=handle.buffer==head?&head:&tail;
+    *target+=usedSz;
+    if(*target>=end)
+        *target=begin;
 }

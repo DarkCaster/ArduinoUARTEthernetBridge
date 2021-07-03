@@ -30,4 +30,6 @@
 #define RESET_TIME_MS 100
 #define COLD_BOOT_WARMUP 1000
 
+#define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*4)
+
 #endif

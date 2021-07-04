@@ -31,5 +31,7 @@
 #define COLD_BOOT_WARMUP 1000
 
 #define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*4)
+#define PACKAGE_SIZE (2+3*UART_COUNT+1+UART_BUFFER_SIZE*UART_COUNT) //seq number 2 bytes, (1byte cmd + 2bytes payload)*UART_COUNT, 1 byte crc, uart payload -> UART_BUFFER_SIZE*UART_COUNT
+
 
 #endif

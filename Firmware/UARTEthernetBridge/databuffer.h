@@ -18,11 +18,14 @@ class DataBuffer
         uint8_t * const end;
         uint8_t *head;
         uint8_t *tail;
+        uint16_t usedSize;
     public:
         DataBuffer();
         Handle GetHead();
         Handle GetTail();
         void Commit(const Handle &handle, uint16_t usedSz);
+        uint16_t UsedSize();
+        bool IsHalfUsed();
 };
 
 #endif // DATABUFFER_H

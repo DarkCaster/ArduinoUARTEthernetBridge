@@ -27,3 +27,13 @@ void DataBuffer::Commit(const Handle& handle, uint16_t usedSz)
     if(*target>=end)
         *target=begin;
 }
+
+uint16_t DataBuffer::UsedSize()
+{
+    return static_cast<uint16_t>(head>=tail?head-tail:(end-tail)+(head-begin));
+}
+
+bool DataBuffer::IsHalfUsed()
+{
+    return UsedSize()>(DATA_BUFFER_SIZE/2);
+}

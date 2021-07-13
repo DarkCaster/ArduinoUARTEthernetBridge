@@ -31,7 +31,11 @@
 #define COLD_BOOT_WARMUP 1000
 
 #define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*4)
-#define PACKAGE_SIZE (2+3*UART_COUNT+1+UART_BUFFER_SIZE*UART_COUNT) //seq number 2 bytes, (1byte cmd + 2bytes payload)*UART_COUNT, 1 byte crc, uart payload -> UART_BUFFER_SIZE*UART_COUNT
+
+#define PKG_HDR_SZ 2
+#define CMD_HDR_SIZE 3
+#define META_CRC_SZ 1
+#define PACKAGE_SIZE (PKG_HDR_SZ+CMD_HDR_SIZE*UART_COUNT+META_CRC_SZ+UART_BUFFER_SIZE*UART_COUNT) //seq number 2 bytes, (1byte cmd + 2bytes payload)*UART_COUNT, 1 byte crc, uart payload -> UART_BUFFER_SIZE*UART_COUNT
 
 
 #endif

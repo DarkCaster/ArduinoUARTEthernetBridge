@@ -1,0 +1,35 @@
+#ifndef CLIENTSTATE_H
+#define CLIENTSTATE_H
+
+#include <Arduino.h>
+#include <IPAddress.h>
+
+enum struct ClientEventType : uint8_t
+{
+    NoEvent=0x00,
+    Connected=0x01,
+    NewRequest=0x02,
+    Disconnected=0xFF,
+};
+
+union ClientEventData
+{
+    IPAddress remoteAddr;
+    uint16_t udpPort;
+    uint16_t udpSeq;
+};
+
+struct ClientEvent
+{
+    ClientEventType type;
+    ClientEventData data;
+};
+
+struct ClientInfo
+{
+    IPAddress clientAddr;
+    uint16_t serverUDPPort;
+    uint16_t clientUDPPort;
+};
+
+#endif // CLIENTSTATE_H

@@ -6,6 +6,7 @@
 
 enum struct ReqType : uint8_t
 {
+    NoCommand = 0x00,
     ResetOpen = 0x01,
     Open = 0x02,
     Close = 0x04,
@@ -14,6 +15,7 @@ enum struct ReqType : uint8_t
 
 enum struct RespType : uint8_t
 {
+    NoCommand = 0x00,
     Data = 0x08,
 };
 

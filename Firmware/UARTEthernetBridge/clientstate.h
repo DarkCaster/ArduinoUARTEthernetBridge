@@ -14,7 +14,7 @@ enum struct ClientEventType : uint8_t
 
 union ClientEventData
 {
-    IPAddress remoteAddr;
+    uint32_t remoteAddr;
     uint16_t udpPort;
     uint16_t udpSeq;
 };

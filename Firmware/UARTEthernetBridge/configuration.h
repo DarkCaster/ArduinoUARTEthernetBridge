@@ -23,6 +23,7 @@
 //network params
 #define NET_PORTS { 50000, 50001, 50002 }
 #define NET_NAME "ENC28J65E366"
+#define TCP_PORT 50000
 
 //other params
 #define DEFAULT_WD_INTERVAL 1000

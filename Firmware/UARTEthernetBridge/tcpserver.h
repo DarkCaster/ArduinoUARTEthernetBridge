@@ -23,6 +23,7 @@ class TCPServer
         TCPServer(uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz, const uint16_t netPort);
         void Start();
         ClientEvent ProcessRX();
+        bool ProcessTX();
 };
 
 #endif // TCPSERVER_H

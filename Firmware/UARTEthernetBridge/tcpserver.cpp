@@ -60,3 +60,16 @@ ClientEvent TCPServer::ProcessRX()
     //read port for UDP connection
     return ClientEvent{ClientEventType::NewRequest,{.udpPort=static_cast<uint16_t>(*rxBuff|*(rxBuff+1)<<8)}};
 }
+
+bool TCPServer::ProcessTX()
+{
+    //clear PKG_HEADER (not needed) and calculate CRC
+    *(txBuff)=*(txBuff+1)=0;
+    *(txBuff+metaSz)=CRC8(txBuff,metaSz);
+    auto dataLeft=pkgSz;
+    while(dataLeft>0&&client.connected())
+        dataLeft-=client.write(txBuff+pkgSz-dataLeft,dataLeft);
+    if(dataLeft>0)
+        return false;
+    return true;
+}

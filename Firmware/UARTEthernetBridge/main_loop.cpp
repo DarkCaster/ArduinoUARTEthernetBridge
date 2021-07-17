@@ -7,6 +7,7 @@
 #include "watchdog.h"
 #include "watchdog_AVR.h"
 #include "tcpserver.h"
+#include "udpserver.h"
 #include "timer.h"
 #include "resethelper.h"
 
@@ -18,6 +19,7 @@ static uint8_t txBuff[PACKAGE_SIZE];
 static WatchdogAVR watchdog;
 static Timer pollTimer;
 static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
+static UDPServer udpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
 static ResetHelper rstHelper[UART_COUNT];
 
 //current client state
@@ -107,7 +109,7 @@ void setup()
     tcpClientState=false;
     tcpServer.Start();
 
-    //TODO: start UDP server
+    //TODO: start UDP server here, if ever needed
 
     STATUS(); LOG(F("Init complete!"));
     BLINK(10,0,1);
@@ -151,44 +153,24 @@ void loop()
             break;
     }
 
-    //TODO: process incoming data from UDP, with respect to TCP client event
+    //process incoming data from UDP, with respect to TCP client event
+    clientEvent=udpServer.ProcessRX(clientEvent);
 
-    //TODO: process payload on new request, write data to ring-buffer
-
-    //TODO: setup timer based on currently configured uart speed
+    if(clientEvent.type==ClientEventType::NewRequest)
+    {
+        //TODO: process payload on new request, process command - write data to ring-buffer, perform port reset, open port for writing
+        //TODO: setup timer based on currently configured uart speed
+    }
 
     //TODO: write buffered data to UART
-
-    /*switch (clientEvent.type)
-    {
-        case ClientEventType::NewRequest:
-            clientState.serverUDPPort=clientEvent.data.udpPort;
-            break;
-        case ClientEventType::NoEvent:
-            break;
-        case ClientEventType::Connected:
-        case ClientEventType::Disconnected:
-        default:
-            clientState.connected=clientEvent.type==ClientEventType::Connected;
-            clientState.clientAddr=clientEvent.data.remoteAddr;
-            clientState.serverUDPPort=0;
-            clientState.clientUDPPort=0;
-            break;
-    }*/
 
     //if poll interval has passed, process data from UART and send it
     if(pollTimer.Update())
     {
         pollTimer.Reset(false);
-        //TODO: poll uart data
+        //TODO: poll UART ports for incoming data
 
-        if(tcpClientState)
-        {
-            //TODO: send data over UDP
-            bool dataSent=false;
-            //send data over TCP if sending it over UDP is not possible
-            if(!dataSent)
-                tcpServer.ProcessTX();
-        }
+        //if tcpClientConnected, try to send data via UDP first, and via TCP if failed;
+        !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
     }
 }

@@ -35,7 +35,7 @@ ClientEvent TCPServer::ProcessRX()
     {
         connected=false;
         client.stop();
-        return ClientEvent{ClientEventType::Disconnected,{}};
+        return ClientEvent{ClientEventType::Disconnected,{.remoteAddr=INADDR_NONE}};
     }
 
     unsigned int avail=client.available();
@@ -54,7 +54,7 @@ ClientEvent TCPServer::ProcessRX()
     {
         connected=false;
         client.stop();
-        return ClientEvent{ClientEventType::Disconnected,{}};
+        return ClientEvent{ClientEventType::Disconnected,{.remoteAddr=INADDR_NONE}};
     }
 
     //read port for UDP connection
@@ -67,7 +67,7 @@ bool TCPServer::ProcessTX()
     *(txBuff)=*(txBuff+1)=0;
     *(txBuff+metaSz)=CRC8(txBuff,metaSz);
     auto dataLeft=pkgSz;
-    while(dataLeft>0&&client.connected())
+    while(dataLeft>0 && client.connected())
         dataLeft-=client.write(txBuff+pkgSz-dataLeft,dataLeft);
     if(dataLeft>0)
         return false;

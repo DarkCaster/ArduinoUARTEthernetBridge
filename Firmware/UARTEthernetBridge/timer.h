@@ -13,7 +13,7 @@ class Timer
         Timer();
         void SetInterval(unsigned long intervalUsec);
         bool Update();
-        void Reset(bool freshStart=false);
+        void Reset(bool freshStart);
 };
 
 #endif // TIMER_H

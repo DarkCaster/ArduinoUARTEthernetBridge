@@ -1,22 +1,24 @@
 #include <Arduino.h>
 #include <UIPEthernet.h>
-#include <UIPServer.h>
-#include <UIPClient.h>
 
 #include "debug.h"
 #include "configuration.h"
 #include "main_loop.h"
 #include "watchdog.h"
 #include "watchdog_AVR.h"
-#include "uart_helper.h"
+#include "tcpserver.h"
+#include "timer.h"
+#include "resethelper.h"
+
+//receive- and send- buffers
+static uint8_t rxBuff[PACKAGE_SIZE];
+static uint8_t txBuff[PACKAGE_SIZE];
 
 //helper classes
 static WatchdogAVR watchdog;
-static UARTHelper uartHelpers[UART_COUNT];
-
-//other stuff
-static uint8_t macaddr[] = ENC28J60_MACADDR;
-static unsigned long time;
+static Timer pollTimer;
+static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
+static ResetHelper rstHelper[UART_COUNT];
 
 void setup()
 {
@@ -36,12 +38,14 @@ void setup()
     pinMode(PIN_ENC28J60_RST, INPUT);
 
     //setup UART-helpers
-    HardwareSerial *extUARTs[] = UART_DEFS;
+    HardwareSerial *extUARTs[] = UART_DEFS; //TODO: setup uart-helpers
     uint8_t extUARTPins[] = UART_RX_PINS;
     uint8_t extRSTPins[] = UART_RST_PINS;
-    uint16_t ports[]= NET_PORTS;
     for(int i=0;i<UART_COUNT;++i)
-        uartHelpers[i].Setup(extUARTs[i], extUARTPins[i], extRSTPins[i], ports[i]);
+    {
+        pinMode(extUARTPins[i],INPUT_PULLUP);
+        rstHelper[i].Setup(extRSTPins[i]);
+    }
 
     //wait PSU to become stable on cold boot
     if(!watchdog.IsSystemResetBoot())
@@ -58,10 +62,14 @@ void setup()
     if(!watchdog.IsSystemResetBoot())
     {
         for(int i=0;i<UART_COUNT;++i)
-            uartHelpers[i].StartReset();
-        delay(RESET_TIME_MS);
-        for(int i=0;i<UART_COUNT;++i)
-            uartHelpers[i].StopReset();
+            rstHelper[i].StartReset(RESET_TIME_MS);
+        bool rstComplete=true;
+        do
+        {
+            rstComplete=true;
+            for(int i=0;i<UART_COUNT;++i)
+                rstComplete&=rstHelper[i].ResetComplete();
+        } while(!rstComplete);
         //blink LED pin indicating hardware setup is complete
         BLINK(25,75,5);
     }
@@ -71,6 +79,7 @@ void setup()
     //initialize network, reset if no network cable detected
     STATUS(); LOG(F("DHCP start"));
     UIPEthernet.init(PIN_SPI_ENC28J60_CS);
+    uint8_t macaddr[] = ENC28J60_MACADDR;
     if (UIPEthernet.begin(macaddr) == 0)
     {
         if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
@@ -91,13 +100,17 @@ void setup()
         watchdog.SystemReset();
     }
 
-    //start TCP server-listeners
-    for(int i=0;i<UART_COUNT;++i)
-        uartHelpers[i].Start();
+    //start TCP server
+    tcpServer.Start();
+
+    //TODO: start UDP server
 
     STATUS(); LOG(F("Init complete!"));
     BLINK(10,0,1);
-    time=millis();
+
+    //setup timer
+    pollTimer.SetInterval(1000000);
+    pollTimer.Reset(true);
 }
 
 void check_link_state()
@@ -114,27 +127,12 @@ void check_link_state()
 
 void loop()
 {
+    pollTimer.Update();
     bool result=false;
 
-    //receive data incoming from TCP client
-    for(uint8_t p=0;p<UART_COUNT;++p)
-        result|=uartHelpers[p].RXStep1(time);
 
-    //write data to UART
-    for(uint8_t p=0;p<UART_COUNT;++p)
-        uartHelpers[p].RXStep2();
-
-    //read data incoming from UART
-    for(uint8_t p=0;p<UART_COUNT;++p)
-        uartHelpers[p].TXStep1(time);
-
-    //transmit data back to TCP client
-    for(uint8_t p=0;p<UART_COUNT;++p)
-        uartHelpers[p].TXStep2();
 
     //if there are no connected uart-helpers, then check link status
     if(!result)
         check_link_state();
-
-    time=millis();
 }

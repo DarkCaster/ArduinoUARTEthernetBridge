@@ -1,4 +1,5 @@
 #include "udpserver.h"
+#include "crc8.h"
 
 UDPServer::UDPServer(uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
     pkgSz(_pkgSz),
@@ -12,6 +13,17 @@ UDPServer::UDPServer(uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint1
     serverStarted = false;
 }
 
+bool UDPServer::DropOldSeq()
+{
+    auto checkSeq=static_cast<uint16_t>(*rxBuff|*(rxBuff+1)<<8);
+    if((serverSeq-checkSeq)>(checkSeq-serverSeq))
+    {
+        serverSeq=checkSeq;
+        return false;
+    }
+    return true;
+}
+
 ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
 {
     switch (ctlEvent.type)
@@ -21,7 +33,7 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
         case ClientEventType::Connected:
             if(serverStarted)
             {
-                //TODO: close UDP server
+                udpServer.stop();
                 serverStarted=false;
             }
             clientUDPPort = 0;
@@ -31,12 +43,9 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
             //nothing more to do at this point
             return ctlEvent;
         case ClientEventType::NewRequest:
-            //store server UDP port for listen UDP packets at
+            //try to start UIP server
             if(!serverStarted && ctlEvent.data.udpPort>0)
-            {
-                //TODO: start UDP server
-                serverStarted=true;
-            }
+                serverStarted=udpServer.begin(ctlEvent.data.udpPort)==1;
             //nothing more to do at this point
             return ctlEvent;
         //try to process further if nothing happened on TCP side
@@ -48,15 +57,47 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
             break;
     }
 
-    //TODO: read the package
-    //TODO: compare package origin IP address
-    //TODO: verify CRC for control block
-    //TODO: compare sequence address
-    //TODO: record client port if all OK
+    if(!serverStarted)
+        return ClientEvent{ClientEventType::NoEvent,{}};
+
+    //parse and read the packet, verify CRC for package metadata, veridy sequence number
+    size_t inSz=udpServer.parsePacket();
+    if(
+        inSz!=pkgSz || //check package size
+        static_cast<size_t>(udpServer.read(rxBuff,pkgSz))!=pkgSz || //try to read it
+        udpServer.remoteIP()!=clientAddr || //check remote address
+        CRC8(rxBuff,metaSz)!=*(rxBuff+metaSz) || //check CRC for package metadata
+        DropOldSeq() //process package seqence number
+      )
+    {
+        if(inSz!=0)
+            udpServer.flush();
+        return ClientEvent{ClientEventType::NoEvent,{}};
+    }
+
+    //record client's port if all OK, and flush the current package
+    if(clientUDPPort<1)
+        clientUDPPort=udpServer.remotePort();
+    udpServer.flush();
+
+    //request is ready
     return ClientEvent{ClientEventType::NewRequest,{.udpSeq=serverSeq}};
 }
 
 bool UDPServer::ProcessTX()
 {
-    return false;
+    //do not attempt to send anything if we still do not known client's local port
+    if(!serverStarted||clientUDPPort<1)
+        return false;
+    if(udpServer.beginPacket(clientAddr,clientUDPPort)!=1)
+        return false;
+    //fill-up server sequence
+    *(txBuff)=clientSeq&0xFF;
+    *(txBuff+1)=(clientSeq>>8)&0xFF;
+    //calculate CRC for package metadata
+    *(txBuff+metaSz)=CRC8(txBuff,metaSz);
+    //send package
+    udpServer.write(txBuff,pkgSz);
+    udpServer.endPacket();
+    return true;
 }

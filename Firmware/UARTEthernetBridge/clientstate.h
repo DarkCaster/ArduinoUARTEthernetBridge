@@ -2,7 +2,6 @@
 #define CLIENTSTATE_H
 
 #include <Arduino.h>
-#include "IPAddress.h"
 
 enum struct ClientEventType : uint8_t
 {
@@ -23,14 +22,6 @@ struct ClientEvent
 {
     ClientEventType type;
     ClientEventData data;
-};
-
-struct ClientInfo
-{
-    IPAddress clientAddr = INADDR_NONE;
-    uint16_t serverUDPPort = 0;
-    uint16_t clientUDPPort = 0;
-    bool connected = false;
 };
 
 #endif // CLIENTSTATE_H

@@ -20,6 +20,9 @@ static Timer pollTimer;
 static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
 static ResetHelper rstHelper[UART_COUNT];
 
+//current client state
+static ClientInfo clientState;
+
 void setup()
 {
     SETUP_DEBUG_SERIAL();

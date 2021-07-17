@@ -109,13 +109,11 @@ void setup()
     tcpClientState=false;
     tcpServer.Start();
 
-    //TODO: start UDP server here, if ever needed
-
     STATUS(); LOG(F("Init complete!"));
     BLINK(10,0,1);
 
     //setup timer
-    pollTimer.SetInterval(1000000);
+    pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
     pollTimer.Reset(true);
 }
 
@@ -137,21 +135,12 @@ void loop()
     if(!tcpClientState)
         check_link_state();
 
-    //process incoming data from TCP
+    //try to process incoming request via TCP
     auto clientEvent=tcpServer.ProcessRX();
 
     //process TCP client event
-    switch (clientEvent.type)
-    {
-        case ClientEventType::Connected:
-            tcpClientState=true;
-            break;
-        case ClientEventType::Disconnected:
-            tcpClientState=false;
-            break;
-        default:
-            break;
-    }
+    tcpClientState|=clientEvent.type==ClientEventType::Connected;
+    tcpClientState&=clientEvent.type!=ClientEventType::Disconnected;
 
     //process incoming data from UDP, with respect to TCP client event
     clientEvent=udpServer.ProcessRX(clientEvent);
@@ -162,6 +151,10 @@ void loop()
         //TODO: setup timer based on currently configured uart speed
     }
 
+    //unarm poll timer on disconnect
+    if(clientEvent.type==ClientEventType::Disconnected)
+        pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
+
     //TODO: write buffered data to UART
 
     //if poll interval has passed, process data from UART and send it
@@ -170,7 +163,7 @@ void loop()
         pollTimer.Reset(false);
         //TODO: poll UART ports for incoming data
 
-        //if tcpClientConnected, try to send data via UDP first, and via TCP if failed;
+        //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
     }
 }

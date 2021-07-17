@@ -14,6 +14,7 @@
 #define UART_RX_PINS { 19, 17, 15 }
 #define UART_RST_PINS { 26, 24, 22 }
 #define UART_MAX_POLL_INTERVAL_MS 5
+#define IDLE_POLL_INTERVAL_US 1000000
 
 //params for ENC28J60 ethernet shield
 #define PIN_SPI_ENC28J60_CS PIN_SPI_SS
@@ -32,6 +33,7 @@
 
 #define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*4)
 
+//package format defines
 #define PKG_HDR_SZ 2
 #define CMD_HDR_SIZE 3
 #define META_SZ (PKG_HDR_SZ+CMD_HDR_SIZE*UART_COUNT)

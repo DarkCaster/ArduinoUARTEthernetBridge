@@ -9,8 +9,8 @@
 class TCPServer
 {
     private:
-        const uint16_t pkgSz;
-        const uint16_t metaSz;
+        const size_t pkgSz;
+        const size_t metaSz;
         const uint16_t netPort;
         uint8_t * const rxBuff;
         uint8_t * const txBuff;
@@ -18,7 +18,7 @@ class TCPServer
         UIPClient client;
 
         bool connected;
-        uint16_t pkgLeft;
+        size_t pkgLeft;
     public:
         TCPServer(uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz, const uint16_t netPort);
         void Start();

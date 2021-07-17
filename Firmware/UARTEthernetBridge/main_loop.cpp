@@ -21,7 +21,7 @@ static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
 static ResetHelper rstHelper[UART_COUNT];
 
 //current client state
-static ClientInfo clientState;
+static bool tcpClientState;
 
 void setup()
 {
@@ -104,6 +104,7 @@ void setup()
     }
 
     //start TCP server
+    tcpClientState=false;
     tcpServer.Start();
 
     //TODO: start UDP server
@@ -130,12 +131,64 @@ void check_link_state()
 
 void loop()
 {
-    pollTimer.Update();
-    bool result=false;
-
-
-
-    //if there are no connected uart-helpers, then check link status
-    if(!result)
+    //if client is not connected, check the link state, and reboot on link-failure
+    if(!tcpClientState)
         check_link_state();
+
+    //process incoming data from TCP
+    auto clientEvent=tcpServer.ProcessRX();
+
+    //process TCP client event
+    switch (clientEvent.type)
+    {
+        case ClientEventType::Connected:
+            tcpClientState=true;
+            break;
+        case ClientEventType::Disconnected:
+            tcpClientState=false;
+            break;
+        default:
+            break;
+    }
+
+    //TODO: process incoming data from UDP, with respect to TCP client event
+
+    //TODO: process payload on new request, write data to ring-buffer
+
+    //TODO: setup timer based on currently configured uart speed
+
+    //TODO: write buffered data to UART
+
+    /*switch (clientEvent.type)
+    {
+        case ClientEventType::NewRequest:
+            clientState.serverUDPPort=clientEvent.data.udpPort;
+            break;
+        case ClientEventType::NoEvent:
+            break;
+        case ClientEventType::Connected:
+        case ClientEventType::Disconnected:
+        default:
+            clientState.connected=clientEvent.type==ClientEventType::Connected;
+            clientState.clientAddr=clientEvent.data.remoteAddr;
+            clientState.serverUDPPort=0;
+            clientState.clientUDPPort=0;
+            break;
+    }*/
+
+    //if poll interval has passed, process data from UART and send it
+    if(pollTimer.Update())
+    {
+        pollTimer.Reset(false);
+        //TODO: poll uart data
+
+        if(tcpClientState)
+        {
+            //TODO: send data over UDP
+            bool dataSent=false;
+            //send data over TCP if sending it over UDP is not possible
+            if(!dataSent)
+                tcpServer.ProcessTX();
+        }
+    }
 }

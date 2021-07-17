@@ -21,7 +21,6 @@
 #define ENC28J60_MACADDR { 0x00,0x16,0x3E,0x65,0xE3,0x66 }
 
 //network params
-#define NET_PORTS { 50000, 50001, 50002 }
 #define NET_NAME "ENC28J65E366"
 #define TCP_PORT 50000
 

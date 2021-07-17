@@ -2,7 +2,6 @@
 #define CLIENTSTATE_H
 
 #include <Arduino.h>
-#include <IPAddress.h>
 
 enum struct ClientEventType : uint8_t
 {

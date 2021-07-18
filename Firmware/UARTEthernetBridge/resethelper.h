@@ -9,6 +9,7 @@ class ResetHelper
         unsigned long startTime;
         uint16_t rstTime;
         uint8_t rstPin;
+        bool started;
     public:
         void Setup(uint8_t rstPin);
         void StartReset(uint16_t msec);

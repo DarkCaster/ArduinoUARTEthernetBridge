@@ -6,6 +6,7 @@ void ResetHelper::Setup(uint8_t _rstPin)
     pinMode(rstPin, INPUT);
     startTime=0;
     rstTime=0;
+    started=false;
 }
 
 void ResetHelper::StartReset(uint16_t msec)
@@ -14,13 +15,16 @@ void ResetHelper::StartReset(uint16_t msec)
     rstTime=msec<1?1:msec;
     pinMode(rstPin, OUTPUT);
     digitalWrite(rstPin, LOW);
+    started=true;
 }
 
 bool ResetHelper::ResetComplete()
 {
-    if(millis()-startTime<rstTime || rstTime<1)
+    if(!started)
+        return true;
+    if(millis()-startTime<rstTime)
         return false;
     pinMode(rstPin, INPUT);
-    rstTime=0;
+    started=false;
     return true;
 }

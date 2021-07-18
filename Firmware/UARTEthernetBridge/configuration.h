@@ -1,11 +1,8 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-//debug serial port params, not used in regular communication
-#define DEBUG_SERIAL_PORT Serial
-#define DEBUG_SERIAL_PORT_SPEED 115200
-#define DEBUG_SERIAL_RX_PIN 0
-#define DEBUG_LED LED_BUILTIN
+//status LED
+#define STATUS_LED LED_BUILTIN
 
 //ext serial config
 #define UART_BUFFER_SIZE 64

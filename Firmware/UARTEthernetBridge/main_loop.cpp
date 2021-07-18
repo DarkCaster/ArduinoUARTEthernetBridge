@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <UIPEthernet.h>
 
-#include "debug.h"
 #include "configuration.h"
 #include "main_loop.h"
 #include "watchdog.h"
@@ -29,11 +28,33 @@ static UARTWorker uartWorker[UART_COUNT];
 static bool tcpClientState;
 static unsigned long uartPollTimes[UART_COUNT];
 
+void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
+{
+    pinMode(STATUS_LED, OUTPUT);
+    blinkTime/=10;
+    pauseTime/=10;
+
+    while(true)
+    {
+        digitalWrite(STATUS_LED,HIGH);
+        uint16_t cnt=0;
+        for(cnt=0; cnt<blinkTime; ++cnt)
+            _delay_ms(10);
+        if(pauseTime>0)
+        {
+            digitalWrite(STATUS_LED,LOW);
+            for(cnt=0; cnt<pauseTime; ++cnt)
+                _delay_ms(10);
+        }
+        if(count==1)
+            return;
+        if(count>0)
+            count--;
+    }
+}
+
 void setup()
 {
-    SETUP_DEBUG_SERIAL();
-    STATUS(); LOG(F("Startup"));
-
     //setup SPI pins
     pinMode(PIN_SPI_MISO,INPUT_PULLUP);
     pinMode(PIN_SPI_MOSI,OUTPUT);
@@ -82,32 +103,22 @@ void setup()
                 rstComplete&=rstHelper[i].ResetComplete();
         } while(!rstComplete);
         //blink LED pin indicating hardware setup is complete
-        BLINK(25,75,5);
+        blink(25,75,5);
     }
     else
-        BLINK(10,10,1);
+        blink(10,10,1);
 
     //initialize network, reset if no network cable detected
-    STATUS(); LOG(F("DHCP start"));
     UIPEthernet.init(PIN_SPI_ENC28J60_CS);
     uint8_t macaddr[] = ENC28J60_MACADDR;
     if (UIPEthernet.begin(macaddr) == 0)
     {
         if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
-        {
-            STATUS(); LOG(F("Ethernet controller not detected or failed!"));
-            BLINK(50,1950,3);
-        }
+            blink(50,1950,3);
         else if (UIPEthernet.linkStatus() == LinkOFF)
-        {
-            STATUS(); LOG(F("No link detected! Rebooting"));
-            BLINK(250,1750,3);
-        }
+            blink(250,1750,3);
         else
-        {
-            STATUS(); LOG(F("DHCP failed"));
-            BLINK(500,1500,3);
-        }
+            blink(500,1500,3);
         watchdog.SystemReset();
     }
 
@@ -115,8 +126,7 @@ void setup()
     tcpClientState=false;
     tcpServer.Start();
 
-    STATUS(); LOG(F("Init complete!"));
-    BLINK(10,0,1);
+    blink(10,0,1);
 
     //setup timer
     pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
@@ -128,8 +138,7 @@ void check_link_state()
     //check link state
     if(UIPEthernet.linkStatus()!=LinkON)
     {
-        STATUS(); LOG(F("Link disconnected! Rebooting"));
-        BLINK(500,500,3);
+        blink(500,500,3);
         watchdog.SystemReset();
     }
 

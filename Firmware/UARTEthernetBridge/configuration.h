@@ -25,7 +25,7 @@
 //other params
 #define RESET_TIME_MS 100
 #define COLD_BOOT_WARMUP 1000
-#define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*16)
+#define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*20)
 
 //package format defines
 #define PKG_HDR_SZ 2

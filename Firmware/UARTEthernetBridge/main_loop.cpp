@@ -10,6 +10,8 @@
 #include "udpserver.h"
 #include "timer.h"
 #include "resethelper.h"
+#include "uartworker.h"
+#include "command.h"
 
 //receive- and send- buffers
 static uint8_t rxBuff[PACKAGE_SIZE];
@@ -21,6 +23,7 @@ static Timer pollTimer;
 static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
 static UDPServer udpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
 static ResetHelper rstHelper[UART_COUNT];
+static UARTWorker uartWorker[UART_COUNT];
 
 //current client state
 static bool tcpClientState;
@@ -50,6 +53,7 @@ void setup()
     {
         pinMode(extUARTPins[i],INPUT_PULLUP);
         rstHelper[i].Setup(extRSTPins[i]);
+        uartWorker[i].Setup(&(rstHelper[i]),extUARTs[i],rxBuff+META_SZ+META_CRC_SZ+UART_BUFFER_SIZE*i,txBuff+META_SZ+META_CRC_SZ+UART_BUFFER_SIZE*i);
     }
 
     //wait PSU to become stable on cold boot
@@ -146,23 +150,30 @@ void loop()
     clientEvent=udpServer.ProcessRX(clientEvent);
 
     if(clientEvent.type==ClientEventType::NewRequest)
+        for(int i=0;i<UART_COUNT;++i)
+        {
+            auto request=Request::Map(i,rxBuff);
+            //TODO: process new request -> perform ext reset, open/close uart port, write incoming data to ring-buffer
+            //TODO: setup timer based on currently configured uart speed
+        }
+
+    for(int i=0;i<UART_COUNT;++i)
     {
-        //TODO: process payload on new request, process command - write data to ring-buffer, perform port reset, open port for writing
-        //TODO: setup timer based on currently configured uart speed
+        //TODO: process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
     }
 
     //unarm poll timer on disconnect
     if(clientEvent.type==ClientEventType::Disconnected)
         pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
 
-    //TODO: write buffered data to UART
-
-    //if poll interval has passed, process data from UART and send it
+    //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP
     if(pollTimer.Update())
     {
         pollTimer.Reset(false);
-        //TODO: poll UART ports for incoming data
-
+        for(int i=0;i<UART_COUNT;++i)
+        {
+            //TODO: poll UART ports for incoming data
+        }
         //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
     }

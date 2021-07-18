@@ -27,6 +27,7 @@ static UARTWorker uartWorker[UART_COUNT];
 
 //current client state
 static bool tcpClientState;
+static unsigned long uartPollTimes[UART_COUNT];
 
 void setup()
 {
@@ -51,6 +52,7 @@ void setup()
     uint8_t extRSTPins[] = UART_RST_PINS;
     for(int i=0;i<UART_COUNT;++i)
     {
+        uartPollTimes[i]=IDLE_POLL_INTERVAL_US;
         pinMode(extUARTPins[i],INPUT_PULLUP);
         rstHelper[i].Setup(extRSTPins[i]);
         uartWorker[i].Setup(&(rstHelper[i]),extUARTs[i],rxBuff+META_SZ+META_CRC_SZ+UART_BUFFER_SIZE*i,txBuff+META_SZ+META_CRC_SZ+UART_BUFFER_SIZE*i);
@@ -133,6 +135,15 @@ void check_link_state()
 
 }
 
+unsigned long GetMinPollTime()
+{
+    unsigned long minPollTime=IDLE_POLL_INTERVAL_US;
+    for(int i=0;i<UART_COUNT;++i)
+        if(uartPollTimes[i]<minPollTime)
+            minPollTime=uartPollTimes[i];
+    return minPollTime;
+}
+
 void loop()
 {
     //if client is not connected, check the link state, and reboot on link-failure
@@ -150,21 +161,22 @@ void loop()
     clientEvent=udpServer.ProcessRX(clientEvent);
 
     if(clientEvent.type==ClientEventType::NewRequest)
+    {
+        //process incoming request
         for(int i=0;i<UART_COUNT;++i)
         {
             auto request=Request::Map(i,rxBuff);
-            //TODO: process new request -> perform ext reset, open/close uart port, write incoming data to ring-buffer
-            //TODO: setup timer based on currently configured uart speed
+            uartPollTimes[i]=uartWorker[i].ProcessRequest(request);
         }
-
-    for(int i=0;i<UART_COUNT;++i)
-    {
-        //TODO: process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
+        //update global uart polling interval
+        pollTimer.SetInterval(GetMinPollTime());
     }
-
-    //unarm poll timer on disconnect
-    if(clientEvent.type==ClientEventType::Disconnected)
+    else if(clientEvent.type==ClientEventType::Disconnected)
         pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
+
+    //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
+    for(int i=0;i<UART_COUNT;++i)
+        uartWorker[i].ProcessRX();
 
     //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP
     if(pollTimer.Update())
@@ -172,7 +184,9 @@ void loop()
         pollTimer.Reset(false);
         for(int i=0;i<UART_COUNT;++i)
         {
-            //TODO: poll UART ports for incoming data
+            //poll UART ports for incoming data
+            auto response=uartWorker[i].ProcessTX();
+            Response::Write(response,i,txBuff);
         }
         //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();

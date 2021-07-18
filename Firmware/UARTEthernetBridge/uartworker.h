@@ -10,13 +10,15 @@ class UARTWorker
 {
     private:
         DataBuffer rxRingBuff;
+        unsigned long pollInterval;
+        uint8_t curMode;
         //filled on setup
         ResetHelper* resetHelper;
         HardwareSerial* uart;
-        uint8_t const * rxDataBuff;
-        uint8_t const * txDataBuff;
+        uint8_t* rxDataBuff;
+        uint8_t* txDataBuff;
     public:
-        void Setup(ResetHelper* const resetHelper, HardwareSerial* const uart, uint8_t const * rxDataBuff, uint8_t const * txDataBuff);
+        void Setup(ResetHelper* const resetHelper, HardwareSerial* const uart, uint8_t * rxDataBuff, uint8_t * txDataBuff);
         unsigned long ProcessRequest(const Request& request);
         void ProcessRX();
         Response ProcessTX();

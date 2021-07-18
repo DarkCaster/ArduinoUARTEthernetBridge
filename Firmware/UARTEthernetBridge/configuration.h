@@ -13,7 +13,7 @@
 #define UART_DEFS { &Serial1, &Serial2, &Serial3 }
 #define UART_RX_PINS { 19, 17, 15 }
 #define UART_RST_PINS { 26, 24, 22 }
-#define UART_MAX_POLL_INTERVAL_MS 5
+
 #define IDLE_POLL_INTERVAL_US 1000000
 
 //params for ENC28J60 ethernet shield
@@ -26,11 +26,8 @@
 #define TCP_PORT 50000
 
 //other params
-#define DEFAULT_WD_INTERVAL 1000
-#define BACK_BUFFER_SEGMENTS 5
 #define RESET_TIME_MS 100
 #define COLD_BOOT_WARMUP 1000
-
 #define DATA_BUFFER_SIZE (UART_BUFFER_SIZE*16)
 
 //package format defines

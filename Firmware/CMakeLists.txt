@@ -8,6 +8,7 @@ endif()
 
 project(UARTEthernetBridge C CXX ASM)
 
+add_definitions(-DARDUINO_MEGA2560_CONFIG)
 set(ARDUINO_AVRDUDE_BAUD "115200" CACHE STRING "avrdude baud-rate (for optiboot)")
 set(ARDUINO_AVRDUDE_MCU "atmega2560" CACHE STRING "avrdude mcu")
 set(ARDUINO_MCU "atmega2560" CACHE STRING "-mmcu define for avr-gcc compiler")
@@ -15,12 +16,15 @@ set(ARDUINO_F_CPU "16000000L" CACHE STRING "-DF_CPU define")
 set(ARDUINO_MODEL "ARDUINO_AVR_MEGA2560" CACHE STRING "-DARDUINO_* define")
 set(ARDUINO_VARIANT "mega" CACHE STRING "arduino variant")
 
+#add_definitions(-DARDUINO_PRO_MINI_CONFIG)
+
 include(ArduinoCmakeBuilder/arduino-avr-config.cmake)
 include(ArduinoCmakeBuilder/arduino-build-helper.cmake)
 
 set_avr_compiler_flags()
 
 add_definitions(-DUIP_CLIENT_TIMER=0)
+
 
 # add some internal and external libraries
 add_arduino_library(SPI ${ARDUINO_LIBS_PATH})

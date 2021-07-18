@@ -17,6 +17,9 @@ class UARTWorker
         uint8_t const * txDataBuff;
     public:
         void Setup(ResetHelper* const resetHelper, HardwareSerial* const uart, uint8_t const * rxDataBuff, uint8_t const * txDataBuff);
+        unsigned long ProcessRequest(const Request& request);
+        void ProcessRX();
+        Response ProcessTX();
 };
 
 #endif // UARTWORKER_H

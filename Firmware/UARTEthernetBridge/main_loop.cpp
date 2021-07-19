@@ -114,11 +114,13 @@ void setup()
     if (UIPEthernet.begin(macaddr) == 0)
     {
         if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
-            blink(50,1950,3);
+            blink(100,900,6);
         else if (UIPEthernet.linkStatus() == LinkOFF)
-            blink(250,1750,3);
+            //Cable not inserted
+            blink(500,500,6);
         else
-            blink(500,1500,3);
+            //DHCP failed
+            blink(1000,1000,3);
         watchdog.SystemReset();
     }
 
@@ -138,7 +140,7 @@ void check_link_state()
     //check link state
     if(UIPEthernet.linkStatus()!=LinkON)
     {
-        blink(500,500,3);
+        blink(500,500,6);
         watchdog.SystemReset();
     }
 

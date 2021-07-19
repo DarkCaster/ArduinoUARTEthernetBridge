@@ -1,7 +1,7 @@
 #include <avr/wdt.h>
 #include "watchdog_AVR.h"
 
-const uint8_t rstSig[] PROGMEM = { 0xFE, 0xED, 0xBE, 0xEF, 0xAA, 0xBB, 0xCC, 0xDD };
+const uint8_t rstSig[] PROGMEM = { 0xFE, 0xED, 0xBE, 0xEF };
 
 // https://forum.arduino.cc/t/watchdog-reset-detection/351423/3
 WatchdogAVR::WatchdogAVR():

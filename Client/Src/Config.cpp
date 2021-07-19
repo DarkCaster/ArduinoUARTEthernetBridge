@@ -25,6 +25,11 @@ void Config::SetUARTBuffSz(int sz)
     uartBuffSize=sz;
 }
 
+void Config::SetRingBuffSegCount(int cnt)
+{
+    ringBuffSegCount=cnt;
+}
+
 int Config::GetServiceIntervalMS() const
 {
     return serviceInterval;
@@ -53,4 +58,9 @@ int Config::GetMaxCTimeSec() const
 int Config::GetUARTBuffSz() const
 {
     return uartBuffSize;
+}
+
+int Config::GetRingBuffSegCount() const
+{
+    return ringBuffSegCount;
 }

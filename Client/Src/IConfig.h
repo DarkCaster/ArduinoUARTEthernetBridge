@@ -15,6 +15,7 @@ class IConfig
         virtual int GetLingerSec() const = 0;
         virtual int GetMaxCTimeSec() const = 0;
         virtual int GetUARTBuffSz() const = 0;
+        virtual int GetRingBuffSegCount() const = 0;
 };
 
 #endif

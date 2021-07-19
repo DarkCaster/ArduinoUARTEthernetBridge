@@ -40,6 +40,7 @@ void usage(const std::string &self)
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
     std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
     std::cerr<<"    -rst{n} <0,1> perform reset on connection"<<std::endl;
+    std::cerr<<"    -rbs{n} <1-256> remote ring-buffer size in segments, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
     std::cerr<<"    -fc <0,1> connect to remote address and open uart port on program start"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen, default: 127.0.0.1"<<std::endl;
@@ -85,8 +86,15 @@ int main (int argc, char *argv[])
         return param_error(argv[0],"Mandatory parameters are missing!");
 
     Config config;
+
+    if(args.find("-rbs")==args.end())
+        return param_error(argv[0],"remote ring-buffer size is missing");
+    config.SetRingBuffSegCount(std::atoi(args["-rbs"].c_str()));
+    if(config.GetRingBuffSegCount()<1||config.GetRingBuffSegCount()>256)
+        return param_error(argv[0],"remote ring-buffer size is invalid!");
+
     if(args.find("-ra")==args.end())
-        return param_error(argv[0],"remote address or DNS is missing");
+        return param_error(argv[0],"remote address or DNS-name is missing");
     std::string remote=args["-ra"];
 
     //parse remote ports numbers

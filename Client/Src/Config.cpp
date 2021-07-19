@@ -25,11 +25,6 @@ void Config::SetUARTBuffSz(int sz)
     uartBuffSize=sz;
 }
 
-void Config::SetTCPNoDelay(bool flag)
-{
-    tcpNoDelay=flag;
-}
-
 int Config::GetServiceIntervalMS() const
 {
     return serviceInterval;
@@ -50,7 +45,6 @@ int Config::GetLingerSec() const
     return linger;
 }
 
-
 int Config::GetMaxCTimeSec() const
 {
     return maxCtSec;
@@ -59,9 +53,4 @@ int Config::GetMaxCTimeSec() const
 int Config::GetUARTBuffSz() const
 {
     return uartBuffSize;
-}
-
-bool Config::GetTCPNoDelay() const
-{
-    return tcpNoDelay;
 }

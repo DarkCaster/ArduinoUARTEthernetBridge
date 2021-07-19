@@ -51,15 +51,12 @@ static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const
     bsz=config.GetTCPBuffSz();
     if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bsz, sizeof(bsz)))
         logger->Warning()<<"Failed to set SO_RCVBUF option to socket: "<<strerror(errno);
-    if(config.GetTCPNoDelay())
-    {
-        int tcpNoDelay=1;
-        if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)))
-            logger->Warning()<<"Failed to set TCP_NODELAY option to socket: "<<strerror(errno);
-        int tcpQuickAck=1;
-        if(setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &tcpQuickAck, sizeof(tcpQuickAck)))
-            logger->Warning()<<"Failed to set TCP_QUICKACK option to socket: "<<strerror(errno);
-    }
+    int tcpNoDelay=1;
+    if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)))
+        logger->Warning()<<"Failed to set TCP_NODELAY option to socket: "<<strerror(errno);
+    int tcpQuickAck=1;
+    if(setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &tcpQuickAck, sizeof(tcpQuickAck)))
+        logger->Warning()<<"Failed to set TCP_QUICKACK option to socket: "<<strerror(errno);
 }
 
 static void SetSocketCustomTimeouts(std::shared_ptr<ILogger> &logger, int fd, const timeval &tv)

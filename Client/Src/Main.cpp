@@ -44,7 +44,6 @@ void usage(const std::string &self)
     std::cerr<<"    -fc <0,1> connect to remote address and open uart port on program start"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen, default: 127.0.0.1"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
-    std::cerr<<"    -nd <0,1> use TCP nodelay flag when sending data over network"<<std::endl;
     std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
@@ -154,11 +153,6 @@ int main (int argc, char *argv[])
     bool connectAtStart=false;
     if(args.find("-fc")!=args.end())
         connectAtStart=std::atoi(args["-fc"].c_str())==1;
-
-    //nodelay
-    config.SetTCPNoDelay(true);
-    if(args.find("-nd")!=args.end())
-        config.SetTCPNoDelay(std::atoi(args["-nd"].c_str())==1);
 
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
     if(args.find("-la")!=args.end())
@@ -281,9 +275,6 @@ int main (int argc, char *argv[])
         mainLogger->Error()<<"Failed to setup signal-handling"<<std::endl;
         return 1;
     }
-
-    if(config.GetTCPNoDelay())
-        mainLogger->Info()<<"Using TCP NoDelay mode";
 
     //startup
     for(auto &listener:tcpListeners)

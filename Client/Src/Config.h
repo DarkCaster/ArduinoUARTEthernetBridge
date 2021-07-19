@@ -55,7 +55,6 @@ class Config final : public IConfig
         int linger;
         int maxCtSec;
         int uartBuffSize=UART_BUFFER_SIZE;
-        bool tcpNoDelay;
     public:
         //void AddListenAddr(const IPEndpoint &endpoint);
         void SetServiceIntervalMS(int intervalMS);
@@ -63,7 +62,6 @@ class Config final : public IConfig
         void SetLingerSec(int sz);
         void SetMaxCTimeSec(int time);
         void SetUARTBuffSz(int sz);
-        void SetTCPNoDelay(bool flag);
 
         //from IConfig
         int GetServiceIntervalMS() const final;
@@ -72,7 +70,6 @@ class Config final : public IConfig
         int GetLingerSec() const final;
         int GetMaxCTimeSec() const final;
         int GetUARTBuffSz() const final;
-        bool GetTCPNoDelay() const final;
 };
 
 #endif //CONFIG_H

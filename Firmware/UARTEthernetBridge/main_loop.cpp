@@ -30,7 +30,6 @@ static unsigned long uartPollTimes[UART_COUNT];
 
 void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 {
-    pinMode(STATUS_LED, OUTPUT);
     blinkTime/=10;
     pauseTime/=10;
 
@@ -66,6 +65,9 @@ void setup()
 
     //setup ENC28J60 reset pin (as precaution)
     pinMode(PIN_ENC28J60_RST, INPUT);
+
+    //status pin
+    pinMode(STATUS_LED, OUTPUT);
 
     //setup UART-helpers
     HardwareSerial *extUARTs[] = UART_DEFS; //TODO: setup uart-helpers
@@ -103,7 +105,7 @@ void setup()
                 rstComplete&=rstHelper[i].ResetComplete();
         } while(!rstComplete);
         //blink LED pin indicating hardware setup is complete
-        blink(25,75,5);
+        blink(50,50,10);
     }
     else
         blink(10,10,1);
@@ -128,7 +130,7 @@ void setup()
     tcpClientState=false;
     tcpServer.Start();
 
-    blink(10,0,1);
+    blink(0,0,1);
 
     //setup timer
     pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);

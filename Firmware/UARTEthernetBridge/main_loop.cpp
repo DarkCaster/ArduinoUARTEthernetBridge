@@ -116,7 +116,7 @@ void setup()
     if (UIPEthernet.begin(macaddr) == 0)
     {
         if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
-            blink(100,900,6);
+            blink(50,950,6);
         else if (UIPEthernet.linkStatus() == LinkOFF)
             //Cable not inserted
             blink(500,500,6);

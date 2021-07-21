@@ -42,7 +42,6 @@ void usage(const std::string &self)
     std::cerr<<"    -rst{n} <0,1> perform reset on connection"<<std::endl;
     std::cerr<<"    -rbs{n} <1-256> remote ring-buffer size in segments, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
-    std::cerr<<"    -fc <0,1> connect to remote address and open uart port on program start"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen, default: 127.0.0.1"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
@@ -157,11 +156,6 @@ int main (int argc, char *argv[])
     if(rstFlags.size()<remotePorts.size())
         return param_error(argv[0],"provided reset-flags count must be equal to remote ports count");
 
-    //connect to remote and uarts at start
-    bool connectAtStart=false;
-    if(args.find("-fc")!=args.end())
-        connectAtStart=std::atoi(args["-fc"].c_str())==1;
-
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
     if(args.find("-la")!=args.end())
     {
@@ -257,7 +251,7 @@ int main (int argc, char *argv[])
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
         auto logger=logFactory.CreateLogger("TCPClient:"+std::to_string(i));
-        auto client=std::make_shared<TCPClient>(logger,messageBroker,connectAtStart,config,remoteConfigs[i],i);
+        auto client=std::make_shared<TCPClient>(logger,messageBroker,/*connectAtStart*/true,config,remoteConfigs[i],i);
         messageBroker.AddSubscriber(client);
         tcpClients.push_back(client);
     }

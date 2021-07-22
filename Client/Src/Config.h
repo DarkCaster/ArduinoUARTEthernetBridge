@@ -2,7 +2,6 @@
 #define CONFIG_H
 
 #include "IConfig.h"
-#include "IPEndpoint.h"
 
 #include <string>
 #include <unordered_map>
@@ -56,6 +55,10 @@ class Config final : public IConfig
         int maxCtSec;
         int uartBuffSize=UART_BUFFER_SIZE;
         int ringBuffSegCount;
+        uint16_t udpPort;
+        uint16_t tcpPort;
+        std::string remoteAddr;
+
     public:
         //void AddListenAddr(const IPEndpoint &endpoint);
         void SetServiceIntervalMS(int intervalMS);
@@ -64,6 +67,9 @@ class Config final : public IConfig
         void SetMaxCTimeSec(int time);
         void SetUARTBuffSz(int sz);
         void SetRingBuffSegCount(int cnt);
+        void SetRemoteAddr(const std::string &addr);
+        void SetUDPPort(uint16_t port);
+        void SetTCPPort(uint16_t port);
 
         //from IConfig
         int GetServiceIntervalMS() const final;
@@ -73,6 +79,9 @@ class Config final : public IConfig
         int GetMaxCTimeSec() const final;
         int GetUARTBuffSz() const final;
         int GetRingBuffSegCount() const final;
+        std::string GetRemoteAddr() const final;
+        uint16_t GetTCPPort() const final;
+        uint16_t GetUDPPort() const final;
 };
 
 #endif //CONFIG_H

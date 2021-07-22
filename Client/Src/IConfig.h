@@ -1,10 +1,11 @@
 #ifndef ICONFIG_H
 #define ICONFIG_H
 
-#include "IPEndpoint.h"
 #include <sys/time.h>
 #include <vector>
 #include <tuple>
+#include <cstdint>
+#include <string>
 
 class IConfig
 {
@@ -16,6 +17,10 @@ class IConfig
         virtual int GetMaxCTimeSec() const = 0;
         virtual int GetUARTBuffSz() const = 0;
         virtual int GetRingBuffSegCount() const = 0;
+
+        virtual std::string GetRemoteAddr() const = 0;
+        virtual uint16_t GetTCPPort() const = 0;
+        virtual uint16_t GetUDPPort() const = 0;
 };
 
 #endif

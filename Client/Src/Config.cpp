@@ -30,6 +30,21 @@ void Config::SetRingBuffSegCount(int cnt)
     ringBuffSegCount=cnt;
 }
 
+void Config::SetRemoteAddr(const std::string& addr)
+{
+    remoteAddr=addr;
+}
+
+void Config::SetUDPPort(uint16_t port)
+{
+    udpPort=port;
+}
+
+void Config::SetTCPPort(uint16_t port)
+{
+    tcpPort=port;
+}
+
 int Config::GetServiceIntervalMS() const
 {
     return serviceInterval;
@@ -64,3 +79,19 @@ int Config::GetRingBuffSegCount() const
 {
     return ringBuffSegCount;
 }
+
+std::string Config::GetRemoteAddr() const
+{
+    return remoteAddr;
+}
+
+uint16_t Config::GetUDPPort() const
+{
+    return udpPort;
+}
+
+uint16_t Config::GetTCPPort() const
+{
+    return udpPort;
+}
+

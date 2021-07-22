@@ -11,6 +11,12 @@ enum MsgType
     MSG_NEW_CLIENT,
     MSG_PATH_ESTABLISHED,
     MSG_PATH_COLLAPSED,
+
+    //TODO:
+    //MSG_SERVER_CONN_ESTABLISHED
+    //MSG_SERVER_CONN_LOST
+    //MSG_TIMER_EVENT
+
 };
 
 class IMessage

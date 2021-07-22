@@ -94,7 +94,7 @@ int main (int argc, char *argv[])
 
     if(args.find("-ra")==args.end())
         return param_error(argv[0],"remote address or DNS-name is missing");
-    std::string remote=args["-ra"];
+    config.SetRemoteAddr(args["-ra"]);
 
     //parse remote ports numbers
     std::vector<int> remotePorts;
@@ -216,7 +216,7 @@ int main (int argc, char *argv[])
                                                                               static_cast<unsigned long>(8))*static_cast<unsigned long>(UART_BUFFER_SIZE))/static_cast<unsigned long>(1000000)),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
                                  localFiles[i],
-                                 remote,
+                                 config.GetRemoteAddr(),
                                  static_cast<uint16_t>(remotePorts[i])));
 
     StdioLoggerFactory logFactory;

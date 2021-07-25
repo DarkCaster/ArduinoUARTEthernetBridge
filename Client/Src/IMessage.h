@@ -12,12 +12,11 @@ enum MsgType
     MSG_PATH_ESTABLISHED,
     MSG_PATH_COLLAPSED,
 
-    //TODO:
     MSG_CONNECTED,
     MSG_INCOMING_PACKAGE,
     MSG_TIMER,
+    MSG_SEND_PACKAGE,
     //MSG_SERVER_CONN_LOST
-
 };
 
 class IMessage
@@ -51,6 +50,17 @@ class ITimerMessage : public IMessage
     public:
         const int64_t interval;
 };
+
+class ISendPackageMessage : public IMessage
+{
+    protected:
+        ISendPackageMessage(uint8_t* const _package):
+            IMessage(MSG_SEND_PACKAGE),package(_package){}
+    public:
+        uint8_t * const package;
+};
+
+
 
 
 class IShutdownMessage : public IMessage

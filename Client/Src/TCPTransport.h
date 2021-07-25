@@ -6,7 +6,6 @@
 #include "WorkerBase.h"
 #include "ILogger.h"
 #include "IMessageSender.h"
-#include "IMessageSubscriber.h"
 
 #include <memory>
 #include <cstdint>
@@ -23,7 +22,7 @@ class TCPTransport final : public WorkerBase
     private:
         std::atomic<bool> shutdownPending;
         //remote connection with it's management lock
-        std::recursive_mutex remoteConnLock;
+        std::mutex remoteConnLock;
         std::shared_ptr<Connection> remoteConn;
         //service methods
         std::shared_ptr<Connection> GetConnection();

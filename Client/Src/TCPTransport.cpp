@@ -93,7 +93,7 @@ void TCPTransport::HandleError(int ec, const std::string &message)
 
 std::shared_ptr<Connection> TCPTransport::GetConnection()
 {
-    std::lock_guard<std::recursive_mutex> opGuard(remoteConnLock);
+    std::lock_guard<std::mutex> opGuard(remoteConnLock);
     if(remoteConn!=nullptr && remoteConn->GetStatus()==0)
         return remoteConn;
 
@@ -192,6 +192,7 @@ void TCPTransport::Worker()
                 auto error=errno;
                 if(error==EINTR || error==EWOULDBLOCK)
                     continue;
+                conn->SetStatus(error);
                 //socket was closed or errored, close connection from our side and stop reading
                 logger->Warning()<<"TCP read failed: "<<strerror(error);
                 conn->Dispose();
@@ -217,7 +218,31 @@ void TCPTransport::Worker()
 
 void TCPTransport::ProcessTX()
 {
-
+    //try to get connection
+    auto conn=GetConnection();
+    if(conn==nullptr)
+        return;
+    //clear PKG_HEADER (not needed) and calculate CRC
+    *(txBuff)=*(txBuff+1)=0;
+    *(txBuff+config.GetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetPackageMetaSz()));
+    //send package
+    const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
+    auto dataLeft=pkgSz;
+    while(dataLeft>0)
+    {
+        auto dw=write(conn->fd,txBuff+pkgSz-dataLeft,dataLeft);
+        if(dw<=0)
+        {
+            auto error=errno;
+            if(error==EINTR || error==EWOULDBLOCK)
+                continue;
+            logger->Warning()<<"TCP write failed: "<<strerror(error);
+            conn->SetStatus(error);
+            conn->Dispose();
+            return;
+        }
+        dataLeft-=static_cast<size_t>(dw);
+    }
 }
 
 void TCPTransport::OnShutdown()

@@ -1,37 +1,81 @@
 #include "Timer.h"
 
-Timer::Timer()
+class TimerMessage: public ITimerMessage { public: TimerMessage(int64_t _interval):ITimerMessage(_interval){} };
+
+Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender,const IConfig& _config):
+    logger(_logger),
+    sender(_sender),
+    config(_config)
 {
-    startTime=std::chrono::steady_clock::now();
-    interval=std::chrono::microseconds(1);
-    lastDiff=std::chrono::microseconds::zero();
+    staleTimersCount=0;
 }
 
-void Timer::SetInterval(int64_t intervalUsec)
+void Timer::Worker(std::chrono::microseconds reqInterval)
 {
-    interval=std::chrono::microseconds(intervalUsec>0?intervalUsec:1);
-}
-
-std::chrono::microseconds Timer::TimeLeft()
-{
-    lastDiff=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-startTime);
-    auto result=interval-lastDiff;
-    return result.count()<0?std::chrono::microseconds::zero():result;
-}
-
-bool Timer::Update()
-{
-    return TimeLeft().count()<1;
-}
-
-void Timer::Reset(bool freshStart)
-{
-    if(freshStart)
+    auto interval=reqInterval;
+    auto startTime=std::chrono::steady_clock::now();
+    while(true)
     {
-        startTime=std::chrono::steady_clock::now();
-        lastDiff=std::chrono::microseconds::zero();
-        return;
+        //wait for interval
+        if(interval.count()>0)
+            std::this_thread::sleep_for(interval);
+        //check are we still an active timer, exit loop if not
+        {
+            std::lock_guard<std::mutex> opGuard(manageLock);
+            if(activeTimer==nullptr || activeTimer->get_id()!=std::this_thread::get_id())
+                break;
+        }
+        //send message
+        //logger->Info()<<"current interval: "<<interval.count();
+        sender.SendMessage(this,TimerMessage(interval.count()));
+        //tune wait interval for next round and start over
+        interval=std::chrono::duration_cast<std::chrono::microseconds>(reqInterval-(std::chrono::steady_clock::now()-startTime)%reqInterval);
     }
-    //time must be rounded down to the interval border
-    startTime+=(lastDiff/interval)*interval;
+
+    //stop sequence
+    std::lock_guard<std::mutex> opGuard(manageLock);
+    staleTimersCount--;
+}
+
+void Timer::Start(int64_t intervalUsec)
+{
+    std::lock_guard<std::mutex> opGuard(manageLock);
+    //move current timer away
+    if(activeTimer!=nullptr)
+    {
+        staleTimersCount++;
+        activeTimer->detach();
+    }
+    activeTimer=std::make_shared<std::thread>([=] { Worker(std::chrono::microseconds(intervalUsec)); });
+}
+
+void Timer::Stop()
+{
+    std::lock_guard<std::mutex> opGuard(manageLock);
+    //move current timer away
+    if(activeTimer!=nullptr)
+    {
+        staleTimersCount++;
+        activeTimer->detach();
+    }
+    activeTimer=nullptr;
+}
+
+void Timer::RequestShutdown()
+{
+    Stop();
+}
+
+void Timer::Shutdown()
+{
+    logger->Info()<<"Shuting down timer";
+    Stop();
+    while(true)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
+        std::lock_guard<std::mutex> opGuard(manageLock);
+        if(staleTimersCount<1)
+            break;
+    }
+    logger->Info()<<"Timer was shutdown";
 }

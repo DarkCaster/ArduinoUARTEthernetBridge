@@ -5,6 +5,7 @@
 #include "MessageBroker.h"
 #include "ShutdownHandler.h"
 
+#include "Timer.h"
 #include "PTYListener.h"
 #include "TCPListener.h"
 #include "TCPTransport.h"
@@ -96,18 +97,6 @@ int main (int argc, char *argv[])
     if(args.find("-ra")==args.end())
         return param_error(argv[0],"remote address or DNS-name is missing");
     config.SetRemoteAddr(args["-ra"]);
-
-    //parse remote ports numbers
-    /*std::vector<int> remotePorts;
-    while(args.find("-rp"+std::to_string(remotePorts.size()+1))!=args.end())
-    {
-        auto port=std::atoi(args["-rp"+std::to_string(remotePorts.size()+1)].c_str());
-        if(port<1||port>65535)
-            return param_error(argv[0],"remote TCP port number is invalid!");
-        remotePorts.push_back(port);
-    }
-    if(remotePorts.size()<1)
-        return param_error(argv[0],"no valid remote ports provided!");*/
 
     size_t portCount=0;
     if(args.find("-pc")!=args.end())
@@ -247,6 +236,7 @@ int main (int argc, char *argv[])
     auto mainLogger=logFactory.CreateLogger("Main");
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
     auto tcpTransportLogger=logFactory.CreateLogger("TCPTransport");
+    auto timerLogger=logFactory.CreateLogger("PollTimer");
 
     //configure the most essential stuff
     MessageBroker messageBroker(messageBrokerLogger);
@@ -259,6 +249,9 @@ int main (int argc, char *argv[])
     auto rxBuff=std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz()));
     auto txBuff=std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz()));
     TCPTransport tcpTransport(tcpTransportLogger,messageBroker,config,rxBuff.get(),txBuff.get());
+
+    //Port polling timer
+    Timer pollTimer(timerLogger,messageBroker,config);
 
     //create instances for main logic
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
@@ -303,6 +296,7 @@ int main (int argc, char *argv[])
 
     //startup
     tcpTransport.Startup();
+    pollTimer.Start(config.GetIdleTimerInterval());
     for(auto &listener:tcpListeners)
         listener->Startup();
     for(auto &listener:ptyListeners)
@@ -343,6 +337,7 @@ int main (int argc, char *argv[])
         listener->RequestShutdown();
     for(auto &worker:connWorkers)
         worker->RequestShutdown();
+    pollTimer.RequestShutdown();
     tcpTransport.RequestShutdown();
 
     //wait for background workers shutdown complete
@@ -352,6 +347,7 @@ int main (int argc, char *argv[])
         listener->Shutdown();
     for(auto &worker:connWorkers)
         worker->Shutdown();
+    pollTimer.Shutdown();
     tcpTransport.Shutdown();
 
     mainLogger->Info()<<"Clean shutdown"<<std::endl;

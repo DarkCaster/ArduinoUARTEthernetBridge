@@ -117,6 +117,6 @@ uint16_t Config::GetUDPPort() const
 
 uint16_t Config::GetTCPPort() const
 {
-    return udpPort;
+    return tcpPort;
 }
 

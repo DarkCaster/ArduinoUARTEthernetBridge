@@ -168,7 +168,7 @@ std::shared_ptr<Connection> TCPTransport::GetConnection()
 
 void TCPTransport::Worker()
 {
-    logger->Info()<<"TCP transport-worker starting up";
+    logger->Info()<<"Trying to connect: "<<config.GetRemoteAddr()<<":"<<config.GetTCPPort();
     while(!shutdownPending.load())
     {
         //get connection

@@ -35,16 +35,19 @@ void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
     std::cerr<<"  mandatory parameters:"<<std::endl;
-    std::cerr<<"    -ra <addr, or name> remote address to connect"<<std::endl;
-    std::cerr<<"    -tp <port> remote TCP port to connect"<<std::endl;
+    std::cerr<<"   remote:"<<std::endl;
+    std::cerr<<"    -ra <ip address, or host name> remote address to connect"<<std::endl;
+    std::cerr<<"    -tp <port> remote TCP port"<<std::endl;
     std::cerr<<"    -pc <count> UART port count configured at remote side, this param is cruical for normal operation"<<std::endl;
+    std::cerr<<"    -rbs <1-256> remote ring-buffer size in segments, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
+    std::cerr<<"   local:"<<std::endl;
     std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
     std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
-    std::cerr<<"    -rst{n} <0,1> perform reset on connection"<<std::endl;
-    std::cerr<<"    -rbs{n} <1-256> remote ring-buffer size in segments, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
-    std::cerr<<"    -la <ip-addr> local IP to listen, default: 127.0.0.1"<<std::endl;
+    std::cerr<<"    -up <port> remote UDP port, for using less reliable UDP transport with less latency, default: 0 - disabled"<<std::endl;
+    std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
+    std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data"<<std::endl;
@@ -120,6 +123,13 @@ int main (int argc, char *argv[])
     else
         return param_error(argv[0],"TCP port must be provided");
 
+    if(args.find("-up")!=args.end())
+    {
+        auto up=std::atoi(args["-up"].c_str());
+        if(up<1||up>65535)
+            return param_error(argv[0],"UDP port is invalid");
+        config.SetUDPPort(static_cast<uint16_t>(up));
+    }
 
     //parse local ports numbers
     std::vector<int> localPorts;

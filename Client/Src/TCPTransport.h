@@ -1,6 +1,7 @@
 #ifndef TCPTRANSPORT_H
 #define TCPTRANSPORT_H
 
+#include "Connection.h"
 #include "IConfig.h"
 #include "WorkerBase.h"
 #include "ILogger.h"
@@ -9,20 +10,32 @@
 
 #include <memory>
 #include <cstdint>
+#include <atomic>
 
-class TCPTransport
+class TCPTransport final : public WorkerBase
 {
-    private:
+    private: //fields setup via constructor
         std::shared_ptr<ILogger> logger;
-        IMessageSender &sender;
-        const IConfig &config; //endpoint, udp port for UDP mode
+        IMessageSender& sender;
+        const IConfig& config; //endpoint, udp port for UDP mode
+        uint8_t* rxBuff;
+        uint8_t* txBuff;
+    private:
+        std::atomic<bool> shutdownPending;
+        //remote connection with it's management lock
+        std::recursive_mutex remoteConnLock;
+        std::shared_ptr<Connection> remoteConn;
+        //service methods
+        std::shared_ptr<Connection> GetConnection();
+        void HandleError(const std::string& message);
+        void HandleError(int ec, const std::string& message);
     public:
-        TCPTransport(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config);
-
-        //establish connection with UART-brige over TCP, start reader-task, signal success
-        //on reader fail - signal disconnect, schedule connection reesyablish
-        //send package on request + with header and CRC setup
-        //signal on receiving new package
+        TCPTransport(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, uint8_t* rxBuff, uint8_t* txBuff);
+        void ProcessTX(); //called by timer, to process data sending
+    protected:
+        //WorkerBase
+        void Worker() final;
+        void OnShutdown() final;
 };
 
 #endif // TCPTRANSPORT_H

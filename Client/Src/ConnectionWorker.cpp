@@ -69,7 +69,7 @@ void ConnectionWorker::Worker()
                     continue;
                 if(dr==0)
                     error=-1;
-                reader->Fail(error);
+                reader->SetStatus(error);
                 {
                     std::lock_guard<std::mutex> tmpGuard(opLock);
                     remote=nullptr;
@@ -91,7 +91,7 @@ void ConnectionWorker::Worker()
             }
             if(dw<0)
             {
-                writer->Fail(errno);
+                writer->SetStatus(errno);
                 {
                     std::lock_guard<std::mutex> tmpGuard(opLock);
                     remote=nullptr;

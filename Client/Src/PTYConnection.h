@@ -13,7 +13,7 @@ class PTYConnection final : public Connection
     public:
         PTYConnection(const int fd);
         error_t GetStatus() final;
-        void Fail(const error_t error) final;
+        void SetStatus(const error_t error) final;
         void Dispose() final;
 };
 

@@ -15,7 +15,7 @@ error_t TCPConnection::GetStatus()
     return error;
 }
 
-void TCPConnection::Fail(const error_t _error)
+void TCPConnection::SetStatus(const error_t _error)
 {
     std::lock_guard<std::mutex> guard(stateLock);
     if(isDisposed)

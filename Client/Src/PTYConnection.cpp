@@ -15,7 +15,7 @@ error_t PTYConnection::GetStatus()
     return error;
 }
 
-void PTYConnection::Fail(const error_t _error)
+void PTYConnection::SetStatus(const error_t _error)
 {
     std::lock_guard<std::mutex> guard(stateLock);
     if(isDisposed)

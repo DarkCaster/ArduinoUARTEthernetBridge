@@ -10,7 +10,7 @@ class Connection
         const int fd;
         Connection(const int fd);
         virtual error_t GetStatus() = 0;
-        virtual void Fail(const error_t error) = 0;
+        virtual void SetStatus(const error_t error) = 0;
         virtual void Dispose() = 0;
 };
 

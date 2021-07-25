@@ -13,7 +13,7 @@ class TCPConnection final : public Connection
     public:
         TCPConnection(const int fd);
         error_t GetStatus() final;
-        void Fail(const error_t error) final;
+        void SetStatus(const error_t error) final;
         void Dispose() final;
 };
 

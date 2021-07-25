@@ -7,7 +7,7 @@
 
 #include "PTYListener.h"
 #include "TCPListener.h"
-#include "TCPClient.h"
+#include "TCPTransport.h"
 #include "ConnectionWorker.h"
 #include "Config.h"
 #include "RemoteConfig.h"
@@ -246,11 +246,19 @@ int main (int argc, char *argv[])
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
+    auto tcpTransportLogger=logFactory.CreateLogger("TCPTransport");
 
     //configure the most essential stuff
     MessageBroker messageBroker(messageBrokerLogger);
+
+    //shutdown handler
     ShutdownHandler shutdownHandler;
     messageBroker.AddSubscriber(shutdownHandler);
+
+    //tcp transport, and shared package-storage buffers
+    auto rxBuff=std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz()));
+    auto txBuff=std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz()));
+    TCPTransport tcpTransport(tcpTransportLogger,messageBroker,config,rxBuff.get(),txBuff.get());
 
     //create instances for main logic
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
@@ -269,15 +277,6 @@ int main (int argc, char *argv[])
             continue;
         auto logger=logFactory.CreateLogger("PTYListener:"+std::to_string(i));
         ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,remoteConfigs[i],i));
-    }
-
-    std::vector<std::shared_ptr<TCPClient>> tcpClients;
-    for(size_t i=0;i<remoteConfigs.size();++i)
-    {
-        auto logger=logFactory.CreateLogger("TCPClient:"+std::to_string(i));
-        auto client=std::make_shared<TCPClient>(logger,messageBroker,/*connectAtStart*/true,config,remoteConfigs[i],i);
-        messageBroker.AddSubscriber(client);
-        tcpClients.push_back(client);
     }
 
     std::vector<std::shared_ptr<ConnectionWorker>> connWorkers;
@@ -303,12 +302,11 @@ int main (int argc, char *argv[])
     }
 
     //startup
+    tcpTransport.Startup();
     for(auto &listener:tcpListeners)
         listener->Startup();
     for(auto &listener:ptyListeners)
         listener->Startup();
-    for(auto &client:tcpClients)
-        client->Startup();
     for(auto &worker:connWorkers)
         worker->Startup();
 
@@ -343,20 +341,18 @@ int main (int argc, char *argv[])
         listener->RequestShutdown();
     for(auto &listener:ptyListeners)
         listener->RequestShutdown();
-    for(auto &client:tcpClients)
-        client->RequestShutdown();
     for(auto &worker:connWorkers)
         worker->RequestShutdown();
+    tcpTransport.RequestShutdown();
 
     //wait for background workers shutdown complete
     for(auto &listener:tcpListeners)
         listener->Shutdown();
     for(auto &listener:ptyListeners)
         listener->Shutdown();
-    for(auto &client:tcpClients)
-        client->Shutdown();
     for(auto &worker:connWorkers)
         worker->Shutdown();
+    tcpTransport.Shutdown();
 
     mainLogger->Info()<<"Clean shutdown"<<std::endl;
     return 0;

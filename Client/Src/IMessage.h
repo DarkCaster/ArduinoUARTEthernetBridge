@@ -15,8 +15,8 @@ enum MsgType
     //TODO:
     MSG_CONNECTED,
     MSG_INCOMING_PACKAGE,
+    MSG_TIMER,
     //MSG_SERVER_CONN_LOST
-    //MSG_TIMER_EVENT
 
 };
 
@@ -43,7 +43,14 @@ class IIncomingPackageMessage : public IMessage
         const uint8_t * const package;
 };
 
-
+class ITimerMessage : public IMessage
+{
+    protected:
+        ITimerMessage(int64_t _interval):
+            IMessage(MSG_TIMER),interval(_interval){}
+    public:
+        const int64_t interval;
+};
 
 
 class IShutdownMessage : public IMessage

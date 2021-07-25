@@ -258,9 +258,7 @@ int main (int argc, char *argv[])
     messageBroker.AddSubscriber(shutdownHandler);
 
     //tcp transport, and shared package-storage buffers
-    auto rxBuff=std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz()));
-    auto txBuff=std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz()));
-    TCPTransport tcpTransport(tcpTransportLogger,messageBroker,config,rxBuff.get(),txBuff.get());
+    TCPTransport tcpTransport(tcpTransportLogger,messageBroker,config);
 
     //Port polling timer
     Timer pollTimer(timerLogger,messageBroker,config);

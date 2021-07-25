@@ -6,19 +6,19 @@
 #include "WorkerBase.h"
 #include "ILogger.h"
 #include "IMessageSender.h"
+#include "IMessageSubscriber.h"
 
 #include <memory>
 #include <cstdint>
 #include <atomic>
 
-class TCPTransport final : public WorkerBase
+class TCPTransport final : public WorkerBase, public IMessageSubscriber
 {
     private: //fields setup via constructor
         std::shared_ptr<ILogger> logger;
         IMessageSender& sender;
-        const IConfig& config; //endpoint, udp port for UDP mode
-        uint8_t* rxBuff;
-        uint8_t* txBuff;
+        const IConfig& config;
+        std::unique_ptr<uint8_t[]> rxBuff;
     private:
         std::atomic<bool> shutdownPending;
         //remote connection with it's management lock
@@ -28,9 +28,12 @@ class TCPTransport final : public WorkerBase
         std::shared_ptr<Connection> GetConnection();
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
+        void OnSendPackage(const ISendPackageMessage& message);
     public:
-        TCPTransport(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, uint8_t* rxBuff, uint8_t* txBuff);
-        void ProcessTX(); //called by timer, to process data sending
+        TCPTransport(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config);
+        //methods for ISubscriber
+        bool ReadyForMessage(const MsgType msgType) final;
+        void OnMessage(const void* const source, const IMessage& message) final;
     protected:
         //WorkerBase
         void Worker() final;

@@ -6,12 +6,15 @@
 #include "IMessageSubscriber.h"
 #include "IMessageSender.h"
 
+#include <memory>
+
 class DataProcessor final : public IMessageSubscriber
 {
     private:
         std::shared_ptr<ILogger> logger;
         IMessageSender& sender;
         const IConfig& config;
+        std::unique_ptr<uint8_t[]> txBuff;
     private:
         void OnPollEvent(const ITimerMessage& message);
         void OnIncomingPackageEvent(const IIncomingPackageMessage& message);

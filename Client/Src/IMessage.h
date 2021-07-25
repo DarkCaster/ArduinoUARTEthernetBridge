@@ -54,9 +54,10 @@ class ITimerMessage : public IMessage
 class ISendPackageMessage : public IMessage
 {
     protected:
-        ISendPackageMessage(uint8_t* const _package):
-            IMessage(MSG_SEND_PACKAGE),package(_package){}
+        ISendPackageMessage(const bool _useTCP, uint8_t* const _package):
+            IMessage(MSG_SEND_PACKAGE),useTCP(_useTCP),package(_package){}
     public:
+        const bool useTCP;
         uint8_t * const package;
 };
 

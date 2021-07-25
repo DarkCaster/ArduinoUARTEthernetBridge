@@ -13,7 +13,8 @@ enum MsgType
     MSG_PATH_COLLAPSED,
 
     //TODO:
-    //MSG_SERVER_CONN_ESTABLISHED
+    MSG_CONNECTED,
+    MSG_INCOMING_PACKAGE,
     //MSG_SERVER_CONN_LOST
     //MSG_TIMER_EVENT
 
@@ -26,6 +27,24 @@ class IMessage
     public:
         const MsgType msgType;
 };
+
+class IConnectedMessage : public IMessage
+{
+    protected:
+        IConnectedMessage():IMessage(MSG_CONNECTED){}
+};
+
+class IIncomingPackageMessage : public IMessage
+{
+    protected:
+        IIncomingPackageMessage(const uint8_t* const _package):
+            IMessage(MSG_INCOMING_PACKAGE),package(_package){}
+    public:
+        const uint8_t * const package;
+};
+
+
+
 
 class IShutdownMessage : public IMessage
 {

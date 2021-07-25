@@ -35,7 +35,8 @@ void usage(const std::string &self)
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
     std::cerr<<"  mandatory parameters:"<<std::endl;
     std::cerr<<"    -ra <addr, or name> remote address to connect"<<std::endl;
-    std::cerr<<"    -rp{n} <port> remote port to connect, example -rp1 50000 -rp2 50001 -rp2 50002"<<std::endl;
+    std::cerr<<"    -tp <port> remote TCP port to connect"<<std::endl;
+    std::cerr<<"    -pc <count> UART port count configured at remote side, this param is cruical for normal operation"<<std::endl;
     std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
     std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
@@ -97,7 +98,7 @@ int main (int argc, char *argv[])
     config.SetRemoteAddr(args["-ra"]);
 
     //parse remote ports numbers
-    std::vector<int> remotePorts;
+    /*std::vector<int> remotePorts;
     while(args.find("-rp"+std::to_string(remotePorts.size()+1))!=args.end())
     {
         auto port=std::atoi(args["-rp"+std::to_string(remotePorts.size()+1)].c_str());
@@ -106,7 +107,30 @@ int main (int argc, char *argv[])
         remotePorts.push_back(port);
     }
     if(remotePorts.size()<1)
-        return param_error(argv[0],"no valid remote ports provided!");
+        return param_error(argv[0],"no valid remote ports provided!");*/
+
+    size_t portCount=0;
+    if(args.find("-pc")!=args.end())
+    {
+        auto pc=std::atoi(args["-pc"].c_str());
+        if(pc<1||pc>32)
+            return param_error(argv[0],"port count value is invalid");
+        portCount=static_cast<size_t>(pc);
+        config.SetPortCount(pc);
+    }
+    else
+        return param_error(argv[0],"port count must be provided");
+
+    if(args.find("-tp")!=args.end())
+    {
+        auto tp=std::atoi(args["-tp"].c_str());
+        if(tp<1||tp>65535)
+            return param_error(argv[0],"TCP port is invalid");
+        config.SetTCPPort(static_cast<uint16_t>(tp));
+    }
+    else
+        return param_error(argv[0],"TCP port must be provided");
+
 
     //parse local ports numbers
     std::vector<int> localPorts;
@@ -122,7 +146,7 @@ int main (int argc, char *argv[])
         localPorts.push_back(port);
         localFiles.push_back(sockFile);
     }
-    if(localPorts.size()<remotePorts.size())
+    if(localPorts.size()<portCount)
         return param_error(argv[0],"local ports count must be equals to remote ports count");
 
     //parse uart speeds
@@ -134,7 +158,7 @@ int main (int argc, char *argv[])
             return param_error(argv[0],"uart speed is invalid!");
         uartSpeeds.push_back(port);
     }
-    if(uartSpeeds.size()<remotePorts.size())
+    if(uartSpeeds.size()<portCount)
         return param_error(argv[0],"provided uart speeds count must be equal to remote ports count");
 
     //parse uart modes
@@ -146,14 +170,14 @@ int main (int argc, char *argv[])
             return param_error(argv[0],"uart mode is invalid!");
         uartModes.push_back(port);
     }
-    if(uartModes.size()<remotePorts.size())
+    if(uartModes.size()<portCount)
         return param_error(argv[0],"provided uart modes count must be equal to remote ports count");
 
     //parse reset-needed flag
     std::vector<bool> rstFlags;
     while(args.find("-rst"+std::to_string(rstFlags.size()+1))!=args.end())
         rstFlags.push_back(std::atoi(args["-rst"+std::to_string(rstFlags.size()+1)].c_str())==1);
-    if(rstFlags.size()<remotePorts.size())
+    if(rstFlags.size()<portCount)
         return param_error(argv[0],"provided reset-flags count must be equal to remote ports count");
 
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
@@ -206,7 +230,7 @@ int main (int argc, char *argv[])
 
     //create remote-config objects
     std::vector<RemoteConfig> remoteConfigs;
-    for(size_t i=0; i<remotePorts.size(); ++i)
+    for(size_t i=0; i<portCount; ++i)
         remoteConfigs.push_back(
                     RemoteConfig(uartSpeeds[i],
                                  static_cast<uint8_t>(uartModes[i]),
@@ -217,7 +241,7 @@ int main (int argc, char *argv[])
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
                                  localFiles[i],
                                  config.GetRemoteAddr(),
-                                 static_cast<uint16_t>(remotePorts[i])));
+                                 54321));
 
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");

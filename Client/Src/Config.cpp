@@ -20,6 +20,11 @@ void Config::SetMaxCTimeSec(int time)
     maxCtSec=time;
 }
 
+void Config::SetPortCount(int _portCount)
+{
+    portCount=_portCount;
+}
+
 void Config::SetUARTBuffSz(int sz)
 {
     uartBuffSize=sz;
@@ -68,6 +73,21 @@ int Config::GetLingerSec() const
 int Config::GetMaxCTimeSec() const
 {
     return maxCtSec;
+}
+
+int Config::GetPortCount() const
+{
+    return portCount;
+}
+
+int Config::GetPackageMetaSz() const
+{
+    return META_SZ(portCount);
+}
+
+int Config::GetPackageSz() const
+{
+    return PACKAGE_SIZE(portCount);
 }
 
 int Config::GetUARTBuffSz() const

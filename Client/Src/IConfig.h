@@ -22,6 +22,7 @@ class IConfig
         virtual int GetPackageSz() const = 0;
         virtual int GetUARTBuffSz() const = 0;
         virtual int GetRingBuffSegCount() const = 0;
+        virtual int GetIdleTimerInterval() const = 0;
         virtual std::string GetRemoteAddr() const = 0;
         virtual uint16_t GetTCPPort() const = 0;
         virtual uint16_t GetUDPPort() const = 0;

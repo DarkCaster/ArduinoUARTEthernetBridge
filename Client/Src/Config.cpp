@@ -100,6 +100,11 @@ int Config::GetRingBuffSegCount() const
     return ringBuffSegCount;
 }
 
+int Config::GetIdleTimerInterval() const
+{
+    return idleTimerInterval;
+}
+
 std::string Config::GetRemoteAddr() const
 {
     return remoteAddr;

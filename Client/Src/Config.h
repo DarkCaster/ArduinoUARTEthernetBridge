@@ -12,6 +12,8 @@
 
 #define UART_BUFFER_SIZE 64
 
+#define IDLE_TIMER_INTERVAL_US 1000000
+
 #define PKG_HDR_SZ 2
 #define CMD_HDR_SIZE 3
 #define META_SZ(uart_count) (PKG_HDR_SZ+CMD_HDR_SIZE*uart_count)
@@ -57,6 +59,7 @@ class Config final : public IConfig
         int uartBuffSize=UART_BUFFER_SIZE;
         int portCount;
         int ringBuffSegCount;
+        int idleTimerInterval=IDLE_TIMER_INTERVAL_US;
         uint16_t udpPort;
         uint16_t tcpPort;
         std::string remoteAddr;
@@ -85,6 +88,7 @@ class Config final : public IConfig
         int GetPackageSz() const final;
         int GetUARTBuffSz() const final;
         int GetRingBuffSegCount() const final;
+        int GetIdleTimerInterval() const final;
         std::string GetRemoteAddr() const final;
         uint16_t GetTCPPort() const final;
         uint16_t GetUDPPort() const final;

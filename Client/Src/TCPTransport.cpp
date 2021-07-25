@@ -109,7 +109,6 @@ std::shared_ptr<Connection> TCPTransport::GetConnection()
             remoteConn=nullptr;
             return nullptr;
         }
-        logger->Info()<<"Trying "<<target.Get();
     }
 
     //create socket
@@ -153,16 +152,16 @@ std::shared_ptr<Connection> TCPTransport::GetConnection()
                 return nullptr;
             }
         }
-        if(error!=EINPROGRESS)
+        /*if(error!=EINPROGRESS)
             logger->Warning()<<"Failed to connect "<<target.Get()<<" with error: "<<strerror(error);
         else
-            logger->Warning()<<"Connection attempt to "<<target.Get()<<" timed out";
+            logger->Warning()<<"Connection attempt to "<<target.Get()<<" timed out";*/
         remoteConn=nullptr;
         return nullptr;
     }
 
     remoteConn=std::make_shared<TCPConnection>(fd);
-    logger->Info()<<"Connection established";
+    logger->Info()<<"Remote connection established";
     sender.SendMessage(this, ConnectedMessage());
     return remoteConn;
 }

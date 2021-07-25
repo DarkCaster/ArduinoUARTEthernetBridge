@@ -12,6 +12,7 @@
 #include "ConnectionWorker.h"
 #include "Config.h"
 #include "RemoteConfig.h"
+#include "DataProcessor.h"
 
 #include <memory>
 #include <cstdint>
@@ -247,6 +248,7 @@ int main (int argc, char *argv[])
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
     auto tcpTransportLogger=logFactory.CreateLogger("TCPTransport");
     auto timerLogger=logFactory.CreateLogger("PollTimer");
+    auto dpLogger=logFactory.CreateLogger("DataProcessor");
 
     //configure the most essential stuff
     MessageBroker messageBroker(messageBrokerLogger);
@@ -262,6 +264,10 @@ int main (int argc, char *argv[])
 
     //Port polling timer
     Timer pollTimer(timerLogger,messageBroker,config);
+
+    //Data processor
+    DataProcessor dataProcessor(dpLogger,messageBroker,config);
+    messageBroker.AddSubscriber(dataProcessor);
 
     //create instances for main logic
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;

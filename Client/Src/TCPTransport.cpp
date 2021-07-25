@@ -207,6 +207,7 @@ void TCPTransport::Worker()
                 conn->Dispose();
                 break;
             }
+            //logger->Info()<<"New TCP package received";
             //signal new package received
             sender.SendMessage(this, IncomingPackageMessage(rxBuff));
             szLeft=pkgSz;

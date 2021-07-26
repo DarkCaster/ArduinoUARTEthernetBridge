@@ -27,7 +27,7 @@ void Timer::Worker(std::chrono::microseconds reqInterval)
         }
         //send message
         //logger->Info()<<"current interval: "<<interval.count();
-        sender.SendMessage(this,TimerMessage(interval.count()));
+        sender.SendMessage(this,TimerMessage(reqInterval.count()));
         //tune wait interval for next round and start over
         interval=std::chrono::duration_cast<std::chrono::microseconds>(reqInterval-(std::chrono::steady_clock::now()-startTime)%reqInterval);
     }

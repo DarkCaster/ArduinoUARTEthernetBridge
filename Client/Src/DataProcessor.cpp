@@ -25,9 +25,14 @@ void DataProcessor::OnMessage(const void* const, const IMessage& message)
 
 void DataProcessor::OnPollEvent(const ITimerMessage& message)
 {
-    logger->Info()<<"Poll event, time: "<<message.interval;
-    //process data from the
+    //caller timer-thread may change, and may be called in parallel ocasionally
+    std::lock_guard<std::mutex> pollGuard(pollLock);
 
+    logger->Info()<<"Poll event, time: "<<message.interval;
+    //process data from the local connections, fill-up txBuffer
+    //calculate new poll-time
+    //send data
+    //set poll-timer to the new value if needed
 }
 
 void DataProcessor::OnIncomingPackageEvent(const IIncomingPackageMessage& message)

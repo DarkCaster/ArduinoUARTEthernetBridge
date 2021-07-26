@@ -7,6 +7,7 @@
 #include "IMessageSender.h"
 
 #include <memory>
+#include <mutex>
 
 class DataProcessor final : public IMessageSubscriber
 {
@@ -15,6 +16,7 @@ class DataProcessor final : public IMessageSubscriber
         IMessageSender& sender;
         const IConfig& config;
         std::unique_ptr<uint8_t[]> txBuff;
+        std::mutex pollLock;
     private:
         void OnPollEvent(const ITimerMessage& message);
         void OnIncomingPackageEvent(const IIncomingPackageMessage& message);

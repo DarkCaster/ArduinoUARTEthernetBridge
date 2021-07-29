@@ -19,7 +19,7 @@ void DataProcessor::OnMessage(const void* const, const IMessage& message)
 {
     if(message.msgType==MSG_TIMER)
         OnPollEvent(static_cast<const ITimerMessage&>(message));
-    if(message.msgType==MSG_INCOMING_PACKAGE)
+    else if(message.msgType==MSG_INCOMING_PACKAGE)
         OnIncomingPackageEvent(static_cast<const IIncomingPackageMessage&>(message));
 }
 
@@ -29,14 +29,27 @@ void DataProcessor::OnPollEvent(const ITimerMessage& message)
     std::lock_guard<std::mutex> pollGuard(pollLock);
 
     logger->Info()<<"Poll event, time: "<<message.interval;
-    //process data from the local connections, fill-up txBuffer
-    //calculate new poll-time
-    //send data
-    //set poll-timer to the new value if needed
+    //TODO: process data from the local connections, fill-up txBuffer
+    //TODO: calculate new poll-time
+    //TODO: send data
+    //TODO: set poll-timer to the new value if needed
 }
+
+//TODO: must be processed at port-worker
+/*void DataProcessor::OnPortOpenEvent(const IPortOpenMessage& message)
+{
+    //TODO: notify port-worker to generate "open" command on next PollEvent
+    //TODO: notify PollTimer to fire PollEvent immediately
+}
+
+void DataProcessor::OnPortCloseEvent(const IPortCloseMessage& message)
+{
+    //TODO: notify port-worker to close
+}*/
 
 void DataProcessor::OnIncomingPackageEvent(const IIncomingPackageMessage& message)
 {
     logger->Info()<<"Package event: "<<message.package;
+    //TODO: decode data
+    //TODO: write it to corresponding port-workers
 }
-

@@ -7,16 +7,16 @@
 
 enum MsgType
 {
-    MSG_SHUTDOWN,
     MSG_NEW_CLIENT,
     MSG_PATH_ESTABLISHED,
     MSG_PATH_COLLAPSED,
 
+    MSG_SHUTDOWN,
     MSG_CONNECTED,
     MSG_INCOMING_PACKAGE,
     MSG_TIMER,
     MSG_SEND_PACKAGE,
-    //MSG_SERVER_CONN_LOST
+    MSG_PORT_OPEN,
 };
 
 class IMessage
@@ -25,6 +25,14 @@ class IMessage
         IMessage(const MsgType _msgType):msgType(_msgType){};
     public:
         const MsgType msgType;
+};
+
+class IShutdownMessage : public IMessage
+{
+    protected:
+        IShutdownMessage(int _ec):IMessage(MSG_SHUTDOWN),ec(_ec){}
+    public:
+        const int ec;
 };
 
 class IConnectedMessage : public IMessage
@@ -61,16 +69,17 @@ class ISendPackageMessage : public IMessage
         uint8_t * const package;
 };
 
-
-
-
-class IShutdownMessage : public IMessage
+class IPortOpenMessage : public IMessage
 {
     protected:
-        IShutdownMessage(int _ec):IMessage(MSG_SHUTDOWN),ec(_ec){}
+        IPortOpenMessage(std::shared_ptr<Connection>& _connection):
+            IMessage(MSG_PORT_OPEN),connection(_connection){}
     public:
-        const int ec;
+        std::shared_ptr<Connection>& connection;
 };
+
+
+
 
 class INewClientMessage : public IMessage
 {

@@ -232,16 +232,10 @@ int main (int argc, char *argv[])
     std::vector<RemoteConfig> remoteConfigs;
     for(size_t i=0; i<portCount; ++i)
         remoteConfigs.push_back(
-                    RemoteConfig(uartSpeeds[i],
-                                 static_cast<uint8_t>(uartModes[i]),
-                                 static_cast<uint8_t>((rstFlags[i]?1:0)|(uartModes[i]==255?1:0)<<1),
-                                 static_cast<uint8_t>(
-                                     (static_cast<unsigned long>(1000000000)/(static_cast<unsigned long>(uartSpeeds[i])/
-                                                                              static_cast<unsigned long>(8))*static_cast<unsigned long>(UART_BUFFER_SIZE))/static_cast<unsigned long>(1000000)),
+                    RemoteConfig(static_cast<uint32_t>(uartSpeeds[i]),
+                                 static_cast<SerialMode>(uartModes[i]),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
-                                 localFiles[i],
-                                 config.GetRemoteAddr(),
-                                 54321));
+                                 localFiles[i]));
 
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");

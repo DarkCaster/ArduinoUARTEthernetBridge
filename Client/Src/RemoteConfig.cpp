@@ -1,20 +1,14 @@
 #include "RemoteConfig.h"
 
+
+
 RemoteConfig::RemoteConfig(const uint32_t _speed,
-                           const uint8_t _mode,
-                           const uint8_t _flags,
-                           const uint8_t _collectIntMS,
-                           const IPEndpoint &_listener,
-                           const std::string &_ptsSymlink,
-                           const std::string &_serverAddr,
-                           const uint16_t _serverPort):
+                           const SerialMode _mode,
+                           const IPEndpoint& _listener,
+                           const std::string& _ptsSymlink):
     speed(_speed),
     mode(_mode),
-    flags(_flags),
-    collectIntMS(_collectIntMS),
     listener(_listener),
-    ptsListener(_ptsSymlink),
-    serverAddr(_serverAddr),
-    serverPort(_serverPort)
+    ptsListener(_ptsSymlink)
 {
 }

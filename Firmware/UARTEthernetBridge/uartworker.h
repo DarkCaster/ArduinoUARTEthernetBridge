@@ -12,6 +12,7 @@ class UARTWorker
         DataBuffer rxRingBuff;
         unsigned long pollInterval;
         uint8_t curMode;
+        uint8_t sessionId;
         //filled on setup
         ResetHelper* resetHelper;
         HardwareSerial* uart;

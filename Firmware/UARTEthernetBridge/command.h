@@ -7,8 +7,9 @@
 enum struct ReqType : uint8_t
 {
     NoCommand = 0x00,
-    ResetOpen = 0x01,
+    Reset = 0x01,
     Open = 0x02,
+    ResetOpen = 0x03,
     Close = 0x04,
     Data = 0x08,
 };

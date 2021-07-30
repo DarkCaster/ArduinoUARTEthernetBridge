@@ -13,6 +13,7 @@ void UARTWorker::Setup(ResetHelper* const _resetHelper, HardwareSerial* const _u
     txDataBuff=_txDataBuff;
     pollInterval=IDLE_POLL_INTERVAL_US;
     curMode=0xFE;
+    sessionId=0;
 }
 
 unsigned long UARTWorker::ProcessRequest(const Request &request)
@@ -21,25 +22,6 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
     uint8_t szLeft;
     switch (request.type)
     {
-        case ReqType::ResetOpen:
-            resetHelper->StartReset(RESET_TIME_MS);
-            [[fallthrough]];
-        case ReqType::Open:
-            if(IS_OPEN(curMode))
-                uart->end();
-            curMode=request.arg;
-            speed=static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16;
-            if(IS_OPEN(curMode))
-                uart->begin(speed,curMode);
-            //re-calculate poll interval for selected data-transfer speed
-            pollInterval=static_cast<unsigned long>(1000000.0f/static_cast<float>(speed)*8.0f*static_cast<float>(UART_BUFFER_SIZE));
-            break;
-        case ReqType::Close:
-            if(IS_OPEN(curMode))
-                uart->end();
-            curMode=MODE_CLOSED;
-            pollInterval=IDLE_POLL_INTERVAL_US;
-            break;
         case ReqType::Data:
             //try to copy data to the ring-buffer
             szLeft=request.plSz;
@@ -53,6 +35,37 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
                 rxRingBuff.Commit(head,szToWrite);
                 szLeft-=szToWrite;
             }
+            break;
+        case ReqType::Reset:
+            resetHelper->StartReset(RESET_TIME_MS);
+            sessionId=request.arg;
+            //TODO: drop current data in the ring-buffer on reset?
+            break;
+        case ReqType::ResetOpen:
+            resetHelper->StartReset(RESET_TIME_MS);
+            [[fallthrough]];
+        case ReqType::Open:
+            if(IS_OPEN(curMode))
+            {
+                uart->end();
+                //TODO: drop current data in the ring-buffer on open?
+            }
+            sessionId=0; //used only on client start, so reset session id
+            curMode=request.arg;
+            speed=static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16;
+            if(IS_OPEN(curMode))
+                uart->begin(speed,curMode);
+            //re-calculate poll interval for selected data-transfer speed
+            pollInterval=static_cast<unsigned long>(1000000.0f/static_cast<float>(speed)*8.0f*static_cast<float>(UART_BUFFER_SIZE));
+            break;
+        case ReqType::Close:
+            if(IS_OPEN(curMode))
+            {
+                uart->end();
+                //TODO: drop current data in the ring-buffer on close?
+            }
+            curMode=MODE_CLOSED;
+            pollInterval=IDLE_POLL_INTERVAL_US;
             break;
         case ReqType::NoCommand:
         default:
@@ -101,9 +114,9 @@ Response UARTWorker::ProcessTX()
         {
             memcpy(txDataBuff,tail.buffer,sz);
             rxRingBuff.Commit(tail,sz);
-            return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()),static_cast<uint8_t>(sz)};
+            return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(sz)};
         }
     }
 
-    return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()),0};
+    return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),0};
 }

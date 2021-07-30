@@ -5,14 +5,14 @@
 #include "MessageBroker.h"
 #include "ShutdownHandler.h"
 
+#include "Config.h"
+#include "RemoteConfig.h"
 #include "Timer.h"
 #include "PTYListener.h"
 #include "TCPListener.h"
 #include "TCPTransport.h"
-#include "ConnectionWorker.h"
-#include "Config.h"
-#include "RemoteConfig.h"
 #include "DataProcessor.h"
+#include "PortWorker.h"
 
 #include <memory>
 #include <cstdint>
@@ -280,17 +280,13 @@ int main (int argc, char *argv[])
         ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,remoteConfigs[i],i));
     }
 
-    std::vector<std::shared_ptr<ConnectionWorker>> connWorkers;
+    std::vector<std::shared_ptr<PortWorker>> portWorkers;
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
-        auto rLogger=logFactory.CreateLogger("ConnWorker:"+std::to_string(i)+"(r)");
-        auto rWorker=std::make_shared<ConnectionWorker>(rLogger,messageBroker,config,remoteConfigs[i],i,true);
-        messageBroker.AddSubscriber(rWorker);
-        connWorkers.push_back(rWorker);
-        auto wLogger=logFactory.CreateLogger("ConnWorker:"+std::to_string(i)+"(w)");
-        auto wWorker=std::make_shared<ConnectionWorker>(wLogger,messageBroker,config,remoteConfigs[i],i,false);
-        messageBroker.AddSubscriber(wWorker);
-        connWorkers.push_back(wWorker);
+        auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
+        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,i,rstFlags[i]);
+        messageBroker.AddSubscriber(portWorker);
+        portWorkers.push_back(portWorker);
     }
 
     //create sigset_t struct with signals
@@ -309,8 +305,6 @@ int main (int argc, char *argv[])
         listener->Startup();
     for(auto &listener:ptyListeners)
         listener->Startup();
-    for(auto &worker:connWorkers)
-        worker->Startup();
 
     //main loop, awaiting for signal
     while(true)
@@ -343,8 +337,6 @@ int main (int argc, char *argv[])
         listener->RequestShutdown();
     for(auto &listener:ptyListeners)
         listener->RequestShutdown();
-    for(auto &worker:connWorkers)
-        worker->RequestShutdown();
     pollTimer.RequestShutdown();
     tcpTransport.RequestShutdown();
 
@@ -353,8 +345,6 @@ int main (int argc, char *argv[])
         listener->Shutdown();
     for(auto &listener:ptyListeners)
         listener->Shutdown();
-    for(auto &worker:connWorkers)
-        worker->Shutdown();
     pollTimer.Shutdown();
     tcpTransport.Shutdown();
 

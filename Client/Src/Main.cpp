@@ -299,6 +299,8 @@ int main (int argc, char *argv[])
     }
 
     //startup
+    for(auto &portWorker:portWorkers)
+        portWorker->Startup();
     tcpTransport.Startup();
     pollTimer.Start(config.GetIdleTimerInterval());
     for(auto &listener:tcpListeners)
@@ -339,6 +341,8 @@ int main (int argc, char *argv[])
         listener->RequestShutdown();
     pollTimer.RequestShutdown();
     tcpTransport.RequestShutdown();
+    for(auto &portWorker:portWorkers)
+        portWorker->RequestShutdown();
 
     //wait for background workers shutdown complete
     for(auto &listener:tcpListeners)
@@ -347,6 +351,8 @@ int main (int argc, char *argv[])
         listener->Shutdown();
     pollTimer.Shutdown();
     tcpTransport.Shutdown();
+    for(auto &portWorker:portWorkers)
+        portWorker->Shutdown();
 
     mainLogger->Info()<<"Clean shutdown"<<std::endl;
     return 0;

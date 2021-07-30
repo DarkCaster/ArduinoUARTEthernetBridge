@@ -7,6 +7,7 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
     portId(_portId),
     resetOnConnect(_resetOnConnect)
 {
+    shutdownPending.store(false);
 }
 
 bool PortWorker::ReadyForMessage(const MsgType msgType)
@@ -17,4 +18,14 @@ bool PortWorker::ReadyForMessage(const MsgType msgType)
 void PortWorker::OnMessage(const void* const, const IMessage& message)
 {
 
+}
+
+void PortWorker::Worker()
+{
+
+}
+
+void PortWorker::OnShutdown()
+{
+     shutdownPending.store(true);
 }

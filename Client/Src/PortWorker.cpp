@@ -13,6 +13,7 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
     bufferLimit(config.GetUARTBuffSz()*config.GetRingBuffSegCount()/2)
 {
     shutdownPending.store(false);
+    connected.store(false);
     openPending=true;
     client=nullptr;
     sessionId=0;
@@ -22,13 +23,20 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
 
 bool PortWorker::ReadyForMessage(const MsgType msgType)
 {
-    return msgType==MSG_PORT_OPEN;
+    return msgType==MSG_PORT_OPEN || msgType==MSG_CONNECTED;
 }
 
 void PortWorker::OnMessage(const void* const, const IMessage& message)
 {
     if(message.msgType==MSG_PORT_OPEN)
         OnPortOpen(static_cast<const IPortOpenMessage&>(message));
+    if(message.msgType==MSG_CONNECTED)
+        OnConnected(static_cast<const IConnectedMessage&>(message));
+}
+
+void PortWorker::OnConnected(const IConnectedMessage&)
+{
+    connected.store(true);
 }
 
 void PortWorker::OnPortOpen(const IPortOpenMessage& message)
@@ -52,7 +60,9 @@ void PortWorker::OnPortOpen(const IPortOpenMessage& message)
 
 Request PortWorker::ProcessTX(uint8_t* txBuff)
 {
-    //TODO: start processing only after receiving first connect-confirmation
+    //do not start processing until receiving first connect-confirmation
+    if(!connected.load())
+        return Request{ReqType::NoCommand,0,0};
 
     //port will be opened at first call
     if(openPending)

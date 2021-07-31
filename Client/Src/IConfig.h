@@ -20,6 +20,7 @@ class IConfig
         virtual int GetPortCount() const = 0;
         virtual int GetPackageMetaSz() const = 0;
         virtual int GetPackageSz() const = 0;
+        virtual int GetPortBuffOffset(int portIndex) const = 0;
         virtual int GetUARTBuffSz() const = 0;
         virtual int GetRingBuffSegCount() const = 0;
         virtual int GetIdleTimerInterval() const = 0;

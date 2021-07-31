@@ -1,5 +1,10 @@
 #include "Config.h"
 
+#define META_SZ(uart_count) (PKG_HDR_SZ+CMD_HDR_SIZE*uart_count)
+#define META_CRC_SZ 1
+#define PACKAGE_SIZE(uart_count,uart_buffer_size) (META_SZ(uart_count)+META_CRC_SZ+uart_buffer_size*uart_count) //seq number 2 bytes, (1byte cmd + 2bytes payload)*UART_COUNT, 1 byte crc, uart payload -> UART_BUFFER_SIZE*UART_COUNT
+#define PORT_OFFSET(uart_count,uart_buffer_size,port_index) (META_SZ(uart_count)+META_CRC_SZ+uart_buffer_size*port_index)
+
 void Config::SetServiceIntervalMS(int intervalMS)
 {
     serviceInterval=intervalMS;
@@ -87,7 +92,12 @@ int Config::GetPackageMetaSz() const
 
 int Config::GetPackageSz() const
 {
-    return PACKAGE_SIZE(portCount);
+    return PACKAGE_SIZE(portCount,uartBuffSize);
+}
+
+int Config::GetPortBuffOffset(int portIndex) const
+{
+    return PORT_OFFSET(portCount,uartBuffSize,portIndex);
 }
 
 int Config::GetUARTBuffSz() const

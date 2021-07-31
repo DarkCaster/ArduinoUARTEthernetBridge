@@ -14,9 +14,7 @@
 
 #define PKG_HDR_SZ 2
 #define CMD_HDR_SIZE 3
-#define META_SZ(uart_count) (PKG_HDR_SZ+CMD_HDR_SIZE*uart_count)
-#define META_CRC_SZ 1
-#define PACKAGE_SIZE(uart_count) (META_SZ(uart_count)+META_CRC_SZ+UART_BUFFER_SIZE*uart_count) //seq number 2 bytes, (1byte cmd + 2bytes payload)*UART_COUNT, 1 byte crc, uart payload -> UART_BUFFER_SIZE*UART_COUNT
+
 
 #define NET_NAME "ENC28J65E366"
 #define NET_DOMAIN "lan"
@@ -59,6 +57,7 @@ class Config final : public IConfig
         int GetPortCount() const final;
         int GetPackageMetaSz() const final;
         int GetPackageSz() const final;
+        int GetPortBuffOffset(int portIndex) const final;
         int GetUARTBuffSz() const final;
         int GetRingBuffSegCount() const final;
         int GetIdleTimerInterval() const final;

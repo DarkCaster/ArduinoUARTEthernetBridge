@@ -63,6 +63,11 @@ int param_error(const std::string &self, const std::string &message)
     return 1;
 }
 
+constexpr int64_t calculate_poll_interval(int portSpeed, int uartBuffSize)
+{
+    return static_cast<int64_t>((1000000.0/static_cast<double>(portSpeed))*8.0*static_cast<double>(uartBuffSize));
+}
+
 int main (int argc, char *argv[])
 {
     //timeout for main thread waiting for external signals
@@ -234,6 +239,8 @@ int main (int argc, char *argv[])
         remoteConfigs.push_back(
                     RemoteConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                  static_cast<SerialMode>(uartModes[i]),
+                                 rstFlags[i],
+                                 calculate_poll_interval(uartSpeeds[i],config.GetUARTBuffSz()),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
                                  localFiles[i]));
 
@@ -251,17 +258,15 @@ int main (int argc, char *argv[])
     ShutdownHandler shutdownHandler;
     messageBroker.AddSubscriber(shutdownHandler);
 
-    //tcp transport, and shared package-storage buffers
+    //create instances for main logic
+
+    //TCP transport
     TCPTransport tcpTransport(tcpTransportLogger,messageBroker,config);
+    messageBroker.AddSubscriber(tcpTransport);
 
     //Port polling timer
     Timer pollTimer(timerLogger,messageBroker,config);
 
-    //Data processor
-    DataProcessor dataProcessor(dpLogger,messageBroker,config);
-    messageBroker.AddSubscriber(dataProcessor);
-
-    //create instances for main logic
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
@@ -284,10 +289,14 @@ int main (int argc, char *argv[])
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
-        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,i,rstFlags[i]);
+        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i],i);
         messageBroker.AddSubscriber(portWorker);
         portWorkers.push_back(portWorker);
     }
+
+    //Data processor
+    DataProcessor dataProcessor(dpLogger,messageBroker,config,portWorkers);
+    messageBroker.AddSubscriber(dataProcessor);
 
     //create sigset_t struct with signals
     sigset_t sigset;

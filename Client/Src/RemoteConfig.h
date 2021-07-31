@@ -34,15 +34,19 @@ enum class SerialMode : uint8_t
     SERIAL_LOOPBACK=0xFF,
 };
 
-class RemoteConfig
+struct RemoteConfig
 {
     public:
         const uint32_t speed;
         const SerialMode mode;
+        const bool resetOnConnect;
+        const int64_t pollInterval;
         const IPEndpoint listener;
         const std::string ptsListener;
         RemoteConfig(const uint32_t speed,
                      const SerialMode mode,
+                     const bool resetOnConnect,
+                     const int64_t pollInterval,
                      const IPEndpoint& listener,
                      const std::string& ptsSymlink);
 };

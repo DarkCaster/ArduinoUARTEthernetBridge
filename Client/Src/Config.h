@@ -8,10 +8,8 @@
 #include <unordered_set>
 #include <sys/time.h>
 
-//some default params
-
+//some hardcoded params
 #define UART_BUFFER_SIZE 64
-
 #define IDLE_TIMER_INTERVAL_US 1000000
 
 #define PKG_HDR_SZ 2

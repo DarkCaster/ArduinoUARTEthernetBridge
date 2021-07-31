@@ -6,7 +6,7 @@
 enum struct ReqType : uint8_t
 {
     NoCommand = 0x00,
-    ResetOpen = 0x01,
+    Reset = 0x01,
     Open = 0x02,
     Close = 0x04,
     Data = 0x08,
@@ -20,7 +20,7 @@ enum struct RespType : uint8_t
 
 struct Request
 {
-    static Request Map(const int portIndex, const uint8_t * const rawBuffer);
+    static void Write(const Request& source, const int portIndex, uint8_t* const rawBuffer);
     ReqType type;
     uint8_t arg;
     uint8_t plSz;
@@ -28,7 +28,7 @@ struct Request
 
 struct Response
 {
-    static void Write(const Response &source, const int portIndex, uint8_t * const rawBuffer);
+    static Response Map(const int portIndex, const uint8_t* const rawBuffer);
     RespType type;
     uint8_t arg;
     uint8_t plSz;

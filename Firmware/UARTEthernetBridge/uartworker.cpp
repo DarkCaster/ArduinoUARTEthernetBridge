@@ -101,9 +101,9 @@ Response UARTWorker::ProcessTX()
         if(sz>0)
         {
             sz=uart->readBytes(txDataBuff,sz>UART_BUFFER_SIZE?UART_BUFFER_SIZE:sz);
-            return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()),static_cast<uint8_t>(sz)};
+            return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(sz)};
         }
-        return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()),0};
+        return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),0};
     }
 
     if(curMode==MODE_LOOPBACK)

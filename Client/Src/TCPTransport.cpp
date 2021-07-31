@@ -25,7 +25,7 @@ TCPTransport::TCPTransport(std::shared_ptr<ILogger>& _logger, IMessageSender& _s
     remoteConn=nullptr;
 }
 
-static IPAddress Lookup(std::shared_ptr<ILogger> &logger, const std::string &target)
+static IPAddress Lookup(const std::string &target)
 {
     addrinfo hints={};
     hints.ai_family = PF_UNSPEC;
@@ -34,10 +34,7 @@ static IPAddress Lookup(std::shared_ptr<ILogger> &logger, const std::string &tar
 
     addrinfo *addrResults=nullptr;
     if(getaddrinfo (target.c_str(), NULL, &hints, &addrResults)!=0)
-    {
-        logger->Warning()<<"Lookup of "<<target<<" is failed with: "<<strerror(errno);
         return IPAddress();
-    }
 
     IPAddress result(addrResults->ai_addr);
     freeaddrinfo(addrResults);
@@ -102,7 +99,7 @@ std::shared_ptr<Connection> TCPTransport::GetConnection()
     ImmutableStorage<IPAddress> target(IPAddress(config.GetRemoteAddr()));
     if(!target.Get().isValid)
     {
-        target.Set(Lookup(logger,config.GetRemoteAddr()));
+        target.Set(Lookup(config.GetRemoteAddr()));
         if(!target.Get().isValid)
         {
             remoteConn=nullptr;
@@ -206,6 +203,7 @@ void TCPTransport::Worker()
                 conn->Dispose();
                 break;
             }
+            //TODO: extra check for payloads size at metadata block, disconnect if too big
             //logger->Info()<<"New TCP package received";
             //signal new package received
             sender.SendMessage(this, IncomingPackageMessage(rxBuff.get()));

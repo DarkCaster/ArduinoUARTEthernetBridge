@@ -27,7 +27,7 @@ void DataProcessor::OnMessage(const void* const, const IMessage& message)
 
 void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
 {
-    //caller timer-thread may change, and may be called in parallel ocasionally
+    //caller timer-thread may change if timer interval updated, so lock there as precaution
     std::lock_guard<std::mutex> pollGuard(pollLock);
 
     //logger->Info()<<"Poll event, time: "<<message.interval;
@@ -36,7 +36,7 @@ void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
     bool useTCP=false;
     for(int i=0;i<config.GetPortCount();++i)
     {
-        auto request=portWorkers[static_cast<size_t>(i)]->ProcessTX(txBuff.get());
+        auto request=portWorkers[static_cast<size_t>(i)]->ProcessTX(txBuff.get()+config.GetPortBuffOffset(i));
         if(request.type==ReqType::Open || request.type==ReqType::Reset)
             useTCP=true;
         Request::Write(request,i,txBuff.get());
@@ -49,21 +49,14 @@ void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
     sender.SendMessage(this,SendPackageMessage(useTCP,txBuff.get()));
 }
 
-//TODO: must be processed at port-worker
-/*void DataProcessor::OnPortOpenEvent(const IPortOpenMessage& message)
-{
-    //TODO: notify port-worker to generate "open" command on next PollEvent
-    //TODO: notify PollTimer to fire PollEvent immediately
-}
-
-void DataProcessor::OnPortCloseEvent(const IPortCloseMessage& message)
-{
-    //TODO: notify port-worker to close
-}*/
-
 void DataProcessor::OnIncomingPackageEvent(const IIncomingPackageMessage& message)
 {
-    logger->Info()<<"Package event: "<<message.package;
-    //TODO: decode data
-    //TODO: write it to corresponding port-workers
+    //may be ocassionally called simultaneously from TCP and UDP transport
+    std::lock_guard<std::mutex> pushGuard(pushLock);
+    //logger->Info()<<"Package event: "<<message.package;
+    for(int i=0;i<config.GetPortCount();++i)
+    {
+        auto response=Response::Map(i,message.package);
+        portWorkers[static_cast<size_t>(i)]->ProcessRX(response,message.package+config.GetPortBuffOffset(i));
+    }
 }

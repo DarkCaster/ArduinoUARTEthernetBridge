@@ -21,7 +21,6 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         IMessageSender& sender;
         const IConfig& config;
         const RemoteConfig& portConfig;
-        const int portId;
         const int bufferLimit;
     private:
         std::atomic<bool> shutdownPending;
@@ -34,9 +33,9 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         uint8_t sessionId;
         int remoteBufferFillup;
     public:
-        PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const RemoteConfig& portConfig, const int portId);
+        PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const RemoteConfig& portConfig);
         Request ProcessTX(uint8_t * txBuff);
-        void ProcessRX();
+        void ProcessRX(const Response& response, const uint8_t* rxBuff);
         //methods for ISubscriber
         bool ReadyForMessage(const MsgType msgType) final;
         void OnMessage(const void* const source, const IMessage& message) final;

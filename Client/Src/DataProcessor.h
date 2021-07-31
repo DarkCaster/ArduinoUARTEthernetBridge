@@ -20,6 +20,7 @@ class DataProcessor final : public IMessageSubscriber
         std::vector<std::shared_ptr<PortWorker>> portWorkers;
         std::unique_ptr<uint8_t[]> txBuff;
         std::mutex pollLock;
+        std::mutex pushLock;
     private:
         void OnPollEvent(const ITimerMessage& message);
         void OnIncomingPackageEvent(const IIncomingPackageMessage& message);

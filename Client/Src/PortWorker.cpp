@@ -4,12 +4,11 @@
 #include <errno.h>
 #include <string.h>
 
-PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const RemoteConfig& _portConfig, const int _portId):
+PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const RemoteConfig& _portConfig):
     logger(_logger),
     sender(_sender),
     config(_config),
     portConfig(_portConfig),
-    portId(_portId),
     bufferLimit(config.GetUARTBuffSz()*config.GetRingBuffSegCount()/2)
 {
     shutdownPending.store(false);
@@ -98,11 +97,11 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     if(dataRead<=0)
     {
         if(dataRead==0)
-            logger->Info()<<"Client for port "<<portId<<" was closed";
+            logger->Info()<<"Client was disconnected";
         auto error=errno;
         if(error!=EINTR && error!=EWOULDBLOCK)
         {
-            logger->Info()<<"Client read for port "<<portId<<" was failed with: "<<strerror(error);
+            logger->Info()<<"Client read was failed with: "<<strerror(error);
             client->Dispose();
             client=nullptr;
         }
@@ -113,9 +112,19 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     return Request{ReqType::Data,0,static_cast<uint8_t>(dataRead)};
 }
 
-void PortWorker::ProcessRX()
+void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
 {
-
+    //client operations must be interlocked
+    std::lock_guard<std::mutex> clientGuard(clientLock);
+    //saving data to RX ring-buffer is pointless if client is not connected
+    if(client==nullptr)
+        return;
+    //update counters, check session id
+    remoteBufferFillup=(response.arg&0x80)!=0?bufferLimit:0;
+    if(sessionId!=(response.arg&0x7F))
+        return;
+    //TODO:write data to ring-buffer
+    //TODO:signal worker to proceed
 }
 
 void PortWorker::Worker()
@@ -126,4 +135,5 @@ void PortWorker::Worker()
 void PortWorker::OnShutdown()
 {
     shutdownPending.store(true);
+    //TODO: signal worker to proceed (and stop)
 }

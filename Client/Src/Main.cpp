@@ -289,7 +289,7 @@ int main (int argc, char *argv[])
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
-        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i],i);
+        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i]);
         messageBroker.AddSubscriber(portWorker);
         portWorkers.push_back(portWorker);
     }

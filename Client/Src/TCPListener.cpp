@@ -12,14 +12,13 @@
 #include <poll.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
-class NewClientMessage: public INewClientMessage { public: NewClientMessage(std::shared_ptr<Connection> _client, int _pathID):INewClientMessage(_client,_pathID){} };
+class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(std::shared_ptr<Connection> _client):IPortOpenMessage(_client){} };
 
-TCPListener::TCPListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig, int _pathID):
+TCPListener::TCPListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig):
     logger(_logger),
     sender(_sender),
     config(_config),
-    remoteConfig(_remoteConfig),
-    pathID(_pathID)
+    remoteConfig(_remoteConfig)
 {
     shutdownPending.store(false);
 }
@@ -174,7 +173,7 @@ void TCPListener::Worker()
         SetSocketCustomTimeouts(logger,cSockFd,config.GetServiceIntervalTV());
 
         logger->Info()<<"New TCP client connected, fd: "<<cSockFd;
-        sender.SendMessage(this, NewClientMessage(std::make_shared<TCPConnection>(cSockFd),pathID));
+        sender.SendMessage(this, PortOpenMessage(std::make_shared<TCPConnection>(cSockFd)));
     }
 
     if(close(lSockFd)!=0)

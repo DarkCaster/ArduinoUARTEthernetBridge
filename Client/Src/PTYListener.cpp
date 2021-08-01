@@ -13,14 +13,13 @@
 #include <sys/inotify.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
-class NewClientMessage: public INewClientMessage { public: NewClientMessage(std::shared_ptr<Connection> _client, int _pathID):INewClientMessage(_client,_pathID){} };
+class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(std::shared_ptr<Connection> _client):IPortOpenMessage(_client){} };
 
-PTYListener::PTYListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig, int _pathID):
+PTYListener::PTYListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig):
     logger(_logger),
     sender(_sender),
     config(_config),
-    remoteConfig(_remoteConfig),
-    pathID(_pathID)
+    remoteConfig(_remoteConfig)
 {
     shutdownPending.store(false);
     ptm=-1;
@@ -157,7 +156,7 @@ void PTYListener::Worker()
         if(openCount==1) //first client connected
         {
             logger->Info()<<"PTY client connected to "<<remoteConfig.ptsListener;
-            sender.SendMessage(this, NewClientMessage(std::make_shared<PTYConnection>(ptm),pathID));
+            sender.SendMessage(this, PortOpenMessage(std::make_shared<PTYConnection>(ptm)));
         }
         else if(openCount==0) //last client disconnected
         {

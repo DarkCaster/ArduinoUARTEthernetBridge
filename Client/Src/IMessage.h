@@ -7,10 +7,6 @@
 
 enum MsgType
 {
-    MSG_NEW_CLIENT,
-    MSG_PATH_ESTABLISHED,
-    MSG_PATH_COLLAPSED,
-
     MSG_SHUTDOWN,
     MSG_CONNECTED,
     MSG_INCOMING_PACKAGE,
@@ -76,41 +72,6 @@ class IPortOpenMessage : public IMessage
             IMessage(MSG_PORT_OPEN),connection(_connection){}
     public:
         std::shared_ptr<Connection>& connection;
-};
-
-
-
-
-class INewClientMessage : public IMessage
-{
-    protected:
-        INewClientMessage(const std::shared_ptr<Connection> &_client, const int _pathID):
-            IMessage(MSG_NEW_CLIENT),client(_client),pathID(_pathID){}
-    public:
-        const std::shared_ptr<Connection> client;
-        const int pathID;
-};
-
-class IPathEstablishedMessage : public IMessage
-{
-    protected:
-        IPathEstablishedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID):
-            IMessage(MSG_PATH_ESTABLISHED),local(_local),remote(_remote),pathID(_pathID){}
-    public:
-        const std::shared_ptr<Connection> local;
-        const std::shared_ptr<Connection> remote;
-        const int pathID;
-};
-
-class IPathCollapsedMessage : public IMessage
-{
-    protected:
-        IPathCollapsedMessage(const std::shared_ptr<Connection> &_local, const std::shared_ptr<Connection> &_remote, const int _pathID):
-            IMessage(MSG_PATH_COLLAPSED),local(_local),remote(_remote),pathID(_pathID){}
-    public:
-        const std::shared_ptr<Connection> local;
-        const std::shared_ptr<Connection> remote;
-        const int pathID;
 };
 
 #endif // IMESSAGE_H

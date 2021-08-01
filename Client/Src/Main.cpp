@@ -273,7 +273,7 @@ int main (int argc, char *argv[])
         if(remoteConfigs[i].listener.port==0)
             continue;
         auto logger=logFactory.CreateLogger("TCPListener:"+std::to_string(i));
-        tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfigs[i],i));
+        tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfigs[i]));
     }
 
     std::vector<std::shared_ptr<PTYListener>> ptyListeners;
@@ -282,7 +282,7 @@ int main (int argc, char *argv[])
         if(remoteConfigs[i].ptsListener.empty())
             continue;
         auto logger=logFactory.CreateLogger("PTYListener:"+std::to_string(i));
-        ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,remoteConfigs[i],i));
+        ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,remoteConfigs[i]));
     }
 
     std::vector<std::shared_ptr<PortWorker>> portWorkers;

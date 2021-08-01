@@ -18,7 +18,6 @@ class DataBuffer
         uint8_t * const end;
         uint8_t *head;
         uint8_t *tail;
-        uint16_t usedSize;
     public:
         DataBuffer();
         Handle GetHead();

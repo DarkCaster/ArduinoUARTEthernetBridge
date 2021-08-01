@@ -116,25 +116,60 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
 void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
 {
     //client operations must be interlocked
-    std::lock_guard<std::mutex> clientGuard(clientLock);
-    //saving data to RX ring-buffer is pointless if client is not connected
-    if(client==nullptr)
+    {
+        std::lock_guard<std::mutex> clientGuard(clientLock);
+        remoteBufferFillup=(response.arg&0x80)!=0?bufferLimit:0;
+        if(client==nullptr || sessionId!=(response.arg&0x7F))
+            return;
+    }
+    if(response.type==RespType::NoCommand)
         return;
-    //update counters, check session id
-    remoteBufferFillup=(response.arg&0x80)!=0?bufferLimit:0;
-    if(sessionId!=(response.arg&0x7F))
-        return;
-    //TODO:write data to ring-buffer
-    //TODO:signal worker to proceed
+    //write data to ring-buffer
+    {
+        std::lock_guard<std::mutex> ringBuffGuard(ringBuffLock);
+        auto head=rxRingBuff.GetHead();
+        size_t szToWrite=response.plSz;
+        while (szToWrite>0 && head.maxSz>0)
+        {
+            auto sz=szToWrite>head.maxSz?head.maxSz:szToWrite;
+            memcpy(head.buffer,rxBuff+response.plSz-szToWrite,sz);
+            szToWrite-=sz;
+            rxRingBuff.Commit(head,sz);
+            head=rxRingBuff.GetHead();
+        }
+        if(szToWrite>0)
+            logger->Warning()<<"Ring buffer overrun detected, bytes lost: "<<szToWrite;
+    }
+    //signal worker to proceed
+    ringBuffTrigger.notify_one();
 }
 
 void PortWorker::Worker()
 {
-
+    while(!shutdownPending.load())
+    {
+        std::unique_lock<std::mutex> lock(ringBuffLock);
+        while(rxRingBuff.UsedSize()<1 && !shutdownPending.load())
+            ringBuffTrigger.wait(lock);
+        if(shutdownPending.load())
+            return;
+        auto tail=rxRingBuff.GetTail();
+        lock.unlock();
+        //just as precaution
+        if(tail.maxSz<1)
+            continue;
+        //TODO: write data to client's FD
+        size_t szToWrite=1;
+        //free data that was read from ringBuffer
+        {
+            std::lock_guard<std::mutex> guard(ringBuffLock);
+            rxRingBuff.Commit(tail,szToWrite);
+        }
+    }
 }
 
 void PortWorker::OnShutdown()
 {
     shutdownPending.store(true);
-    //TODO: signal worker to proceed (and stop)
+    ringBuffTrigger.notify_one();
 }

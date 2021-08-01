@@ -14,6 +14,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 
 class PortWorker :  public WorkerBase, public IMessageSubscriber
 {
@@ -23,7 +24,6 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         const IConfig& config;
         const RemoteConfig& portConfig;
         const int bufferLimit;
-        DataBuffer rxRingBuff;
     private:
         std::atomic<bool> shutdownPending;
         std::atomic<bool> connected;
@@ -34,6 +34,10 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         bool resetPending;
         uint8_t sessionId;
         int remoteBufferFillup;
+        //ring buffer, shared between ProcessRX and Worker threads
+        std::mutex ringBuffLock;
+        DataBuffer rxRingBuff;
+        std::condition_variable ringBuffTrigger;
     public:
         PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const RemoteConfig& portConfig);
         Request ProcessTX(uint8_t * txBuff);

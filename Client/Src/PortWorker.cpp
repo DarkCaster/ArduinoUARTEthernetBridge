@@ -45,7 +45,10 @@ void PortWorker::OnPortOpen(const IPortOpenMessage& message)
     std::lock_guard<std::mutex> clientGuard(clientLock);
     //get rid of old client if it still not closed
     if(client!=nullptr)
+    {
+        logger->Info()<<"Disposing previous client connection, fd"<<client->fd;
         client->Dispose();
+    }
     //setup new client
     client=message.connection;
     resetPending=portConfig.resetOnConnect;

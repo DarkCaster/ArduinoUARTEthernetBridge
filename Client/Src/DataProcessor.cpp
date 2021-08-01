@@ -21,7 +21,7 @@ void DataProcessor::OnMessage(const void* const, const IMessage& message)
 {
     if(message.msgType==MSG_TIMER)
         OnPollEvent(static_cast<const ITimerMessage&>(message));
-    else if(message.msgType==MSG_INCOMING_PACKAGE)
+    if(message.msgType==MSG_INCOMING_PACKAGE)
         OnIncomingPackageEvent(static_cast<const IIncomingPackageMessage&>(message));
 }
 

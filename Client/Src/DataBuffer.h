@@ -8,7 +8,7 @@
 struct Handle
 {
     uint8_t *buffer;
-    uint16_t maxSz;
+    size_t maxSz;
 };
 
 class DataBuffer
@@ -24,8 +24,8 @@ class DataBuffer
         DataBuffer(size_t size);
         Handle GetHead();
         Handle GetTail();
-        void Commit(const Handle &handle, uint16_t usedSz);
-        uint16_t UsedSize();
+        void Commit(const Handle &handle, size_t usedSz);
+        size_t UsedSize();
         bool IsHalfUsed();
         void Reset();
 };

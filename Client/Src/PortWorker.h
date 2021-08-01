@@ -9,6 +9,7 @@
 #include "RemoteConfig.h"
 #include "Command.h"
 #include "Connection.h"
+#include "DataBuffer.h"
 
 #include <memory>
 #include <atomic>
@@ -22,6 +23,7 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         const IConfig& config;
         const RemoteConfig& portConfig;
         const int bufferLimit;
+        DataBuffer rxRingBuff;
     private:
         std::atomic<bool> shutdownPending;
         std::atomic<bool> connected;

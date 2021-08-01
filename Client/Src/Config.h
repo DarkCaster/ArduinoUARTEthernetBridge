@@ -24,6 +24,7 @@ class Config final : public IConfig
     private:
         int socketTimeout;
         int serviceInterval;
+        int incomingDataBufferSec=2;
         int TCPBuffSz;
         int linger;
         int maxCtSec;
@@ -51,6 +52,7 @@ class Config final : public IConfig
         //from IConfig
         int GetServiceIntervalMS() const final;
         timeval GetServiceIntervalTV() const final;
+        int GetIncomingDataBufferSec() const final;
         int GetTCPBuffSz() const final;
         int GetLingerSec() const final;
         int GetMaxCTimeSec() const final;

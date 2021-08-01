@@ -12,6 +12,7 @@ class IConfig
     public:
         virtual int GetServiceIntervalMS() const = 0;
         virtual timeval GetServiceIntervalTV() const = 0;
+        virtual int GetIncomingDataBufferSec() const = 0;
 
         virtual int GetTCPBuffSz() const = 0;
         virtual int GetLingerSec() const = 0;

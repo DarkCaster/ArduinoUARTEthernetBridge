@@ -65,6 +65,11 @@ timeval Config::GetServiceIntervalTV() const
     return timeval{serviceInterval/1000,(serviceInterval-serviceInterval/1000*1000)*1000};
 }
 
+int Config::GetIncomingDataBufferSec() const
+{
+    return incomingDataBufferSec;
+}
+
 int Config::GetTCPBuffSz() const
 {
     return TCPBuffSz;

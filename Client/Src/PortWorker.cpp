@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <poll.h>
 
 PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const RemoteConfig& _portConfig):
     logger(_logger),
@@ -147,6 +148,7 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
 void PortWorker::Worker()
 {
     logger->Info()<<"Starting PortWorker";
+    pollfd pfd={};
     while(!shutdownPending.load())
     {
         std::unique_lock<std::mutex> lock(ringBuffLock);
@@ -157,8 +159,46 @@ void PortWorker::Worker()
         //just as precaution, may be triggered on shutdown
         if(tail.maxSz<1)
             continue;
-        //TODO: write data to client's FD
-        size_t szToWrite=1;
+        //get client
+        std::shared_ptr<Connection> currConn=nullptr;
+        {
+            std::lock_guard<std::mutex> clientGuard(clientLock);
+            currConn=client;
+        }
+        //poll for write
+        size_t szToWrite=tail.maxSz;
+        if(currConn!=nullptr)
+        {
+            pfd.fd=currConn->fd;
+            pfd.events=POLLOUT;
+            pfd.revents=0;
+            if(poll(&pfd,1,config.GetServiceIntervalMS())<0)
+            {
+                logger->Error()<<"Write poll failed with error: "<<strerror(errno);
+                std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
+            }
+            else if (pfd.revents & (POLLHUP|POLLNVAL|POLLERR))
+            {
+                logger->Error()<<"Write poll failed, client being disconnected";
+                std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
+            }
+            else if (pfd.revents & POLLOUT)
+            {
+                auto dw=write(client->fd,tail.buffer,szToWrite);
+                if(dw<0)
+                {
+                    logger->Error()<<"Write failed with error: "<<strerror(errno);
+                    szToWrite=0;
+                }
+                else
+                    szToWrite-=static_cast<size_t>(dw);
+            }
+        }
+        else
+        {
+            logger->Warning()<<"Write failed - client is not connected, bytes lost: "<<szToWrite;
+            std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
+        }
         //free data that was read from ringBuffer
         {
             std::lock_guard<std::mutex> guard(ringBuffLock);

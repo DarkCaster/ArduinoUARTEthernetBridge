@@ -146,16 +146,15 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
 
 void PortWorker::Worker()
 {
+    logger->Info()<<"Starting PortWorker";
     while(!shutdownPending.load())
     {
         std::unique_lock<std::mutex> lock(ringBuffLock);
         while(rxRingBuff.UsedSize()<1 && !shutdownPending.load())
             ringBuffTrigger.wait(lock);
-        if(shutdownPending.load())
-            return;
         auto tail=rxRingBuff.GetTail();
         lock.unlock();
-        //just as precaution
+        //just as precaution, may be triggered on shutdown
         if(tail.maxSz<1)
             continue;
         //TODO: write data to client's FD
@@ -166,6 +165,7 @@ void PortWorker::Worker()
             rxRingBuff.Commit(tail,szToWrite);
         }
     }
+    logger->Info()<<"PortWorker was shutdown";
 }
 
 void PortWorker::OnShutdown()

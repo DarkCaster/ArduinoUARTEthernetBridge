@@ -28,7 +28,7 @@ static UARTWorker uartWorker[UART_COUNT];
 static bool tcpClientState;
 static unsigned long uartPollTimes[UART_COUNT];
 
-void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
+static void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 {
     blinkTime/=10;
     pauseTime/=10;
@@ -137,7 +137,7 @@ void setup()
     pollTimer.Reset(true);
 }
 
-void check_link_state()
+static void check_link_state()
 {
     //check link state
     if(UIPEthernet.linkStatus()!=LinkON)
@@ -148,7 +148,7 @@ void check_link_state()
 
 }
 
-unsigned long GetMinPollTime()
+static unsigned long GetMinPollTime()
 {
     unsigned long minPollTime=IDLE_POLL_INTERVAL_US;
     for(int i=0;i<UART_COUNT;++i)

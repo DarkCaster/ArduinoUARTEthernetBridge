@@ -311,7 +311,15 @@ int main (int argc, char *argv[])
     for(auto &portWorker:portWorkers)
         portWorker->Startup();
     tcpTransport.Startup();
-    pollTimer.Start(config.GetIdleTimerInterval());
+    //get the lowest poll time, and set timer to it
+    int64_t minPollTime=INT64_MAX;
+    for(size_t i=0;i<portCount;++i)
+    {
+        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetUARTBuffSz());
+        if(testTime<minPollTime)
+            minPollTime=testTime;
+    }
+    pollTimer.Start(minPollTime);
     for(auto &listener:tcpListeners)
         listener->Startup();
     for(auto &listener:ptyListeners)

@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
+#include <fcntl.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(std::shared_ptr<Connection> _client):IPortOpenMessage(_client){} };
@@ -56,6 +57,8 @@ static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const
     int tcpQuickAck=1;
     if(setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &tcpQuickAck, sizeof(tcpQuickAck)))
         logger->Warning()<<"Failed to set TCP_QUICKACK option to socket: "<<strerror(errno);
+    if(fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
+        logger->Error()<<"Failed to set O_NONBLOCK option to socket: "<<strerror(errno);
 }
 
 static void SetSocketCustomTimeouts(std::shared_ptr<ILogger> &logger, int fd, const timeval &tv)

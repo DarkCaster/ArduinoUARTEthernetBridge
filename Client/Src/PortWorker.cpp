@@ -57,8 +57,10 @@ void PortWorker::OnPortOpen(const IPortOpenMessage& message)
         sessionId++;
         if(sessionId>0x7F)
             sessionId=0x01;
-        //TODO: reset ring-buffer for RX
         remoteBufferFillup=bufferLimit;
+        std::lock_guard<std::mutex> ringBuffGuard(ringBuffLock);
+        logger->Info()<<"Dumping RX ring-buffer contents";
+        rxRingBuff.Reset();
     }
 }
 
@@ -191,6 +193,7 @@ void PortWorker::Worker()
                 if(dw<0)
                 {
                     logger->Error()<<"Write failed with error: "<<strerror(errno);
+                    client->Dispose();
                     szToWrite=0;
                 }
                 else

@@ -41,6 +41,9 @@ bool PTYListener::Startup()
         return false;
     }
 
+    if(fcntl(ptm, F_SETFL, O_NONBLOCK) < 0)
+        logger->Error()<<"Failed to set O_NONBLOCK option to ptm: "<<strerror(errno);
+
     return WorkerBase::Startup();
 }
 

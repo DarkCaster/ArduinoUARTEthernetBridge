@@ -67,9 +67,13 @@ bool TCPServer::ProcessTX()
     *(txBuff)=*(txBuff+1)=0;
     *(txBuff+metaSz)=CRC8(txBuff,metaSz);
     auto dataLeft=pkgSz;
-    while(dataLeft>0 && client.connected())
-        dataLeft-=client.write(txBuff+pkgSz-dataLeft,dataLeft);
-    if(dataLeft>0)
-        return false;
+    while(dataLeft>0)
+    {
+        auto dw=client.write(txBuff+pkgSz-dataLeft,dataLeft);
+        //TODO: check this if porting to other ethernet libs, UIPEthernet return 0 if client is not connected
+        if(dw<1)
+            return false;
+        dataLeft-=dw;
+    }
     return true;
 }

@@ -39,7 +39,7 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
         case ReqType::Reset:
             resetHelper->StartReset(RESET_TIME_MS);
             sessionId=request.arg;
-            //TODO: drop current data in the ring-buffer on reset?
+            rxRingBuff.Reset();
             break;
         case ReqType::ResetOpen:
             resetHelper->StartReset(RESET_TIME_MS);
@@ -48,7 +48,7 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
             if(IS_OPEN(curMode))
             {
                 uart->end();
-                //TODO: drop current data in the ring-buffer on open?
+                rxRingBuff.Reset();
             }
             sessionId=0; //used only on client start, so reset session id
             curMode=request.arg;
@@ -62,7 +62,7 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
             if(IS_OPEN(curMode))
             {
                 uart->end();
-                //TODO: drop current data in the ring-buffer on close?
+                rxRingBuff.Reset();
             }
             curMode=MODE_CLOSED;
             pollInterval=IDLE_POLL_INTERVAL_US;

@@ -69,8 +69,8 @@ void setup()
     //status pin
     pinMode(STATUS_LED, OUTPUT);
 
-    //setup UART-helpers
-    HardwareSerial *extUARTs[] = UART_DEFS; //TODO: setup uart-helpers
+    //setup UART-workers
+    HardwareSerial *extUARTs[] = UART_DEFS;
     uint8_t extUARTPins[] = UART_RX_PINS;
     uint8_t extRSTPins[] = UART_RST_PINS;
     for(int i=0;i<UART_COUNT;++i)

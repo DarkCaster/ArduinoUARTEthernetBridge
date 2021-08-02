@@ -46,7 +46,7 @@ void PortWorker::OnPortOpen(const IPortOpenMessage& message)
     //get rid of old client if it still not closed
     if(client!=nullptr)
     {
-        logger->Info()<<"Disposing previous client connection, fd"<<client->fd;
+        logger->Info()<<"Disposing previous client connection, fd: "<<client->fd;
         client->Dispose();
     }
     //setup new client

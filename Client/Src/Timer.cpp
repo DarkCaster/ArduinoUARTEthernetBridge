@@ -45,8 +45,10 @@ void Timer::Start(int64_t intervalUsec)
     {
         staleTimersCount++;
         activeTimer->detach();
+        logger->Info()<<"Old timer was detached";
     }
     activeTimer=std::make_shared<std::thread>([=] { Worker(std::chrono::microseconds(intervalUsec)); });
+    logger->Info()<<"Interval set to: "<<intervalUsec<<" usec";
 }
 
 void Timer::Stop()

@@ -25,6 +25,7 @@ class DataBuffer
         void Commit(const Handle &handle, uint16_t usedSz);
         uint16_t UsedSize();
         bool IsHalfUsed();
+        void Reset();
 };
 
 #endif // DATABUFFER_H

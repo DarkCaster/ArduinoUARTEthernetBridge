@@ -4,8 +4,8 @@ DataBuffer::DataBuffer():
     begin(&(storage[0])),
     end(&(storage[DATA_BUFFER_SIZE]))
 {
-    head=&(storage[0]);
-    tail=&(storage[0]);
+    head=begin;
+    tail=begin;
 }
 
 Handle DataBuffer::GetHead()
@@ -36,4 +36,10 @@ uint16_t DataBuffer::UsedSize()
 bool DataBuffer::IsHalfUsed()
 {
     return UsedSize()>(DATA_BUFFER_SIZE/2);
+}
+
+void DataBuffer::Reset()
+{
+    head=begin;
+    tail=begin;
 }

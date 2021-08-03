@@ -146,6 +146,7 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
             memcpy(head.buffer,rxBuff+response.plSz-szToWrite,sz);
             szToWrite-=sz;
             rxRingBuff.Commit(head,sz);
+            //logger->Info()<<"Ring buffer commited: "<<sz;
             head=rxRingBuff.GetHead();
         }
         if(szToWrite>0)
@@ -202,7 +203,7 @@ void PortWorker::Worker()
                     szToWrite=0;
                 }
                 else
-                    szToWrite-=static_cast<size_t>(dw);
+                    szToWrite=static_cast<size_t>(dw);
             }
         }
         else

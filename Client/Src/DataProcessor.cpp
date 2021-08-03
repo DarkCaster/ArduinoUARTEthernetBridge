@@ -53,7 +53,7 @@ void DataProcessor::OnIncomingPackageEvent(const IIncomingPackageMessage& messag
 {
     //may be ocassionally called simultaneously from TCP and UDP transport
     std::lock_guard<std::mutex> pushGuard(pushLock);
-    //logger->Info()<<"Package event: "<<message.package;
+    //logger->Info()<<"Package event: "<<message.msgType;
     for(int i=0;i<config.GetPortCount();++i)
     {
         auto response=Response::Map(i,message.package);

@@ -57,7 +57,9 @@ ClientEvent TCPServer::ProcessRX()
         return ClientEvent{ClientEventType::Disconnected,{.remoteAddr=INADDR_NONE}};
     }
 
-    //read port for UDP connection
+    //prepare reading next package
+    pkgLeft=pkgSz;
+    //read port for UDP connection with new request
     return ClientEvent{ClientEventType::NewRequest,{.udpPort=static_cast<uint16_t>(*rxBuff|*(rxBuff+1)<<8)}};
 }
 

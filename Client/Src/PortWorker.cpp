@@ -78,6 +78,7 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
         txBuff[0]=portConfig.speed&0xFF;
         txBuff[1]=(portConfig.speed>>8)&0xFF;
         txBuff[2]=(portConfig.speed>>16)&0xFF;
+        logger->Info()<<"Sending port open request, speed: "<<portConfig.speed<<"; mode: "<< static_cast<int>(portConfig.mode);
         return Request{ReqType::Open,static_cast<uint8_t>(portConfig.mode),3};
     }
 
@@ -87,8 +88,11 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     if(resetPending)
     {
         resetPending=false;
+        logger->Info()<<"Sending reset request";
         return Request{ReqType::Reset,static_cast<uint8_t>(sessionId),0};
     }
+
+    //logger->Info()<<"Remote buffer fillup: "<<remoteBufferFillup;
 
     //calculate how much data we want to read from client
     auto dataToRead=config.GetUARTBuffSz();
@@ -103,12 +107,13 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     auto dataRead=read(client->fd,txBuff,static_cast<size_t>(dataToRead));
     if(dataRead<=0)
     {
-        if(dataRead==0)
-            logger->Info()<<"Client was disconnected";
         auto error=errno;
-        if(error!=EINTR && error!=EWOULDBLOCK)
+        if(dataRead==0 || (error!=EINTR && error!=EWOULDBLOCK))
         {
-            logger->Info()<<"Client read was failed with: "<<strerror(error);
+            if(dataRead==0)
+                logger->Info()<<"Client was disconnected";
+            else
+                logger->Info()<<"Client read was failed with: "<<strerror(error);
             client->Dispose();
             client=nullptr;
         }

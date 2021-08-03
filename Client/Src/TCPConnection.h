@@ -2,18 +2,15 @@
 #define TCP_CONNECTION_H
 
 #include "Connection.h"
-#include <mutex>
+#include <atomic>
 
 class TCPConnection final : public Connection
 {
     private:
-        bool isDisposed;
-        error_t error;
-        std::mutex stateLock;
+        std::atomic<bool> isDisposed;
     public:
         TCPConnection(const int fd);
-        error_t GetStatus() final;
-        void SetStatus(const error_t error) final;
+        bool GetStatus() final;
         void Dispose() final;
 };
 

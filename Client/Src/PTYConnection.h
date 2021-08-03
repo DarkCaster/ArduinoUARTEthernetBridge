@@ -2,18 +2,16 @@
 #define PTYCONNECTION_H
 
 #include "Connection.h"
-#include <mutex>
+
+#include <atomic>
 
 class PTYConnection final : public Connection
 {
     private:
-        bool isDisposed;
-        error_t error;
-        std::mutex stateLock;
+        std::atomic<bool> isDisposed;
     public:
         PTYConnection(const int fd);
-        error_t GetStatus() final;
-        void SetStatus(const error_t error) final;
+        bool GetStatus() final;
         void Dispose() final;
 };
 

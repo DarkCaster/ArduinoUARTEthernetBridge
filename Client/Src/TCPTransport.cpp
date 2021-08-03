@@ -90,7 +90,7 @@ void TCPTransport::HandleError(int ec, const std::string &message)
 std::shared_ptr<Connection> TCPTransport::GetConnection()
 {
     std::lock_guard<std::mutex> opGuard(remoteConnLock);
-    if(remoteConn!=nullptr && remoteConn->GetStatus()==0)
+    if(remoteConn!=nullptr && remoteConn->GetStatus())
         return remoteConn;
 
     if(remoteConn!=nullptr)
@@ -187,7 +187,6 @@ void TCPTransport::Worker()
                 auto error=errno;
                 if(error==EINTR || error==EWOULDBLOCK)
                     continue;
-                conn->SetStatus(error);
                 //socket was closed or errored, close connection from our side and stop reading
                 logger->Warning()<<"TCP read failed: "<<strerror(error);
                 conn->Dispose();
@@ -235,7 +234,6 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
             if(error==EINTR || error==EWOULDBLOCK)
                 continue;
             logger->Warning()<<"TCP write failed: "<<strerror(error);
-            conn->SetStatus(error);
             conn->Dispose();
             return;
         }

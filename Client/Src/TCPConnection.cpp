@@ -2,32 +2,21 @@
 
 #include <unistd.h>
 
+static bool falseVal=false;
+
 TCPConnection::TCPConnection(const int _fd):
     Connection(_fd)
 {
-    error=0;
-    isDisposed=false;
+    isDisposed.store(false);
 }
 
-error_t TCPConnection::GetStatus()
+bool TCPConnection::GetStatus()
 {
-    std::lock_guard<std::mutex> guard(stateLock);
-    return error;
-}
-
-void TCPConnection::SetStatus(const error_t _error)
-{
-    std::lock_guard<std::mutex> guard(stateLock);
-    if(isDisposed)
-        return;
-    error=_error;
+    return !isDisposed.load();
 }
 
 void TCPConnection::Dispose()
 {
-    std::lock_guard<std::mutex> guard(stateLock);
-    if(isDisposed)
-        return;
-    isDisposed=true;
-    close(fd);
+    if(isDisposed.compare_exchange_strong(falseVal,true))
+        close(fd);
 }

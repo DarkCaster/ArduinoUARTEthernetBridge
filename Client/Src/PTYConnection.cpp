@@ -5,28 +5,15 @@
 PTYConnection::PTYConnection(const int _fd):
     Connection(_fd)
 {
-    error=0;
-    isDisposed=false;
+    isDisposed.store(false);
 }
 
-error_t PTYConnection::GetStatus()
+bool PTYConnection::GetStatus()
 {
-    std::lock_guard<std::mutex> guard(stateLock);
-    return error;
-}
-
-void PTYConnection::SetStatus(const error_t _error)
-{
-    std::lock_guard<std::mutex> guard(stateLock);
-    if(isDisposed)
-        return;
-    error=_error;
+    return !isDisposed.load();
 }
 
 void PTYConnection::Dispose()
 {
-    std::lock_guard<std::mutex> guard(stateLock);
-    if(isDisposed)
-        return;
-    isDisposed=true;
+    isDisposed.store(true);
 }

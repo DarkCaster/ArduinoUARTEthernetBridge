@@ -30,20 +30,14 @@ static unsigned long uartPollTimes[UART_COUNT];
 
 static void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 {
-    blinkTime/=10;
-    pauseTime/=10;
-
     while(true)
     {
         digitalWrite(STATUS_LED,HIGH);
-        uint16_t cnt=0;
-        for(cnt=0; cnt<blinkTime; ++cnt)
-            _delay_ms(10);
+        delay(blinkTime);
         if(pauseTime>0)
         {
             digitalWrite(STATUS_LED,LOW);
-            for(cnt=0; cnt<pauseTime; ++cnt)
-                _delay_ms(10);
+            delay(pauseTime);
         }
         if(count==1)
             return;
@@ -145,7 +139,6 @@ static void check_link_state()
         blink(500,500,6);
         watchdog.SystemReset();
     }
-
 }
 
 static unsigned long GetMinPollTime()
@@ -161,7 +154,11 @@ void loop()
 {
     //if client is not connected, check the link state, and reboot on link-failure
     if(!tcpClientState)
+    {
         check_link_state();
+        //add small delay to speed down SPI communication with ethernet adapter while not connected
+        delay(25);
+    }
 
     //try to process incoming request via TCP
     auto clientEvent=tcpServer.ProcessRX();

@@ -120,6 +120,7 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
         return Request{ReqType::NoCommand,0,0};
     }
 
+    //logger->Info()<<"Client bytes send: "<<dataRead;
     remoteBufferFillup+=static_cast<int>(dataRead);
     return Request{ReqType::Data,0,static_cast<uint8_t>(dataRead)};
 }
@@ -146,7 +147,7 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
             memcpy(head.buffer,rxBuff+response.plSz-szToWrite,sz);
             szToWrite-=sz;
             rxRingBuff.Commit(head,sz);
-            //logger->Info()<<"Ring buffer commited: "<<sz;
+            //logger->Info()<<"Ring buffer bytes written: "<<sz;
             head=rxRingBuff.GetHead();
         }
         if(szToWrite>0)

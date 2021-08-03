@@ -33,7 +33,7 @@ add_definitions(-DUIP_CLIENT_TIMER=0)
 add_definitions(-DUIP_CONF_BROADCAST=0)
 add_definitions(-DUIP_CONF_UDP_CONNS=1)
 add_definitions(-DUIP_CONF_MAX_CONNECTIONS=2)
-add_definitions(-DUIP_SOCKET_NUMPACKETS=2)
+add_definitions(-DUIP_SOCKET_NUMPACKETS=10)
 
 # add some internal and external libraries
 add_arduino_library(SPI ${ARDUINO_LIBS_PATH})

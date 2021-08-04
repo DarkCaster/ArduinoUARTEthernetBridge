@@ -10,6 +10,8 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <sys/uio.h>
+#include <netinet/ip.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class ConnectedMessage: public IConnectedMessage { public: ConnectedMessage():IConnectedMessage(){} };
@@ -51,15 +53,12 @@ static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const
     if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &cLinger, sizeof(linger))!=0)
         logger->Warning()<<"Failed to set SO_LINGER option to socket: "<<strerror(errno);
     //set buffer size
-    auto bsz=config.GetTCPBuffSz();
+    auto bsz=config.GetPackageSz();
     if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &bsz, sizeof(bsz)))
         logger->Warning()<<"Failed to set SO_SNDBUF option to socket: "<<strerror(errno);
     bsz=config.GetTCPBuffSz();
     if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bsz, sizeof(bsz)))
         logger->Warning()<<"Failed to set SO_RCVBUF option to socket: "<<strerror(errno);
-    int tcpNoDelay=1;
-    if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)))
-        logger->Warning()<<"Failed to set TCP_NODELAY option to socket: "<<strerror(errno);
     int tcpQuickAck=1;
     if(setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &tcpQuickAck, sizeof(tcpQuickAck)))
         logger->Warning()<<"Failed to set TCP_QUICKACK option to socket: "<<strerror(errno);
@@ -225,9 +224,16 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
     //send package
     const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
     auto dataLeft=pkgSz;
+    //enable CORK to dalay send
+    /*int tcpCork=1;
+    if(setsockopt(conn->fd, IPPROTO_TCP, TCP_CORK, &tcpCork, sizeof(tcpCork)))
+        logger->Warning()<<"Failed to enable TCP_CORK option to socket: "<<strerror(errno);*/
+    iovec wio;
     while(dataLeft>0)
     {
-        auto dw=write(conn->fd,txBuff+pkgSz-dataLeft,dataLeft);
+        wio.iov_base=txBuff+pkgSz-dataLeft;
+        wio.iov_len=dataLeft;
+        auto dw=writev(conn->fd,&wio,1);
         if(dw<=0)
         {
             auto error=errno;
@@ -237,8 +243,14 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
             conn->Dispose();
             return;
         }
+        if(static_cast<size_t>(dw)<dataLeft)
+            logger->Warning()<<"Partial write detected: "<<dw;
         dataLeft-=static_cast<size_t>(dw);
     }
+    //disable CORK to flush
+    /*tcpCork=0;
+    if(setsockopt(conn->fd, IPPROTO_TCP, TCP_CORK, &tcpCork, sizeof(tcpCork)))
+        logger->Warning()<<"Failed to disable TCP_CORK option to socket: "<<strerror(errno);*/
 }
 
 bool TCPTransport::ReadyForMessage(const MsgType msgType)

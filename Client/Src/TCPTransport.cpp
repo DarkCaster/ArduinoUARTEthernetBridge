@@ -185,7 +185,8 @@ void TCPTransport::Worker()
                 if(error==EINTR)
                     continue;
                 //socket was closed or errored, close connection from our side and stop reading
-                logger->Warning()<<"TCP recv failed: "<<strerror(error);
+                if(!shutdownPending.load())
+                    logger->Warning()<<"TCP recv failed: "<<strerror(error);
                 conn->Dispose();
                 break;
             }
@@ -232,7 +233,8 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
             auto error=errno;
             if(error==EINTR)
                 continue;
-            logger->Warning()<<"TCP send failed: "<<strerror(error);
+            if(!shutdownPending.load())
+                logger->Warning()<<"TCP send failed: "<<strerror(error);
             conn->Dispose();
             return;
         }
@@ -251,10 +253,12 @@ void TCPTransport::OnMessage(const void* const, const IMessage& message)
 {
     if(message.msgType==MSG_SEND_PACKAGE)
         OnSendPackage(static_cast<const ISendPackageMessage&>(message));
-
 }
 
 void TCPTransport::OnShutdown()
 {
     shutdownPending.store(true);
+    std::lock_guard<std::mutex> opGuard(remoteConnLock);
+    if(remoteConn!=nullptr)
+        remoteConn->Dispose();
 }

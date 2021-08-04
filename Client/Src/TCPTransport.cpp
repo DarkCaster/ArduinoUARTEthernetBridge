@@ -10,8 +10,6 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <netdb.h>
-#include <sys/uio.h>
-#include <netinet/ip.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class ConnectedMessage: public IConnectedMessage { public: ConnectedMessage():IConnectedMessage(){} };
@@ -53,11 +51,11 @@ static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const
     if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &cLinger, sizeof(linger))!=0)
         logger->Warning()<<"Failed to set SO_LINGER option to socket: "<<strerror(errno);
     //set buffer size
-    auto bsz=config.GetPackageSz();
-    if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &bsz, sizeof(bsz)))
+    auto sbsz=config.GetPackageSz();
+    if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sbsz, sizeof(sbsz)))
         logger->Warning()<<"Failed to set SO_SNDBUF option to socket: "<<strerror(errno);
-    bsz=config.GetTCPBuffSz();
-    if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bsz, sizeof(bsz)))
+    auto rbsz=config.GetTCPBuffSz();
+    if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rbsz, sizeof(rbsz)))
         logger->Warning()<<"Failed to set SO_RCVBUF option to socket: "<<strerror(errno);
     int tcpQuickAck=1;
     if(setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &tcpQuickAck, sizeof(tcpQuickAck)))
@@ -176,23 +174,25 @@ void TCPTransport::Worker()
         }
 
         const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
-        auto szLeft=pkgSz;
+        auto dataLeft=pkgSz;
         while(!shutdownPending.load())
         {
             //read package
-            auto dr=read(conn->fd,rxBuff.get()+pkgSz-szLeft,szLeft);
+            auto dr=recv(conn->fd,rxBuff.get()+pkgSz-dataLeft,dataLeft,MSG_WAITALL);
             if(dr<=0)
             {
                 auto error=errno;
-                if(error==EINTR || error==EWOULDBLOCK)
+                if(error==EINTR)
                     continue;
                 //socket was closed or errored, close connection from our side and stop reading
-                logger->Warning()<<"TCP read failed: "<<strerror(error);
+                logger->Warning()<<"TCP recv failed: "<<strerror(error);
                 conn->Dispose();
                 break;
             }
-            szLeft-=static_cast<size_t>(dr);
-            if(szLeft>0)
+            if(static_cast<size_t>(dr)<dataLeft)
+                logger->Warning()<<"Partial recv detected: "<<dr<<" bytes; requested: "<<dataLeft<<" bytes";
+            dataLeft-=static_cast<size_t>(dr);
+            if(dataLeft>0)
                 continue;
             //verify CRC, disconnect on failure and drop data
             if(*(rxBuff.get()+config.GetPackageMetaSz())!=CRC8(rxBuff.get(),static_cast<size_t>(config.GetPackageMetaSz())))
@@ -205,7 +205,7 @@ void TCPTransport::Worker()
             //logger->Info()<<"New TCP package received";
             //signal new package received
             sender.SendMessage(this, IncomingPackageMessage(rxBuff.get()));
-            szLeft=pkgSz;
+            dataLeft=pkgSz;
         }
     }
     logger->Info()<<"TCP transport-worker shuting down";
@@ -224,33 +224,22 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
     //send package
     const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
     auto dataLeft=pkgSz;
-    //enable CORK to dalay send
-    /*int tcpCork=1;
-    if(setsockopt(conn->fd, IPPROTO_TCP, TCP_CORK, &tcpCork, sizeof(tcpCork)))
-        logger->Warning()<<"Failed to enable TCP_CORK option to socket: "<<strerror(errno);*/
-    iovec wio;
     while(dataLeft>0)
     {
-        wio.iov_base=txBuff+pkgSz-dataLeft;
-        wio.iov_len=dataLeft;
-        auto dw=writev(conn->fd,&wio,1);
+        auto dw=send(conn->fd,txBuff+pkgSz-dataLeft,dataLeft,0);
         if(dw<=0)
         {
             auto error=errno;
-            if(error==EINTR || error==EWOULDBLOCK)
+            if(error==EINTR)
                 continue;
-            logger->Warning()<<"TCP write failed: "<<strerror(error);
+            logger->Warning()<<"TCP send failed: "<<strerror(error);
             conn->Dispose();
             return;
         }
         if(static_cast<size_t>(dw)<dataLeft)
-            logger->Warning()<<"Partial write detected: "<<dw;
+            logger->Warning()<<"Partial send detected: "<<dw<<" bytes; requested: "<<dataLeft<<" bytes";
         dataLeft-=static_cast<size_t>(dw);
     }
-    //disable CORK to flush
-    /*tcpCork=0;
-    if(setsockopt(conn->fd, IPPROTO_TCP, TCP_CORK, &tcpCork, sizeof(tcpCork)))
-        logger->Warning()<<"Failed to disable TCP_CORK option to socket: "<<strerror(errno);*/
 }
 
 bool TCPTransport::ReadyForMessage(const MsgType msgType)

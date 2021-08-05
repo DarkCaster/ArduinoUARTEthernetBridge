@@ -4,29 +4,29 @@
 #include "IConfig.h"
 #include "ILogger.h"
 #include "IMessageSender.h"
+#include "WorkerBase.h"
 
-#include <chrono>
 #include <cstdint>
-#include <mutex>
-#include <thread>
+#include <atomic>
 
-class Timer
+class Timer : public WorkerBase
 {
     private:
         std::shared_ptr<ILogger> logger;
         IMessageSender& sender;
         const IConfig &config;
-        //following fields managed from background threads
-        std::mutex manageLock;
-        std::shared_ptr<std::thread> activeTimer;
-        int staleTimersCount;
-        void Worker(std::chrono::microseconds reqInterval);
+        const int64_t reqIntervalUsec;
+        const bool profilingEnabled;
+        std::atomic<bool> shutdownPending;
+    protected:
+        void WorkerPRF();
+        void WorkerNoPRF();
     public:
-        Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config);
-        void Start(int64_t intervalUsec);
-        void Stop();
-        void Shutdown();
-        void RequestShutdown();
+        Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const int64_t intervalUsec, const bool profilingEnabled);
+    protected:
+        //WorkerBase
+        void Worker() final;
+        void OnShutdown() final;
 };
 
 #endif // TIMER_H

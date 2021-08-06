@@ -41,7 +41,6 @@ static IPAddress Lookup(const std::string &target)
     return result;
 }
 
-
 static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const IConfig& config)
 {
     //set linger

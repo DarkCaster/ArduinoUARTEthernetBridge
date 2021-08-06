@@ -25,6 +25,7 @@ void DataProcessor::OnMessage(const void* const, const IMessage& message)
         OnIncomingPackageEvent(static_cast<const IIncomingPackageMessage&>(message));
 }
 
+//TODO: embed time value from ITimerMessage into the outgoing request
 void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
 {
     //caller timer-thread may change if timer interval updated, so lock there as precaution

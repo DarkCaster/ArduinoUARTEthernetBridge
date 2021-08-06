@@ -20,6 +20,7 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
     sessionId=0;
     resetPending=false;
     remoteBufferFillup=bufferLimit;
+    oldSessionPkgCount=0;
 }
 
 bool PortWorker::ReadyForMessage(const MsgType msgType)
@@ -131,9 +132,21 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
     {
         std::lock_guard<std::mutex> clientGuard(clientLock);
         remoteBufferFillup=(response.arg&0x80)!=0?bufferLimit:0;
-        if(client==nullptr || sessionId!=(response.arg&0x7F))
+        if(client==nullptr)
             return;
+        if(sessionId!=(response.arg&0x7F))
+        {
+            oldSessionPkgCount++;
+            return;
+        }
     }
+
+    if(oldSessionPkgCount>0)
+    {
+        logger->Info()<<"Dropped "<<oldSessionPkgCount<<" incoming packages from previous session";
+        oldSessionPkgCount=0;
+    }
+
     if(response.type==RespType::NoCommand)
         return;
     //write data to ring-buffer

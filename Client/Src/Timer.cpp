@@ -16,6 +16,8 @@ Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const I
 void Timer::Worker()
 {
     logger->Info()<<"Starting up with interval: "<<reqIntervalUsec<<" usec";
+    if(profilingEnabled)
+        logger->Info()<<"Package processing-time profiling enabled";
 
     const auto reqInterval=std::chrono::microseconds(reqIntervalUsec);
     const auto startTime=std::chrono::steady_clock::now();

@@ -34,6 +34,7 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         bool resetPending;
         uint8_t sessionId;
         int remoteBufferFillup;
+        int oldSessionPkgCount;
         //ring buffer, shared between ProcessRX and Worker threads
         std::mutex ringBuffLock;
         DataBuffer rxRingBuff;

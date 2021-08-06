@@ -170,12 +170,15 @@ int main (int argc, char *argv[])
 
     //parse uart modes
     std::vector<int> uartModes;
+    bool timingProfilingEnabled=false;
     while(args.find("-pm"+std::to_string(uartModes.size()+1))!=args.end())
     {
-        auto port=std::atoi(args["-pm"+std::to_string(uartModes.size()+1)].c_str());
-        if(port<0)
+        auto mode=std::atoi(args["-pm"+std::to_string(uartModes.size()+1)].c_str());
+        if(mode<0)
             return param_error(argv[0],"uart mode is invalid!");
-        uartModes.push_back(port);
+        if(mode==255)
+            timingProfilingEnabled=true;
+        uartModes.push_back(mode);
     }
     if(uartModes.size()<portCount)
         return param_error(argv[0],"provided uart modes count must be equal to remote ports count");
@@ -274,7 +277,7 @@ int main (int argc, char *argv[])
         if(testTime<minPollTime)
             minPollTime=testTime;
     }
-    Timer pollTimer(timerLogger,messageBroker,config,minPollTime,false);
+    Timer pollTimer(timerLogger,messageBroker,config,minPollTime,timingProfilingEnabled);
 
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
     for(size_t i=0;i<remoteConfigs.size();++i)

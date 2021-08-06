@@ -18,9 +18,6 @@ class Timer : public WorkerBase
         const int64_t reqIntervalUsec;
         const bool profilingEnabled;
         std::atomic<bool> shutdownPending;
-    protected:
-        void WorkerPRF();
-        void WorkerNoPRF();
     public:
         Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const int64_t intervalUsec, const bool profilingEnabled);
     protected:

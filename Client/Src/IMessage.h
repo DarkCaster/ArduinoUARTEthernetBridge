@@ -49,10 +49,10 @@ class IIncomingPackageMessage : public IMessage
 class ITimerMessage : public IMessage
 {
     protected:
-        ITimerMessage(int64_t _interval):
-            IMessage(MSG_TIMER),interval(_interval){}
+        ITimerMessage(int64_t _time):
+            IMessage(MSG_TIMER),time(_time){}
     public:
-        const int64_t interval;
+        const int64_t time;
 };
 
 class ISendPackageMessage : public IMessage

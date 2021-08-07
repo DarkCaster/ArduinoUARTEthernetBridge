@@ -186,7 +186,7 @@ void UDPTransport::Worker()
         if(dr<=0)
         {
             auto error=errno;
-            if(error==EINTR)
+            if(error==EINTR || error==EAGAIN || error==EWOULDBLOCK)
                 continue;
             //socket was closed or errored, close connection from our side and stop reading
             if(!shutdownPending.load())
@@ -218,7 +218,7 @@ void UDPTransport::Worker()
         if(!conn->RXSeqCheckIncrement(static_cast<uint16_t>(*rxBuff.get()|*(rxBuff.get()+1)<<8)))
         {
             if(droppedRxSeqCnt<1)
-                logger->Warning()<<"Start dropping incoming packages because of invalid sequence number!";
+                logger->Warning()<<"Dropping incoming packages due to invalid sequence number!";
             droppedRxSeqCnt++;
             continue;
         }

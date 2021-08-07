@@ -35,7 +35,7 @@ uint16_t UDPConnection::TXSeqIncrement()
 
 bool UDPConnection::RXSeqCheckIncrement(uint16_t testSeq)
 {
-    if((rxSeq-testSeq)>(testSeq-rxSeq))
+    if(static_cast<uint16_t>(rxSeq-testSeq)>static_cast<uint16_t>(testSeq-rxSeq))
     {
         rxSeq=testSeq;
         return true;

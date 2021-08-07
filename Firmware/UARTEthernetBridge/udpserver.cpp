@@ -63,9 +63,6 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
             break;
     }
 
-    if(!serverStarted)
-        return ClientEvent{ClientEventType::NoEvent,{}};
-
     //parse and read the packet, verify CRC for package metadata, veridy sequence number
     size_t inSz=udpServer.parsePacket();
     if(
@@ -100,6 +97,7 @@ bool UDPServer::ProcessTX()
     //fill-up server sequence
     *(txBuff)=clientSeq&0xFF;
     *(txBuff+1)=(clientSeq>>8)&0xFF;
+    clientSeq++;
     //calculate CRC for package metadata
     *(txBuff+metaSz)=CRC8(txBuff,metaSz);
     //send package

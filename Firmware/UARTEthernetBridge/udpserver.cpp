@@ -63,25 +63,20 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
             break;
     }
 
-    //parse and read the packet, verify CRC for package metadata, veridy sequence number
+    //parse and read the packet, flush it as fast as possible
     size_t inSz=udpServer.parsePacket();
-    if(
-        inSz!=pkgSz || //check package size
-        static_cast<size_t>(udpServer.read(rxBuff,pkgSz))!=pkgSz || //try to read it
-        udpServer.remoteIP()!=clientAddr || //check remote address
-        CRC8(rxBuff,metaSz)!=*(rxBuff+metaSz) || //check CRC for package metadata
-        DropOldSeq() //process package seqence number
-      )
-    {
-        if(inSz!=0)
-            udpServer.flush();
+    if(inSz<1)
         return ClientEvent{ClientEventType::NoEvent,{}};
-    }
+    auto dr=static_cast<size_t>(udpServer.read(rxBuff,pkgSz));
+    udpServer.flush();
 
-    //record client's port if all OK, and flush the current package
+    //if(udpServer.remoteIP()!=clientAddr) //check remote address not really needed
+    if(dr!=pkgSz||CRC8(rxBuff,metaSz)!=*(rxBuff+metaSz)||DropOldSeq())
+        return ClientEvent{ClientEventType::NoEvent,{}};
+
+    //record client's port if all OK
     if(clientUDPPort<1)
         clientUDPPort=udpServer.remotePort();
-    udpServer.flush();
 
     //defer connection state tracking alarm
     alarmTimer.SnoozeAlarm();

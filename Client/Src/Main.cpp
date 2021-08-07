@@ -280,6 +280,7 @@ int main (int argc, char *argv[])
             minPollTime=testTime;
     }
     Timer pollTimer(timerLogger,messageBroker,config,minPollTime,timingProfilingEnabled);
+    messageBroker.AddSubscriber(pollTimer);
 
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
     for(size_t i=0;i<remoteConfigs.size();++i)

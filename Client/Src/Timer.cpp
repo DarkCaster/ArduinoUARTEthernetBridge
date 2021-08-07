@@ -11,6 +11,17 @@ Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const I
     profilingEnabled(_profilingEnabled)
 {
     shutdownPending.store(false);
+    connectPending.store(true);
+}
+
+bool Timer::ReadyForMessage(const MsgType msgType)
+{
+    return msgType==MSG_CONNECTED;
+}
+
+void Timer::OnMessage(const void* const /*source*/, const IMessage& /*message*/)
+{
+    connectPending.store(false);
 }
 
 void Timer::Worker()
@@ -37,7 +48,7 @@ void Timer::Worker()
         if(profilingEnabled)
         {
             auto processTime=now-prev;
-            if(processTime>reqInterval)
+            if(processTime>reqInterval && !connectPending.load())
                 logger->Warning()<<"Processing takes too long: "<<std::chrono::duration_cast<std::chrono::microseconds>(processTime).count()<<" usec";
         }
 

@@ -4,12 +4,13 @@
 #include "IConfig.h"
 #include "ILogger.h"
 #include "IMessageSender.h"
+#include "IMessageSubscriber.h"
 #include "WorkerBase.h"
 
 #include <cstdint>
 #include <atomic>
 
-class Timer : public WorkerBase
+class Timer : public WorkerBase, public IMessageSubscriber
 {
     private:
         std::shared_ptr<ILogger> logger;
@@ -18,8 +19,12 @@ class Timer : public WorkerBase
         const int64_t reqIntervalUsec;
         const bool profilingEnabled;
         std::atomic<bool> shutdownPending;
+        std::atomic<bool> connectPending;
     public:
         Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const int64_t intervalUsec, const bool profilingEnabled);
+        //methods for ISubscriber
+        bool ReadyForMessage(const MsgType msgType) final;
+        void OnMessage(const void* const source, const IMessage& message) final;
     protected:
         //WorkerBase
         void Worker() final;

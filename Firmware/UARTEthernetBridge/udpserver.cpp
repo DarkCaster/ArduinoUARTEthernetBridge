@@ -18,7 +18,7 @@ UDPServer::UDPServer(AlarmTimer& _alarmTimer, Watchdog& _watchDog, uint8_t* cons
 bool UDPServer::DropOldSeq()
 {
     auto checkSeq=static_cast<uint16_t>(*rxBuff|*(rxBuff+1)<<8);
-    if((serverSeq-checkSeq)>(checkSeq-serverSeq))
+    if(static_cast<uint16_t>(serverSeq-checkSeq)>static_cast<uint16_t>(checkSeq-serverSeq))
     {
         serverSeq=checkSeq;
         return false;

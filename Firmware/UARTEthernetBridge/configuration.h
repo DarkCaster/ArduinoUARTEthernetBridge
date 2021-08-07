@@ -24,6 +24,7 @@
 #endif
 
 #define IDLE_POLL_INTERVAL_US 1000000
+#define DEFAULT_ALARM_INTERVAL_MS 5000
 
 //params for ENC28J60 ethernet shield
 #define ENC28J60_MACADDR { 0x00,0x16,0x3E,0x65,0xE3,0x66 }

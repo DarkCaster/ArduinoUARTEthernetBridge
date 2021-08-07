@@ -181,7 +181,7 @@ void TCPTransport::Worker()
             if(dr<=0)
             {
                 auto error=errno;
-                if(error==EINTR)
+                if(error==EINTR || error==EAGAIN || error==EWOULDBLOCK)
                     continue;
                 //socket was closed or errored, close connection from our side and stop reading
                 if(!shutdownPending.load())
@@ -213,6 +213,9 @@ void TCPTransport::Worker()
 
 void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
 {
+    if(!message.useTCP)
+        return;
+
     //try to get connection
     auto txBuff=message.package;
     auto conn=GetConnection();

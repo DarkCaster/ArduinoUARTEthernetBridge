@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "watchdog.h"
 
-class WatchdogAVR final : Watchdog
+class WatchdogAVR final : public Watchdog
 {
     private:
         uint8_t * const srBootSig;

@@ -1,7 +1,8 @@
 #include "udpserver.h"
 #include "crc8.h"
 
-UDPServer::UDPServer(uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
+UDPServer::UDPServer(Watchdog& _watchDog, uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
+    watchDog(_watchDog),
     pkgSz(_pkgSz),
     metaSz(_metaSz),
     rxBuff(_rxBuff),
@@ -45,7 +46,12 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
         case ClientEventType::NewRequest:
             //try to start UIP server
             if(!serverStarted && ctlEvent.data.udpPort>0)
+            {
                 serverStarted=udpServer.begin(ctlEvent.data.udpPort)==1;
+                //reset if server is not started
+                if(!serverStarted)
+                    watchDog.SystemReset();
+            }
             //nothing more to do at this point
             return ctlEvent;
         //try to process further if nothing happened on TCP side

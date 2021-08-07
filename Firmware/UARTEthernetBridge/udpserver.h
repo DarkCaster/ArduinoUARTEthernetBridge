@@ -5,11 +5,13 @@
 #include <IPAddress.h>
 #include <UIPUdp.h>
 
+#include "watchdog.h"
 #include "clientstate.h"
 
 class UDPServer
 {
     private:
+        Watchdog& watchDog;
         const size_t pkgSz;
         const size_t metaSz;
         uint8_t * const rxBuff;
@@ -21,7 +23,7 @@ class UDPServer
         bool serverStarted = false;
         UIPUDP udpServer;
     public:
-        UDPServer(uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
+        UDPServer(Watchdog& watchDog, uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
         ClientEvent ProcessRX(const ClientEvent& ctlEvent);
         bool ProcessTX();
     private:

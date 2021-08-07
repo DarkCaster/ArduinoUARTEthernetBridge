@@ -1,16 +1,16 @@
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef INTERVALTIMER_H
+#define INTERVALTIMER_H
 
 #include <Arduino.h>
 
-class Timer
+class IntervalTimer
 {
     private:
         unsigned long interval;
         unsigned long startTime;
         unsigned long lastDiff;
     public:
-        Timer();
+        IntervalTimer();
         void SetInterval(unsigned long intervalUsec);
         bool Update();
         void Reset(bool freshStart);

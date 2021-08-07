@@ -18,7 +18,7 @@ static uint8_t txBuff[PACKAGE_SIZE];
 
 //helper classes
 static WatchdogAVR watchdog;
-static Timer pollTimer;
+static IntervalTimer pollTimer;
 static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
 static UDPServer udpServer(watchdog,rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
 static ResetHelper rstHelper[UART_COUNT];

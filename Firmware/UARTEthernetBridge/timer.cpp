@@ -1,25 +1,25 @@
 #include "timer.h"
 
-Timer::Timer()
+IntervalTimer::IntervalTimer()
 {
     startTime=micros();
     interval=1;
     lastDiff=0;
 }
 
-void Timer::SetInterval(unsigned long intervalUsec)
+void IntervalTimer::SetInterval(unsigned long intervalUsec)
 {
     interval=intervalUsec>0?intervalUsec:1;
 }
 
-bool Timer::Update()
+bool IntervalTimer::Update()
 {
     //will overflow at some point, not a problem in this case
     lastDiff=micros()-startTime;
     return lastDiff>=interval;
 }
 
-void Timer::Reset(bool freshStart)
+void IntervalTimer::Reset(bool freshStart)
 {
     if(freshStart)
     {

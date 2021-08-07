@@ -4,12 +4,12 @@
 #include "CRC8.h"
 
 #include <cstring>
-#include <sys/socket.h>
 #include <fcntl.h>
-#include <netinet/in.h>
+#include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <netdb.h>
+
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class IncomingPackageMessage: public IIncomingPackageMessage { public: IncomingPackageMessage(const uint8_t* const _package):IIncomingPackageMessage(_package){} };
@@ -45,12 +45,15 @@ static IPAddress Lookup(const std::string &target)
 static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const IConfig& config)
 {
     //set buffer size
-    auto sbsz=config.GetPackageSz();
+    auto sbsz=config.GetTCPBuffSz();
     if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sbsz, sizeof(sbsz)))
         logger->Warning()<<"Failed to set SO_SNDBUF option to socket: "<<strerror(errno);
     auto rbsz=config.GetTCPBuffSz();
     if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rbsz, sizeof(rbsz)))
         logger->Warning()<<"Failed to set SO_RCVBUF option to socket: "<<strerror(errno);
+    int tos=IPTOS_RELIABILITY;
+    if (setsockopt(fd, IPPROTO_IP, IP_TOS,&tos, sizeof(tos)) < 0)
+        logger->Warning()<<"Failed to set IP_TOS option to socket: "<<strerror(errno);
 }
 
 static void SetSocketCustomTimeouts(std::shared_ptr<ILogger> &logger, int fd, const timeval &tv)

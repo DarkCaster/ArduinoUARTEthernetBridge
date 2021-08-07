@@ -83,6 +83,10 @@ std::shared_ptr<UDPConnection> UDPTransport::GetConnection()
         return nullptr;
     }
 
+    //valid port number will when TCP connection is established
+    if(udpPort<1)
+        return nullptr;
+
     std::lock_guard<std::mutex> opGuard(remoteConnLock);
     if(remoteConn!=nullptr && remoteConn->GetStatus())
         return remoteConn;
@@ -300,6 +304,7 @@ void UDPTransport::OnConnected(const IConnectedMessage& message)
     udpPort=message.udpPort;
     if(remoteConn!=nullptr)
         remoteConn->Dispose();
+    logger->Info()<<"Connection reset pending";
 }
 
 void UDPTransport::OnShutdown()

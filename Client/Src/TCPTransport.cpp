@@ -145,15 +145,11 @@ std::shared_ptr<TCPConnection> TCPTransport::GetConnection()
                 return nullptr;
             }
         }
-        /*if(error!=EINPROGRESS)
-            logger->Warning()<<"Failed to connect "<<target.Get()<<" with error: "<<strerror(error);
-        else
-            logger->Warning()<<"Connection attempt to "<<target.Get()<<" timed out";*/
         remoteConn=nullptr;
         return nullptr;
     }
 
-    remoteConn=std::make_shared<TCPConnection>(fd,config.GetUDPEnabled()?udpPort++:0);
+    remoteConn=std::make_shared<TCPConnection>(fd,udpPort++);
     if(udpPort<49152)
         udpPort=49152;
 
@@ -223,8 +219,13 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
     if(conn==nullptr)
         return;
     //write UDP transport port to header and calculate CRC
-    *(txBuff)=static_cast<uint8_t>(conn->GetUDPTransportPort()&0xFF);
-    *(txBuff+1)=static_cast<uint8_t>((conn->GetUDPTransportPort()>>8)&0xFF);
+    if(config.GetUDPEnabled())
+    {
+        *(txBuff)=static_cast<uint8_t>(conn->GetUDPTransportPort()&0xFF);
+        *(txBuff+1)=static_cast<uint8_t>((conn->GetUDPTransportPort()>>8)&0xFF);
+    }
+    else
+        *(txBuff)=*(txBuff+1)=0;
     *(txBuff+config.GetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetPackageMetaSz()));
     //send package
     const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());

@@ -34,7 +34,9 @@ class IShutdownMessage : public IMessage
 class IConnectedMessage : public IMessage
 {
     protected:
-        IConnectedMessage():IMessage(MSG_CONNECTED){}
+        IConnectedMessage(const uint16_t _udpPort):IMessage(MSG_CONNECTED),udpPort(_udpPort){}
+    public:
+        const uint16_t udpPort;
 };
 
 class IIncomingPackageMessage : public IMessage

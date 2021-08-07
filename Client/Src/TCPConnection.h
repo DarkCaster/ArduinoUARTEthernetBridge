@@ -8,10 +8,12 @@ class TCPConnection final : public Connection
 {
     private:
         std::atomic<bool> isDisposed;
+        const uint16_t udpTransportPort;
     public:
-        TCPConnection(const int fd);
+        TCPConnection(const int fd, const uint16_t udpPort);
         bool GetStatus() final;
         void Dispose() final;
+        uint16_t GetUDPTransportPort();
 };
 
 #endif //TCP_CONNECTION_H

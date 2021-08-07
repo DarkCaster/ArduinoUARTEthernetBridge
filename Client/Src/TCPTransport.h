@@ -1,7 +1,7 @@
 #ifndef TCPTRANSPORT_H
 #define TCPTRANSPORT_H
 
-#include "Connection.h"
+#include "TCPConnection.h"
 #include "IConfig.h"
 #include "WorkerBase.h"
 #include "ILogger.h"
@@ -23,9 +23,10 @@ class TCPTransport final : public WorkerBase, public IMessageSubscriber
         std::atomic<bool> shutdownPending;
         //remote connection with it's management lock
         std::mutex remoteConnLock;
-        std::shared_ptr<Connection> remoteConn;
+        std::shared_ptr<TCPConnection> remoteConn;
+        uint16_t udpPort;
         //service methods
-        std::shared_ptr<Connection> GetConnection();
+        std::shared_ptr<TCPConnection> GetConnection();
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
         void OnSendPackage(const ISendPackageMessage& message);

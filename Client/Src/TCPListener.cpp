@@ -176,7 +176,7 @@ void TCPListener::Worker()
         SetSocketCustomTimeouts(logger,cSockFd,config.GetServiceIntervalTV());
 
         logger->Info()<<"New TCP client connected, fd: "<<cSockFd;
-        sender.SendMessage(this, PortOpenMessage(std::make_shared<TCPConnection>(cSockFd)));
+        sender.SendMessage(this, PortOpenMessage(std::make_shared<TCPConnection>(cSockFd,0)));
     }
 
     if(close(lSockFd)!=0)

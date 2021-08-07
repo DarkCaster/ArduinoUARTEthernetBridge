@@ -12,7 +12,7 @@
 #include <netdb.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
-class ConnectedMessage: public IConnectedMessage { public: ConnectedMessage():IConnectedMessage(){} };
+class ConnectedMessage: public IConnectedMessage { public: ConnectedMessage(const uint16_t _udpPort):IConnectedMessage(_udpPort){} };
 class IncomingPackageMessage: public IIncomingPackageMessage { public: IncomingPackageMessage(const uint8_t* const _package):IIncomingPackageMessage(_package){} };
 
 TCPTransport::TCPTransport(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config):
@@ -23,6 +23,7 @@ TCPTransport::TCPTransport(std::shared_ptr<ILogger>& _logger, IMessageSender& _s
 {
     shutdownPending.store(false);
     remoteConn=nullptr;
+    udpPort=49152;
 }
 
 static IPAddress Lookup(const std::string &target)
@@ -83,7 +84,7 @@ void TCPTransport::HandleError(int ec, const std::string &message)
     sender.SendMessage(this,ShutdownMessage(ec));
 }
 
-std::shared_ptr<Connection> TCPTransport::GetConnection()
+std::shared_ptr<TCPConnection> TCPTransport::GetConnection()
 {
     std::lock_guard<std::mutex> opGuard(remoteConnLock);
     if(remoteConn!=nullptr && remoteConn->GetStatus())
@@ -152,9 +153,12 @@ std::shared_ptr<Connection> TCPTransport::GetConnection()
         return nullptr;
     }
 
-    remoteConn=std::make_shared<TCPConnection>(fd);
+    remoteConn=std::make_shared<TCPConnection>(fd,config.GetUDPEnabled()?udpPort++:0);
+    if(udpPort<49152)
+        udpPort=49152;
+
     logger->Info()<<"Remote connection established";
-    sender.SendMessage(this, ConnectedMessage());
+    sender.SendMessage(this, ConnectedMessage(remoteConn->GetUDPTransportPort()));
     return remoteConn;
 }
 
@@ -218,8 +222,9 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
     auto conn=GetConnection();
     if(conn==nullptr)
         return;
-    //clear PKG_HEADER (not needed) and calculate CRC
-    *(txBuff)=*(txBuff+1)=0;
+    //write UDP transport port to header and calculate CRC
+    *(txBuff)=static_cast<uint8_t>(conn->GetUDPTransportPort()&0xFF);
+    *(txBuff+1)=static_cast<uint8_t>((conn->GetUDPTransportPort()>>8)&0xFF);
     *(txBuff+config.GetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetPackageMetaSz()));
     //send package
     const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());

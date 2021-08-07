@@ -27,7 +27,7 @@ class IConfig
         virtual int GetIdleTimerInterval() const = 0;
         virtual std::string GetRemoteAddr() const = 0;
         virtual uint16_t GetTCPPort() const = 0;
-        virtual uint16_t GetUDPPort() const = 0;
+        virtual bool GetUDPEnabled() const = 0;
 };
 
 #endif

@@ -11,6 +11,7 @@
 #include "PTYListener.h"
 #include "TCPListener.h"
 #include "TCPTransport.h"
+#include "UDPTransport.h"
 #include "DataProcessor.h"
 #include "PortWorker.h"
 
@@ -48,7 +49,7 @@ void usage(const std::string &self)
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
     std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
-    std::cerr<<"    -up <port> remote UDP port, for using less reliable UDP transport with less latency, default: 0 - disabled"<<std::endl;
+    std::cerr<<"    -up <0,1> 1 - enable use of less reliable UDP transport with lower latency and jitter, default: 0 - disabled"<<std::endl;
     std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
@@ -131,13 +132,9 @@ int main (int argc, char *argv[])
     else
         return param_error(argv[0],"TCP port must be provided");
 
+    config.SetUDPEnabled(false);
     if(args.find("-up")!=args.end())
-    {
-        auto up=std::atoi(args["-up"].c_str());
-        if(up<1||up>65535)
-            return param_error(argv[0],"UDP port is invalid");
-        config.SetUDPPort(static_cast<uint16_t>(up));
-    }
+        config.SetUDPEnabled(std::atoi(args["-up"].c_str())==1);
 
     //parse local ports numbers
     std::vector<int> localPorts;
@@ -253,6 +250,7 @@ int main (int argc, char *argv[])
     auto mainLogger=logFactory.CreateLogger("Main");
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
     auto tcpTransportLogger=logFactory.CreateLogger("TCPTransport");
+    auto udpTransportLogger=logFactory.CreateLogger("UDPTransport");
     auto timerLogger=logFactory.CreateLogger("PollTimer");
     auto dpLogger=logFactory.CreateLogger("DataProcessor");
 
@@ -268,6 +266,10 @@ int main (int argc, char *argv[])
     //TCP transport
     TCPTransport tcpTransport(tcpTransportLogger,messageBroker,config);
     messageBroker.AddSubscriber(tcpTransport);
+
+    //UDP transport
+    UDPTransport udpTransport(udpTransportLogger,messageBroker,config);
+    messageBroker.AddSubscriber(udpTransport);
 
     //Port polling timer
     int64_t minPollTime=INT64_MAX;
@@ -323,6 +325,7 @@ int main (int argc, char *argv[])
     for(auto &portWorker:portWorkers)
         portWorker->Startup();
     tcpTransport.Startup();
+    udpTransport.Startup();
     pollTimer.Startup();
     for(auto &listener:tcpListeners)
         listener->Startup();
@@ -361,6 +364,7 @@ int main (int argc, char *argv[])
     for(auto &listener:ptyListeners)
         listener->RequestShutdown();
     pollTimer.RequestShutdown();
+    udpTransport.RequestShutdown();
     tcpTransport.RequestShutdown();
     for(auto &portWorker:portWorkers)
         portWorker->RequestShutdown();
@@ -371,6 +375,7 @@ int main (int argc, char *argv[])
     for(auto &listener:ptyListeners)
         listener->Shutdown();
     pollTimer.Shutdown();
+    udpTransport.Shutdown();
     tcpTransport.Shutdown();
     for(auto &portWorker:portWorkers)
         portWorker->Shutdown();

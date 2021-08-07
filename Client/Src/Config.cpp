@@ -45,9 +45,9 @@ void Config::SetRemoteAddr(const std::string& addr)
     remoteAddr=addr;
 }
 
-void Config::SetUDPPort(uint16_t port)
+void Config::SetUDPEnabled(bool _enableUDP)
 {
-    udpPort=port;
+    enableUDP=_enableUDP;
 }
 
 void Config::SetTCPPort(uint16_t port)
@@ -125,9 +125,9 @@ std::string Config::GetRemoteAddr() const
     return remoteAddr;
 }
 
-uint16_t Config::GetUDPPort() const
+bool Config::GetUDPEnabled() const
 {
-    return udpPort;
+    return enableUDP;
 }
 
 uint16_t Config::GetTCPPort() const

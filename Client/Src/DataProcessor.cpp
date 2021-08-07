@@ -38,12 +38,12 @@ void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
     for(int i=0;i<config.GetPortCount();++i)
     {
         auto request=portWorkers[static_cast<size_t>(i)]->ProcessTX(txBuff.get()+config.GetPortBuffOffset(i));
-        if(request.type==ReqType::Open || request.type==ReqType::Reset)
+        if(request.type==ReqType::Open || request.type==ReqType::Close || request.type==ReqType::Reset)
             useTCP=true;
         Request::Write(request,i,txBuff.get());
     }
 
-    if(config.GetUDPPort()<1)
+    if(!config.GetUDPEnabled())
         useTCP=true;
 
     //send data

@@ -32,7 +32,7 @@ class Config final : public IConfig
         int portCount;
         int ringBuffSegCount;
         int idleTimerInterval=IDLE_TIMER_INTERVAL_US;
-        uint16_t udpPort;
+        bool enableUDP;
         uint16_t tcpPort;
         std::string remoteAddr;
 
@@ -46,7 +46,7 @@ class Config final : public IConfig
         void SetUARTBuffSz(int sz);
         void SetRingBuffSegCount(int cnt);
         void SetRemoteAddr(const std::string &addr);
-        void SetUDPPort(uint16_t port);
+        void SetUDPEnabled(bool enableUDP);
         void SetTCPPort(uint16_t port);
 
         //from IConfig
@@ -65,7 +65,7 @@ class Config final : public IConfig
         int GetIdleTimerInterval() const final;
         std::string GetRemoteAddr() const final;
         uint16_t GetTCPPort() const final;
-        uint16_t GetUDPPort() const final;
+        bool GetUDPEnabled() const final;
 };
 
 #endif //CONFIG_H

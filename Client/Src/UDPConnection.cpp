@@ -9,7 +9,7 @@ UDPConnection::UDPConnection(const int _fd, const uint16_t _port):
     remotePort(_port)
 {
     isDisposed.store(false);
-    rxSeq=txSeq=0;
+    rxSeq=txSeq=UINT16_MAX;
 }
 
 bool UDPConnection::GetStatus()

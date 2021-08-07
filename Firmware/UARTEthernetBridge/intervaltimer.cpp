@@ -1,4 +1,4 @@
-#include "timer.h"
+#include "intervaltimer.h"
 
 IntervalTimer::IntervalTimer()
 {

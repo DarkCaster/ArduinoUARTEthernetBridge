@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 
+//TODO: wrap into abstract class, and platform-specific implementation
 class IntervalTimer
 {
     private:

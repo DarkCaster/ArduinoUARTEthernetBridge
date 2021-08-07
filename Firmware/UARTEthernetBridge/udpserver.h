@@ -5,12 +5,14 @@
 #include <IPAddress.h>
 #include <UIPUdp.h>
 
+#include "alarmtimer.h"
 #include "watchdog.h"
 #include "clientstate.h"
 
 class UDPServer
 {
     private:
+        AlarmTimer& alarmTimer;
         Watchdog& watchDog;
         const size_t pkgSz;
         const size_t metaSz;
@@ -23,7 +25,7 @@ class UDPServer
         bool serverStarted = false;
         UIPUDP udpServer;
     public:
-        UDPServer(Watchdog& watchDog, uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
+        UDPServer(AlarmTimer& alarmTimer, Watchdog& watchDog, uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
         ClientEvent ProcessRX(const ClientEvent& ctlEvent);
         bool ProcessTX();
     private:

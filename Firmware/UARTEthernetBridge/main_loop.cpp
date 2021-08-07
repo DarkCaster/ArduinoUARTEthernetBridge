@@ -7,7 +7,8 @@
 #include "watchdog_AVR.h"
 #include "tcpserver.h"
 #include "udpserver.h"
-#include "timer.h"
+#include "alarmtimer.h"
+#include "intervaltimer.h"
 #include "resethelper.h"
 #include "uartworker.h"
 #include "command.h"
@@ -19,8 +20,9 @@ static uint8_t txBuff[PACKAGE_SIZE];
 //helper classes
 static WatchdogAVR watchdog;
 static IntervalTimer pollTimer;
-static TCPServer tcpServer(rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
-static UDPServer udpServer(watchdog,rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
+static AlarmTimer alarmTimer;
+static TCPServer tcpServer(alarmTimer,rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
+static UDPServer udpServer(alarmTimer,watchdog,rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
 static ResetHelper rstHelper[UART_COUNT];
 static UARTWorker uartWorker[UART_COUNT];
 
@@ -126,7 +128,8 @@ void setup()
 
     blink(0,0,1);
 
-    //setup timer
+    //setup timers
+    alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
     pollTimer.Reset(true);
 }

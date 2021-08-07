@@ -1,7 +1,9 @@
 #include "tcpserver.h"
 #include "crc8.h"
+#include "configuration.h"
 
-TCPServer::TCPServer(uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz, const uint16_t _netPort):
+TCPServer::TCPServer(AlarmTimer& _alarmTimer, uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz, const uint16_t _netPort):
+    alarmTimer(_alarmTimer),
     pkgSz(_pkgSz),
     metaSz(_metaSz),
     netPort(_netPort),
@@ -27,11 +29,13 @@ ClientEvent TCPServer::ProcessRX()
             return ClientEvent{ClientEventType::NoEvent,{}};
         connected=true;
         pkgLeft=pkgSz;
+        alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
+        alarmTimer.SnoozeAlarm();
         return ClientEvent{ClientEventType::Connected,{.remoteAddr=client.remoteIP()}};
     }
 
-    //check it is still connected
-    if(!client.connected())
+    //check client is still connected and alive
+    if(alarmTimer.AlarmTriggered() || !client.connected())
     {
         connected=false;
         client.stop();
@@ -59,6 +63,7 @@ ClientEvent TCPServer::ProcessRX()
 
     //prepare reading next package
     pkgLeft=pkgSz;
+    alarmTimer.SnoozeAlarm();
     //read port for UDP connection with new request
     return ClientEvent{ClientEventType::NewRequest,{.udpPort=static_cast<uint16_t>(*rxBuff|*(rxBuff+1)<<8)}};
 }

@@ -1,7 +1,8 @@
 #include "udpserver.h"
 #include "crc8.h"
 
-UDPServer::UDPServer(Watchdog& _watchDog, uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
+UDPServer::UDPServer(AlarmTimer& _alarmTimer, Watchdog& _watchDog, uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
+    alarmTimer(_alarmTimer),
     watchDog(_watchDog),
     pkgSz(_pkgSz),
     metaSz(_metaSz),
@@ -29,7 +30,7 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
 {
     switch (ctlEvent.type)
     {
-        //on connect/disconnect reset currently configured UDP connection
+        //on connect/disconnect events reset currently configured UDP connection
         case ClientEventType::Disconnected:
         case ClientEventType::Connected:
             if(serverStarted)
@@ -48,18 +49,17 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
             if(!serverStarted && ctlEvent.data.udpPort>0)
             {
                 serverStarted=udpServer.begin(ctlEvent.data.udpPort)==1;
-                //reset if server is not started
+                //reset MCU if server was not started
                 if(!serverStarted)
                     watchDog.SystemReset();
             }
             //nothing more to do at this point
             return ctlEvent;
-        //try to process further if nothing happened on TCP side
         case ClientEventType::NoEvent:
         default:
             //return here if UDP server is not started
             if(!serverStarted)
-               return ctlEvent;
+                return ctlEvent;
             break;
     }
 
@@ -82,6 +82,9 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
     if(clientUDPPort<1)
         clientUDPPort=udpServer.remotePort();
     udpServer.flush();
+
+    //defer connection state tracking alarm
+    alarmTimer.SnoozeAlarm();
 
     //request is ready
     return ClientEvent{ClientEventType::NewRequest,{.udpSeq=serverSeq}};

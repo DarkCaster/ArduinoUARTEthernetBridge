@@ -28,7 +28,7 @@ class Config final : public IConfig
         int TCPBuffSz;
         int linger;
         int maxCtSec;
-        int uartBuffSize=UART_BUFFER_SIZE;
+        int nwPayloadSize=UART_BUFFER_SIZE;
         int portCount;
         int ringBuffSegCount;
         int idleTimerInterval=IDLE_TIMER_INTERVAL_US;

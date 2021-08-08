@@ -29,6 +29,8 @@ static UARTWorker uartWorker[UART_COUNT];
 //current client state
 static bool tcpClientState;
 static unsigned long uartPollTimes[UART_COUNT];
+static int segmentCounter;
+static ClientEvent clientEvent;
 
 static void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 {
@@ -74,7 +76,7 @@ void setup()
         uartPollTimes[i]=IDLE_POLL_INTERVAL_US;
         pinMode(extUARTPins[i],INPUT_PULLUP);
         rstHelper[i].Setup(extRSTPins[i]);
-        uartWorker[i].Setup(&(rstHelper[i]),extUARTs[i],rxBuff+META_SZ+META_CRC_SZ+UART_BUFFER_SIZE*i,txBuff+META_SZ+META_CRC_SZ+UART_BUFFER_SIZE*i);
+        uartWorker[i].Setup(&(rstHelper[i]),extUARTs[i],rxBuff+META_SZ+META_CRC_SZ+DATA_PAYLOAD_SIZE*i,txBuff+META_SZ+META_CRC_SZ+DATA_PAYLOAD_SIZE*i);
     }
 
     //wait PSU to become stable on cold boot
@@ -129,6 +131,7 @@ void setup()
     blink(0,0,1);
 
     //setup timers
+    segmentCounter=0;
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
     pollTimer.Reset(true);
@@ -164,18 +167,25 @@ void loop()
     }
 
     //try to process incoming request via TCP
-    auto clientEvent=tcpServer.ProcessRX();
+    clientEvent=tcpServer.ProcessRX();
 
     //process TCP client event
-    tcpClientState|=clientEvent.type==ClientEventType::Connected;
-    tcpClientState&=clientEvent.type!=ClientEventType::Disconnected;
+    if(clientEvent.type==ClientEventType::Connected)
+    {
+        tcpClientState=true;
+        segmentCounter=0;
+    }
+    else if(clientEvent.type==ClientEventType::Disconnected)
+    {
+        tcpClientState=false;
+        pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
+    }
 
     //process incoming data from UDP, with respect to TCP client event
     clientEvent=udpServer.ProcessRX(clientEvent);
 
+    //process incoming request
     if(clientEvent.type==ClientEventType::NewRequest)
-    {
-        //process incoming request
         for(int i=0;i<UART_COUNT;++i)
         {
             auto request=Request::Map(i,rxBuff);
@@ -185,9 +195,6 @@ void loop()
                 pollTimer.SetInterval(GetMinPollTime());
             }
         }
-    }
-    else if(clientEvent.type==ClientEventType::Disconnected)
-        pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
 
     //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
     for(int i=0;i<UART_COUNT;++i)
@@ -197,13 +204,18 @@ void loop()
     if(pollTimer.Update())
     {
         pollTimer.Reset(false);
+        segmentCounter++;
+        for(int i=0;i<UART_COUNT;++i)
+            uartWorker[i].FillTXBuff(segmentCounter==1);
+        if(segmentCounter<UART_AGGREGATE_MULT)
+            return;
         for(int i=0;i<UART_COUNT;++i)
         {
-            //poll UART ports for incoming data
             auto response=uartWorker[i].ProcessTX();
             Response::Write(response,i,txBuff);
         }
         //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
+        segmentCounter=0;
     }
 }

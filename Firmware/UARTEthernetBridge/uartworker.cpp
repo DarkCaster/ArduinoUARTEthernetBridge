@@ -14,6 +14,7 @@ void UARTWorker::Setup(ResetHelper* const _resetHelper, HardwareSerial* const _u
     pollInterval=IDLE_POLL_INTERVAL_US;
     curMode=0xFE;
     sessionId=0;
+    txUsedSz=0;
 }
 
 bool UARTWorker::ProcessRequest(const Request &request)
@@ -100,31 +101,36 @@ void UARTWorker::ProcessRX()
     }
 }
 
-Response UARTWorker::ProcessTX()
+void UARTWorker::FillTXBuff(bool reset)
 {
+    if(reset)
+        txUsedSz=0;
     if(IS_OPEN(curMode))
     {
-        //copy data from UART to txDataBuff for sending
-        auto sz=uart->available();
-        if(sz>0)
-        {
-            sz=uart->readBytes(txDataBuff,sz>UART_BUFFER_SIZE?UART_BUFFER_SIZE:sz);
-            return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(sz)};
-        }
-        return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),0};
+        size_t sz=uart->available();
+        if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
+            sz=DATA_PAYLOAD_SIZE-txUsedSz;
+        if(sz<1)
+            return;
+        txUsedSz+=uart->readBytes(txDataBuff+txUsedSz,sz);
     }
-
     if(curMode==MODE_LOOPBACK)
     {
         auto tail=rxRingBuff.GetTail();
-        auto sz=tail.maxSz>UART_BUFFER_SIZE?UART_BUFFER_SIZE:tail.maxSz;
-        if(sz>0)
-        {
-            memcpy(txDataBuff,tail.buffer,sz);
-            rxRingBuff.Commit(tail,sz);
-            return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(sz)};
-        }
+        size_t sz=tail.maxSz;
+        if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
+            sz=DATA_PAYLOAD_SIZE-txUsedSz;
+        if(sz<1)
+            return;
+        memcpy(txDataBuff+txUsedSz,tail.buffer,sz);
+        rxRingBuff.Commit(tail,sz);
+        txUsedSz+=sz;
     }
+}
 
+Response UARTWorker::ProcessTX()
+{
+    if(txUsedSz>0)
+       return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(txUsedSz)};
     return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),0};
 }

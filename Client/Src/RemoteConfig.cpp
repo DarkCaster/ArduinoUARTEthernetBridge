@@ -2,7 +2,7 @@
 
 
 
-RemoteConfig::RemoteConfig(const uint32_t _speed,
+PortConfig::PortConfig(const uint32_t _speed,
                            const SerialMode _mode,
                            const bool _resetOnConnect,
                            const int64_t _pollInterval,

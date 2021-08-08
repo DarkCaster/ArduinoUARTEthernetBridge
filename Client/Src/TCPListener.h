@@ -19,12 +19,12 @@ class TCPListener final : public WorkerBase
         std::shared_ptr<ILogger> logger;
         IMessageSender &sender;
         const IConfig &config;
-        const RemoteConfig &remoteConfig;
+        const PortConfig &remoteConfig;
         std::atomic<bool> shutdownPending;
         void HandleError(const std::string& message);
         void HandleError(int ec, const std::string& message);
     public:
-        TCPListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config,  const RemoteConfig &remoteConfig);
+        TCPListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config,  const PortConfig &remoteConfig);
     protected:
         //WorkerBase
         void Worker() final;

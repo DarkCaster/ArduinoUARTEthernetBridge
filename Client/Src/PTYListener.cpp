@@ -15,7 +15,7 @@
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
 class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(std::shared_ptr<Connection> _client):IPortOpenMessage(_client){} };
 
-PTYListener::PTYListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const RemoteConfig &_remoteConfig):
+PTYListener::PTYListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const PortConfig &_remoteConfig):
     logger(_logger),
     sender(_sender),
     config(_config),

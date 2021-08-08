@@ -19,13 +19,13 @@ class PTYListener final : public WorkerBase
         std::shared_ptr<ILogger> logger;
         IMessageSender &sender;
         const IConfig &config;
-        const RemoteConfig &remoteConfig;
+        const PortConfig &remoteConfig;
         std::atomic<bool> shutdownPending;
         int ptm, pts;
         void HandleError(const std::string &message);
         void HandleError(int ec, const std::string &message);
     public:
-        PTYListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config, const RemoteConfig &remoteConfig);
+        PTYListener(std::shared_ptr<ILogger> &logger, IMessageSender &sender, const IConfig &config, const PortConfig &remoteConfig);
         //WorkerBase
         bool Startup() final;
     protected:

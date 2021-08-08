@@ -5,7 +5,7 @@
 #include <string.h>
 #include <poll.h>
 
-PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const RemoteConfig& _portConfig):
+PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const PortConfig& _portConfig):
     logger(_logger),
     sender(_sender),
     config(_config),

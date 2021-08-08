@@ -238,10 +238,10 @@ int main (int argc, char *argv[])
     }
 
     //create remote-config objects
-    std::vector<RemoteConfig> remoteConfigs;
+    std::vector<PortConfig> remoteConfigs;
     for(size_t i=0; i<portCount; ++i)
         remoteConfigs.push_back(
-                    RemoteConfig(static_cast<uint32_t>(uartSpeeds[i]),
+                    PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                  static_cast<SerialMode>(uartModes[i]),
                                  rstFlags[i],
                                  calculate_poll_interval(uartSpeeds[i],config.GetUARTBuffSz()),

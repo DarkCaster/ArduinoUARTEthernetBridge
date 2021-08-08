@@ -22,7 +22,7 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         std::shared_ptr<ILogger> logger;
         IMessageSender& sender;
         const IConfig& config;
-        const RemoteConfig& portConfig;
+        const PortConfig& portConfig;
         const int bufferLimit;
     private:
         std::atomic<bool> shutdownPending;
@@ -40,7 +40,7 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         DataBuffer rxRingBuff;
         std::condition_variable ringBuffTrigger;
     public:
-        PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const RemoteConfig& portConfig);
+        PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const PortConfig& portConfig);
         Request ProcessTX(uint8_t * txBuff);
         void ProcessRX(const Response& response, const uint8_t* rxBuff);
         //methods for ISubscriber

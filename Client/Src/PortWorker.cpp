@@ -5,12 +5,12 @@
 #include <string.h>
 #include <poll.h>
 
-PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const PortConfig& _portConfig):
+PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const PortConfig& _portConfig, RemoteBufferTracker& _remoteBufferTracker):
     logger(_logger),
     sender(_sender),
     config(_config),
     portConfig(_portConfig),
-    bufferLimit(config.GetHwUARTSz()*config.GetRingBuffSegCount()/2),
+    remoteBufferTracker(_remoteBufferTracker),
     rxRingBuff(static_cast<size_t>(_config.GetIncomingDataBufferSec())*(_portConfig.speed/8))
 {
     shutdownPending.store(false);
@@ -19,7 +19,6 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
     client=nullptr;
     sessionId=0;
     resetPending=false;
-    remoteBufferFillup=bufferLimit;
     oldSessionPkgCount=0;
 }
 
@@ -58,7 +57,7 @@ void PortWorker::OnPortOpen(const IPortOpenMessage& message)
         sessionId++;
         if(sessionId>0x7F)
             sessionId=0x01;
-        remoteBufferFillup=bufferLimit;
+        remoteBufferTracker.Reset();
         std::lock_guard<std::mutex> ringBuffGuard(ringBuffLock);
         logger->Info()<<"Dumping RX ring-buffer contents";
         rxRingBuff.Reset();
@@ -96,9 +95,9 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     //logger->Info()<<"Remote buffer fillup: "<<remoteBufferFillup;
 
     //calculate how much data we want to read from client
-    auto dataToRead=config.GetNetworkPayloadSz();
-    if(dataToRead>(bufferLimit-remoteBufferFillup))
-        dataToRead=bufferLimit-remoteBufferFillup;
+    auto dataToRead=static_cast<size_t>(config.GetNetworkPayloadSz());
+    if(dataToRead>remoteBufferTracker.GetAvailSpace())
+        dataToRead=remoteBufferTracker.GetAvailSpace();
 
     //send ReqType::NoCommand if we cannot read data from client
     if(dataToRead<=0 || client==nullptr)
@@ -122,7 +121,7 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     }
 
     //logger->Info()<<"Client bytes send: "<<dataRead;
-    remoteBufferFillup+=static_cast<int>(dataRead);
+    remoteBufferTracker.AddPackage(static_cast<size_t>(dataRead));
     return Request{ReqType::Data,0,static_cast<uint8_t>(dataRead)};
 }
 
@@ -131,7 +130,7 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
     //client operations must be interlocked
     {
         std::lock_guard<std::mutex> clientGuard(clientLock);
-        remoteBufferFillup=(response.arg&0x80)!=0?bufferLimit:0;
+        remoteBufferTracker.ConfirmPackage(response.counter,(response.arg&0x80)>0);
         if(client==nullptr)
             return;
         if(sessionId!=(response.arg&0x7F))

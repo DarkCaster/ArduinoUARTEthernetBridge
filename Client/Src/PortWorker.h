@@ -10,6 +10,7 @@
 #include "Command.h"
 #include "Connection.h"
 #include "DataBuffer.h"
+#include "RemoteBufferTracker.h"
 
 #include <memory>
 #include <atomic>
@@ -23,7 +24,7 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         IMessageSender& sender;
         const IConfig& config;
         const PortConfig& portConfig;
-        const int bufferLimit;
+        RemoteBufferTracker& remoteBufferTracker;
     private:
         std::atomic<bool> shutdownPending;
         std::atomic<bool> connected;
@@ -33,14 +34,13 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         std::shared_ptr<Connection> client;
         bool resetPending;
         uint8_t sessionId;
-        int remoteBufferFillup;
         int oldSessionPkgCount;
         //ring buffer, shared between ProcessRX and Worker threads
         std::mutex ringBuffLock;
         DataBuffer rxRingBuff;
         std::condition_variable ringBuffTrigger;
     public:
-        PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const PortConfig& portConfig);
+        PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const PortConfig& portConfig, RemoteBufferTracker& remoteBufferTracker);
         Request ProcessTX(uint8_t * txBuff);
         void ProcessRX(const Response& response, const uint8_t* rxBuff);
         //methods for ISubscriber

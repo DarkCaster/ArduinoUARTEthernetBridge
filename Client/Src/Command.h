@@ -32,6 +32,7 @@ struct Response
     RespType type;
     uint8_t arg;
     uint8_t plSz;
+    uint32_t counter;
 };
 
 #endif // COMMAND_H

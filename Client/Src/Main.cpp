@@ -14,6 +14,7 @@
 #include "UDPTransport.h"
 #include "DataProcessor.h"
 #include "PortWorker.h"
+#include "RemoteBufferTracker.h"
 
 #include <memory>
 #include <cstdint>
@@ -256,6 +257,10 @@ int main (int argc, char *argv[])
         config.SetLingerSec(time);
     }
 
+    //check network payload size, currently it cannot exceed 255 bytes
+    if(config.GetNetworkPayloadSz()>255)
+        return param_error(argv[0],"Provided UART buffer size or it's multiplier is too big, total payload size (uart size * mult) exceed 255 bytes");
+
     //create remote-config objects
     std::vector<PortConfig> remoteConfigs;
     for(size_t i=0; i<portCount; ++i)
@@ -322,12 +327,17 @@ int main (int argc, char *argv[])
     }
 
     std::vector<std::shared_ptr<PortWorker>> portWorkers;
+    std::vector<std::shared_ptr<RemoteBufferTracker>> buffTrackers;
     for(size_t i=0;i<remoteConfigs.size();++i)
     {
+        auto rTrackerLogger=logFactory.CreateLogger("BuffTracker:"+std::to_string(i));
+        auto rTracker=std::make_shared<RemoteBufferTracker>(rTrackerLogger,config,config.GetHwUARTSz()*config.GetRingBuffSegCount());
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
-        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i]);
+        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i],*(rTracker));
         messageBroker.AddSubscriber(portWorker);
+        messageBroker.AddSubscriber(rTracker);
         portWorkers.push_back(portWorker);
+        buffTrackers.push_back(rTracker);
     }
 
     //Data processor

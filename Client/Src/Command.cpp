@@ -12,6 +12,7 @@ void Request::Write(const Request& source, const int portIndex, uint8_t* const r
 
 Response Response::Map(const int portIndex, const uint8_t* const rawBuffer)
 {
+    //TODO: map counter
     const auto offset=PKG_HDR_SZ+portIndex*CMD_HDR_SIZE;
-    return Response{static_cast<RespType>(*(rawBuffer+offset)),*(rawBuffer+offset+1),*(rawBuffer+offset+2)};
+    return Response{static_cast<RespType>(*(rawBuffer+offset)),*(rawBuffer+offset+1),*(rawBuffer+offset+2),0};
 }

@@ -34,6 +34,11 @@ size_t RemoteBufferTracker::GetAvailSpace()
     return bufferLimit-totalSent;
 }
 
+void RemoteBufferTracker::Reset()
+{
+    dataSent.clear();
+}
+
 bool RemoteBufferTracker::ReadyForMessage(const MsgType msgType)
 {
     return msgType==MSG_TIMER;

@@ -29,6 +29,7 @@ class RemoteBufferTracker final : public IMessageSubscriber
         void AddPackage(size_t size);
         void ConfirmPackage(uint32_t refCounter, bool writeBlocked);
         size_t GetAvailSpace();
+        void Reset();
         //methods for ISubscriber
         bool ReadyForMessage(const MsgType msgType) final;
         void OnMessage(const void* const source, const IMessage& message) final;

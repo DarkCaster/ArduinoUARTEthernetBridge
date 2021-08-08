@@ -20,7 +20,8 @@ class UARTWorker
         uint8_t* txDataBuff;
     public:
         void Setup(ResetHelper* const resetHelper, HardwareSerial* const uart, uint8_t * rxDataBuff, uint8_t * txDataBuff);
-        unsigned long ProcessRequest(const Request& request);
+        bool ProcessRequest(const Request& request);
+        unsigned long GetPollInterval();
         void ProcessRX();
         Response ProcessTX();
 };

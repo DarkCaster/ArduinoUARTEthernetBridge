@@ -179,10 +179,12 @@ void loop()
         for(int i=0;i<UART_COUNT;++i)
         {
             auto request=Request::Map(i,rxBuff);
-            uartPollTimes[i]=uartWorker[i].ProcessRequest(request);
+            if(uartWorker[i].ProcessRequest(request))
+            {
+                uartPollTimes[i]=uartWorker[i].GetPollInterval();
+                pollTimer.SetInterval(GetMinPollTime());
+            }
         }
-        //update global uart polling interval
-        pollTimer.SetInterval(GetMinPollTime());
     }
     else if(clientEvent.type==ClientEventType::Disconnected)
         pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);

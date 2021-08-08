@@ -16,9 +16,10 @@ void UARTWorker::Setup(ResetHelper* const _resetHelper, HardwareSerial* const _u
     sessionId=0;
 }
 
-unsigned long UARTWorker::ProcessRequest(const Request &request)
+bool UARTWorker::ProcessRequest(const Request &request)
 {
     unsigned long speed=0;
+    bool pollIntervalChanged=false;
     uint8_t szLeft;
     switch (request.type)
     {
@@ -57,6 +58,7 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
                 uart->begin(speed,curMode);
             //re-calculate poll interval for selected data-transfer speed
             pollInterval=static_cast<unsigned long>(1000000.0f/static_cast<float>(speed)*8.0f*static_cast<float>(UART_BUFFER_SIZE));
+            pollIntervalChanged=true;
             break;
         case ReqType::Close:
             if(IS_OPEN(curMode))
@@ -66,11 +68,17 @@ unsigned long UARTWorker::ProcessRequest(const Request &request)
             }
             curMode=MODE_CLOSED;
             pollInterval=IDLE_POLL_INTERVAL_US;
+            pollIntervalChanged=true;
             break;
         case ReqType::NoCommand:
         default:
             break;
     }
+    return pollIntervalChanged;
+}
+
+unsigned long UARTWorker::GetPollInterval()
+{
     return pollInterval;
 }
 

@@ -20,6 +20,7 @@ class Timer : public WorkerBase, public IMessageSubscriber
         const bool profilingEnabled;
         std::atomic<bool> shutdownPending;
         std::atomic<bool> connectPending;
+        uint32_t eventCounter;
     public:
         Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const int64_t intervalUsec, const bool profilingEnabled);
         //methods for ISubscriber

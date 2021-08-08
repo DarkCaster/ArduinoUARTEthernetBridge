@@ -51,10 +51,10 @@ class IIncomingPackageMessage : public IMessage
 class ITimerMessage : public IMessage
 {
     protected:
-        ITimerMessage(int64_t _time):
-            IMessage(MSG_TIMER),time(_time){}
+        ITimerMessage(uint32_t _counter):
+            IMessage(MSG_TIMER),counter(_counter){}
     public:
-        const int64_t time;
+        const uint32_t counter;
 };
 
 class ISendPackageMessage : public IMessage

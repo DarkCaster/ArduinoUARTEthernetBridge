@@ -1,7 +1,7 @@
 #include "Timer.h"
 #include <chrono>
 
-class TimerMessage: public ITimerMessage { public: TimerMessage(int64_t _time):ITimerMessage(_time){} };
+class TimerMessage: public ITimerMessage { public: TimerMessage(uint32_t _counter):ITimerMessage(_counter){} };
 
 Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const int64_t _intervalUsec, const bool _profilingEnabled):
     logger(_logger),
@@ -12,6 +12,7 @@ Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const I
 {
     shutdownPending.store(false);
     connectPending.store(true);
+    eventCounter=0;
 }
 
 bool Timer::ReadyForMessage(const MsgType msgType)
@@ -42,14 +43,14 @@ void Timer::Worker()
             std::this_thread::sleep_for(interval);
 
         prev+=interval;
-        sender.SendMessage(this,TimerMessage(std::chrono::duration_cast<std::chrono::microseconds>(prev-startTime).count()));
+        sender.SendMessage(this,TimerMessage(++eventCounter));
 
         auto now=std::chrono::steady_clock::now();
         if(profilingEnabled)
         {
             auto processTime=now-prev;
             if(processTime>reqInterval && !connectPending.load())
-                logger->Warning()<<"Processing takes too long: "<<std::chrono::duration_cast<std::chrono::microseconds>(processTime).count()<<" usec";
+                logger->Warning()<<"Processing takes too long: "<<std::chrono::duration_cast<std::chrono::microseconds>(processTime).count()<<" usec; event: "<<eventCounter;
         }
 
         //tune wait interval for next round and start over

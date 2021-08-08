@@ -40,13 +40,11 @@ struct PortConfig
         const uint32_t speed;
         const SerialMode mode;
         const bool resetOnConnect;
-        const int64_t pollInterval;
         const IPEndpoint listener;
         const std::string ptsListener;
         PortConfig(const uint32_t speed,
                      const SerialMode mode,
                      const bool resetOnConnect,
-                     const int64_t pollInterval,
                      const IPEndpoint& listener,
                      const std::string& ptsSymlink);
 };

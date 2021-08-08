@@ -10,7 +10,7 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
     sender(_sender),
     config(_config),
     portConfig(_portConfig),
-    bufferLimit(config.GetNetworkPayloadSz()*config.GetRingBuffSegCount()/2),
+    bufferLimit(config.GetHwUARTSz()*config.GetRingBuffSegCount()/2),
     rxRingBuff(static_cast<size_t>(_config.GetIncomingDataBufferSec())*(_portConfig.speed/8))
 {
     shutdownPending.store(false);

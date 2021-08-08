@@ -45,7 +45,7 @@ void usage(const std::string &self)
     std::cerr<<"    -ra <ip address, or host name> remote address to connect"<<std::endl;
     std::cerr<<"    -tp <port> remote TCP port"<<std::endl;
     std::cerr<<"    -pc <count> UART port count configured at remote side, this param is cruical for normal operation"<<std::endl;
-    std::cerr<<"    -rbs <1-256> remote ring-buffer size multiple of hw-buffer size, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
+    std::cerr<<"    -rbs <1-256> remote ring-buffer size as multiplier to hw-buffer size, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
     std::cerr<<"   local:"<<std::endl;
     std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
@@ -54,7 +54,8 @@ void usage(const std::string &self)
     std::cerr<<"    -up <0,1> 1 - enable use of less reliable UDP transport with lower latency and jitter, default: 0 - disabled"<<std::endl;
     std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
-    std::cerr<<"    -us <1-65536> hw uart-buffer size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
+    std::cerr<<"    -us <1-65535> hw uart-buffer size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
+    std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 2"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
@@ -218,6 +219,24 @@ int main (int argc, char *argv[])
         config.SetTCPBuffSz(bsz);
     }
 
+    config.SetHwUARTSz(64);
+    if(args.find("-us")!=args.end())
+    {
+        auto bsz=std::atoi(args["-us"].c_str());
+        if(bsz<1||bsz>65535)
+            return param_error(argv[0],"HW UART buffer size is invalid");
+        config.SetHwUARTSz(bsz);
+    }
+
+    config.SetNwMult(2);
+    if(args.find("-nm")!=args.end())
+    {
+        auto nsz=std::atoi(args["-nm"].c_str());
+        if(nsz<1||nsz>10)
+            return param_error(argv[0],"Package aggregation multiplier is invalid");
+        config.SetNwMult(nsz);
+    }
+
     //management interval
     config.SetServiceIntervalMS(500);
     if(args.find("-mt")!=args.end())
@@ -245,7 +264,7 @@ int main (int argc, char *argv[])
                     PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                  static_cast<SerialMode>(uartModes[i]),
                                  rstFlags[i],
-                                 calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
+                                 //calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
                                  localFiles[i]));
 

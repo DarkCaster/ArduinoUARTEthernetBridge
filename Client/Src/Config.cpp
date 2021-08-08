@@ -2,8 +2,8 @@
 
 #define META_SZ(uart_count) (PKG_HDR_SZ+CMD_HDR_SIZE*uart_count)
 #define META_CRC_SZ 1
-#define PACKAGE_SIZE(uart_count,uart_buffer_size) (META_SZ(uart_count)+META_CRC_SZ+uart_buffer_size*uart_count)
-#define PORT_OFFSET(uart_count,uart_buffer_size,port_index) (META_SZ(uart_count)+META_CRC_SZ+uart_buffer_size*port_index)
+#define PACKAGE_SIZE(uart_count,data_payload_size) (META_SZ(uart_count)+META_CRC_SZ+data_payload_size*uart_count)
+#define PORT_OFFSET(uart_count,data_payload_size,port_index) (META_SZ(uart_count)+META_CRC_SZ+data_payload_size*port_index)
 
 void Config::SetServiceIntervalMS(int intervalMS)
 {
@@ -30,9 +30,14 @@ void Config::SetPortCount(int _portCount)
     portCount=_portCount;
 }
 
-void Config::SetNetworkPayloadSz(int sz)
+void Config::SetHwUARTSz(int sz)
 {
-    nwPayloadSize=sz;
+    hwUARTSize=sz;
+}
+
+void Config::SetNwMult(int mult)
+{
+    nwMult=mult;
 }
 
 void Config::SetRingBuffSegCount(int cnt)
@@ -97,17 +102,22 @@ int Config::GetPackageMetaSz() const
 
 int Config::GetPackageSz() const
 {
-    return PACKAGE_SIZE(portCount,nwPayloadSize);
+    return PACKAGE_SIZE(portCount,(hwUARTSize*nwMult));
 }
 
 int Config::GetPortBuffOffset(int portIndex) const
 {
-    return PORT_OFFSET(portCount,nwPayloadSize,portIndex);
+    return PORT_OFFSET(portCount,(hwUARTSize*nwMult),portIndex);
 }
 
 int Config::GetNetworkPayloadSz() const
 {
-    return nwPayloadSize;
+    return hwUARTSize*nwMult;
+}
+
+int Config::GetHwUARTSz() const
+{
+    return hwUARTSize;
 }
 
 int Config::GetRingBuffSegCount() const

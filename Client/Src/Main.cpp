@@ -34,8 +34,7 @@
 
 // example command lines:
 // Arduino Pro Mini (atmega328p) with 1 uart port:
-//  -ra ENC28J65E366.lan -tp 50000 -up 0 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1 -rbs 10
-
+//  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1 -rbs 10
 
 void usage(const std::string &self)
 {

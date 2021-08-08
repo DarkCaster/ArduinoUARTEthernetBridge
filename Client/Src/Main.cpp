@@ -6,7 +6,7 @@
 #include "ShutdownHandler.h"
 
 #include "Config.h"
-#include "RemoteConfig.h"
+#include "PortConfig.h"
 #include "Timer.h"
 #include "PTYListener.h"
 #include "TCPListener.h"

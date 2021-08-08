@@ -1,7 +1,7 @@
 #ifndef PTYLISTENER_H
 #define PTYLISTENER_H
 
-#include "RemoteConfig.h"
+#include "PortConfig.h"
 #include "IConfig.h"
 #include "WorkerBase.h"
 #include "ILogger.h"

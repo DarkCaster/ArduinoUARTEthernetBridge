@@ -6,7 +6,7 @@
 #include "IMessageSender.h"
 #include "IMessageSubscriber.h"
 #include "Config.h"
-#include "RemoteConfig.h"
+#include "PortConfig.h"
 #include "Command.h"
 #include "Connection.h"
 #include "DataBuffer.h"

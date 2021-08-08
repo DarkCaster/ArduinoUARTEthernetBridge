@@ -1,6 +1,4 @@
-#include "RemoteConfig.h"
-
-
+#include "PortConfig.h"
 
 PortConfig::PortConfig(const uint32_t _speed,
                            const SerialMode _mode,

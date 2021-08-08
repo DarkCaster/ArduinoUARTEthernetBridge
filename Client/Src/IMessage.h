@@ -1,7 +1,7 @@
 #ifndef IMESSAGE_H
 #define IMESSAGE_H
 
-#include "RemoteConfig.h"
+#include "PortConfig.h"
 #include "Connection.h"
 #include <memory>
 

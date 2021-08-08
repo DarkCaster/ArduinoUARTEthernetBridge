@@ -1,7 +1,7 @@
 #ifndef TCP_LISTENER_H
 #define TCP_LISTENER_H
 
-#include "RemoteConfig.h"
+#include "PortConfig.h"
 #include "IConfig.h"
 #include "WorkerBase.h"
 #include "ILogger.h"

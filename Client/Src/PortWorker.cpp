@@ -10,7 +10,7 @@ PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sende
     sender(_sender),
     config(_config),
     portConfig(_portConfig),
-    bufferLimit(config.GetUARTBuffSz()*config.GetRingBuffSegCount()/2),
+    bufferLimit(config.GetNetworkPayloadSz()*config.GetRingBuffSegCount()/2),
     rxRingBuff(static_cast<size_t>(_config.GetIncomingDataBufferSec())*(_portConfig.speed/8))
 {
     shutdownPending.store(false);
@@ -96,7 +96,7 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     //logger->Info()<<"Remote buffer fillup: "<<remoteBufferFillup;
 
     //calculate how much data we want to read from client
-    auto dataToRead=config.GetUARTBuffSz();
+    auto dataToRead=config.GetNetworkPayloadSz();
     if(dataToRead>(bufferLimit-remoteBufferFillup))
         dataToRead=bufferLimit-remoteBufferFillup;
 

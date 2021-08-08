@@ -244,7 +244,7 @@ int main (int argc, char *argv[])
                     PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                  static_cast<SerialMode>(uartModes[i]),
                                  rstFlags[i],
-                                 calculate_poll_interval(uartSpeeds[i],config.GetUARTBuffSz()),
+                                 calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
                                  localFiles[i]));
 
@@ -277,7 +277,7 @@ int main (int argc, char *argv[])
     int64_t minPollTime=INT64_MAX;
     for(size_t i=0;i<portCount;++i)
     {
-        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetUARTBuffSz());
+        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz());
         if(testTime<minPollTime)
             minPollTime=testTime;
     }

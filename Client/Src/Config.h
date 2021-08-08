@@ -43,7 +43,7 @@ class Config final : public IConfig
         void SetLingerSec(int sz);
         void SetMaxCTimeSec(int time);
         void SetPortCount(int portCount);
-        void SetUARTBuffSz(int sz);
+        void SetNetworkPayloadSz(int sz);
         void SetRingBuffSegCount(int cnt);
         void SetRemoteAddr(const std::string &addr);
         void SetUDPEnabled(bool enableUDP);
@@ -60,7 +60,7 @@ class Config final : public IConfig
         int GetPackageMetaSz() const final;
         int GetPackageSz() const final;
         int GetPortBuffOffset(int portIndex) const final;
-        int GetUARTBuffSz() const final;
+        int GetNetworkPayloadSz() const final;
         int GetRingBuffSegCount() const final;
         int GetIdleTimerInterval() const final;
         std::string GetRemoteAddr() const final;

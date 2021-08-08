@@ -22,7 +22,7 @@ class IConfig
         virtual int GetPackageMetaSz() const = 0;
         virtual int GetPackageSz() const = 0;
         virtual int GetPortBuffOffset(int portIndex) const = 0;
-        virtual int GetUARTBuffSz() const = 0;
+        virtual int GetNetworkPayloadSz() const = 0;
         virtual int GetRingBuffSegCount() const = 0;
         virtual int GetIdleTimerInterval() const = 0;
         virtual std::string GetRemoteAddr() const = 0;

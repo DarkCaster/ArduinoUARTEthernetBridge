@@ -30,7 +30,7 @@ void Config::SetPortCount(int _portCount)
     portCount=_portCount;
 }
 
-void Config::SetUARTBuffSz(int sz)
+void Config::SetNetworkPayloadSz(int sz)
 {
     uartBuffSize=sz;
 }
@@ -105,7 +105,7 @@ int Config::GetPortBuffOffset(int portIndex) const
     return PORT_OFFSET(portCount,uartBuffSize,portIndex);
 }
 
-int Config::GetUARTBuffSz() const
+int Config::GetNetworkPayloadSz() const
 {
     return uartBuffSize;
 }

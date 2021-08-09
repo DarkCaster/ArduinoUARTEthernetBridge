@@ -9,7 +9,8 @@
 #include <sys/time.h>
 
 //some hardcoded params
-#define PKG_HDR_SZ 2
+#define PKG_HDR_SZ 6
+#define PKG_CNT_OFFSET 2
 #define CMD_HDR_SIZE 3
 
 #define NET_NAME "ENC28J65E366"

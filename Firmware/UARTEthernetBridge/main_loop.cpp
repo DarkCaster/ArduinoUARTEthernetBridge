@@ -186,6 +186,7 @@ void loop()
 
     //process incoming request
     if(clientEvent.type==ClientEventType::NewRequest)
+    {
         for(int i=0;i<UART_COUNT;++i)
         {
             auto request=Request::Map(i,rxBuff);
@@ -195,6 +196,10 @@ void loop()
                 pollTimer.SetInterval(GetMinPollTime());
             }
         }
+        //save new counter to the txbuff
+        for(int i=0;i<PKG_CNT_SIZE;++i)
+            txBuff[PKG_CNT_OFFSET+i]=rxBuff[PKG_CNT_OFFSET+i];
+    }
 
     //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
     for(int i=0;i<UART_COUNT;++i)

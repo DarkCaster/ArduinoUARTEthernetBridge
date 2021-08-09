@@ -54,7 +54,9 @@
 #endif
 
 //package format defines
-#define PKG_HDR_SZ 2
+#define PKG_HDR_SZ 6
+#define PKG_CNT_OFFSET 2
+#define PKG_CNT_SIZE 4
 #define CMD_HDR_SIZE 3
 #define META_SZ (PKG_HDR_SZ+CMD_HDR_SIZE*UART_COUNT)
 #define META_CRC_SZ 1

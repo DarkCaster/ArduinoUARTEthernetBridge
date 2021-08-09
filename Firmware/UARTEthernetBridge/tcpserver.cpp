@@ -26,7 +26,7 @@ ClientEvent TCPServer::ProcessRX()
     {
         client=server.accept();
         if(!client)
-            return ClientEvent{ClientEventType::NoEvent,{}};
+            return ClientEvent{ClientEventType::NoEvent,{.pkgReading=false}};
         connected=true;
         pkgLeft=pkgSz;
         alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
@@ -45,13 +45,13 @@ ClientEvent TCPServer::ProcessRX()
     unsigned int avail=client.available();
 
     if(avail<1)
-        return ClientEvent{ClientEventType::NoEvent,{}};
+        return ClientEvent{ClientEventType::NoEvent,{.pkgReading=pkgLeft<pkgSz}};
 
     if(pkgLeft>0)
         pkgLeft-=client.read(rxBuff+pkgSz-pkgLeft,pkgLeft>avail?avail:pkgLeft);
 
     if(pkgLeft>0)
-        return ClientEvent{ClientEventType::NoEvent,{}};
+        return ClientEvent{ClientEventType::NoEvent,{.pkgReading=true}};
 
     //check crc and disconnect on fail
     if(CRC8(rxBuff,metaSz)!=*(rxBuff+metaSz))

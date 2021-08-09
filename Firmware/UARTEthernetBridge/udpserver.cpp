@@ -58,7 +58,7 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
         case ClientEventType::NoEvent:
         default:
             //return here if UDP server is not started
-            if(!serverStarted)
+            if(!serverStarted||ctlEvent.data.pkgReading)
                 return ctlEvent;
             break;
     }

@@ -16,6 +16,7 @@ union ClientEventData
     uint32_t remoteAddr;
     uint16_t udpPort;
     uint16_t udpSeq;
+    bool pkgReading;
 };
 
 struct ClientEvent

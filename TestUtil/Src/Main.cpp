@@ -1,3 +1,5 @@
+#include <cstring>
+#include <cerrno>
 #include <iostream>
 #include <string>
 #include <csignal>
@@ -6,6 +8,12 @@
 #include <memory>
 #include <cstdint>
 #include <sys/time.h>
+
+#include "ILogger.h"
+#include "StdioLoggerFactory.h"
+#include "IMessage.h"
+#include "MessageBroker.h"
+#include "ShutdownHandler.h"
 
 void usage(const std::string &self)
 {
@@ -109,6 +117,63 @@ int main (int argc, char *argv[])
             return param_error(argv[0],"Flush timeout value is invalid");
         linger=time;
     }
+
+    StdioLoggerFactory logFactory;
+    auto mainLogger=logFactory.CreateLogger("Main");
+    auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
+
+    //configure the most essential stuff
+    MessageBroker messageBroker(messageBrokerLogger);
+
+    //shutdown handler
+    ShutdownHandler shutdownHandler;
+    messageBroker.AddSubscriber(shutdownHandler);
+
+    //create sigset_t struct with signals
+    sigset_t sigset;
+    sigemptyset(&sigset);
+    if(sigaddset(&sigset,SIGHUP)!=0||sigaddset(&sigset,SIGTERM)!=0||sigaddset(&sigset,SIGUSR1)!=0||sigaddset(&sigset,SIGUSR2)!=0||sigaddset(&sigset,SIGPIPE)!=0||pthread_sigmask(SIG_BLOCK,&sigset,nullptr)!=0)
+    {
+        mainLogger->Error()<<"Failed to setup signal-handling"<<std::endl;
+        return 1;
+    }
+
+    mainLogger->Info()<<"Startup"<<std::endl;
+
+    //startup
+
+    //main loop, awaiting for signal
+    while(true)
+    {
+        auto signal=sigtimedwait(&sigset,nullptr,&sigTs);
+        auto error=errno;
+        if(signal<0 && error!=EAGAIN && error!=EINTR)
+        {
+            mainLogger->Error()<<"Error while handling incoming signal: "<<strerror(error)<<std::endl;
+            break;
+        }
+        else if(signal>0 && signal!=SIGUSR2 && signal!=SIGINT) //SIGUSR2 triggered by shutdownhandler to unblock sigtimedwait
+        {
+            mainLogger->Info()<< "Pending shutdown by receiving signal: "<<signal<<"->"<<strsignal(signal)<<std::endl;
+            break;
+        }
+
+        if(shutdownHandler.IsShutdownRequested())
+        {
+            if(shutdownHandler.GetEC()!=0)
+                mainLogger->Error() << "One of background worker was failed, shuting down" << std::endl;
+            else
+                mainLogger->Info() << "Shuting down gracefully by request from background worker" << std::endl;
+            break;
+        }
+    }
+
+    //request shutdown of background workers
+
+    //wait for background workers shutdown complete
+
+    mainLogger->Info()<<"Clean shutdown"<<std::endl;
+
 
     return 0;
 }

@@ -6,11 +6,10 @@ RemoteBufferTracker::RemoteBufferTracker(std::shared_ptr<ILogger>& _logger, cons
     config(_config),
     bufferLimit(_bufferLimit)
 {
-    counter=0;
     isBlocked=false;
 }
 
-void RemoteBufferTracker::AddPackage(size_t size)
+void RemoteBufferTracker::AddPackage(size_t size, uint32_t counter)
 {
     dataSent.push_back(RemoteBufferPkg{counter,size});
 }
@@ -37,14 +36,4 @@ size_t RemoteBufferTracker::GetAvailSpace()
 void RemoteBufferTracker::Reset()
 {
     dataSent.clear();
-}
-
-bool RemoteBufferTracker::ReadyForMessage(const MsgType msgType)
-{
-    return msgType==MSG_TIMER;
-}
-
-void RemoteBufferTracker::OnMessage(const void* const, const IMessage& message)
-{
-    counter=static_cast<const ITimerMessage&>(message).counter;
 }

@@ -41,7 +41,7 @@ class PortWorker :  public WorkerBase, public IMessageSubscriber
         std::condition_variable ringBuffTrigger;
     public:
         PortWorker(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const PortConfig& portConfig, RemoteBufferTracker& remoteBufferTracker);
-        Request ProcessTX(uint8_t * txBuff);
+        Request ProcessTX(uint32_t counter, uint8_t * txBuff);
         void ProcessRX(const Response& response, const uint8_t* rxBuff);
         //methods for ISubscriber
         bool ReadyForMessage(const MsgType msgType) final;

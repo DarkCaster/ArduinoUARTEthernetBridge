@@ -335,7 +335,6 @@ int main (int argc, char *argv[])
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
         auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i],*(rTracker));
         messageBroker.AddSubscriber(portWorker);
-        messageBroker.AddSubscriber(rTracker);
         portWorkers.push_back(portWorker);
         buffTrackers.push_back(rTracker);
     }

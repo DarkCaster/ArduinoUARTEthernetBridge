@@ -64,7 +64,7 @@ void PortWorker::OnPortOpen(const IPortOpenMessage& message)
     }
 }
 
-Request PortWorker::ProcessTX(uint8_t* txBuff)
+Request PortWorker::ProcessTX(uint32_t counter, uint8_t* txBuff)
 {
     //do not start processing until receiving first connect-confirmation
     if(!connected.load())
@@ -121,7 +121,7 @@ Request PortWorker::ProcessTX(uint8_t* txBuff)
     }
 
     //logger->Info()<<"Client bytes send: "<<dataRead;
-    remoteBufferTracker.AddPackage(static_cast<size_t>(dataRead));
+    remoteBufferTracker.AddPackage(static_cast<size_t>(dataRead),counter);
     return Request{ReqType::Data,0,static_cast<uint8_t>(dataRead)};
 }
 

@@ -26,7 +26,7 @@ void DataProcessor::OnMessage(const void* const, const IMessage& message)
 }
 
 //TODO: embed time value from ITimerMessage into the outgoing request
-void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
+void DataProcessor::OnPollEvent(const ITimerMessage& message)
 {
     //caller timer-thread may change if timer interval updated, so lock there as precaution
     std::lock_guard<std::mutex> pollGuard(pollLock);
@@ -37,11 +37,14 @@ void DataProcessor::OnPollEvent(const ITimerMessage& /*message*/)
     bool useTCP=false;
     for(int i=0;i<config.GetPortCount();++i)
     {
-        auto request=portWorkers[static_cast<size_t>(i)]->ProcessTX(txBuff.get()+config.GetPortBuffOffset(i));
+        auto request=portWorkers[static_cast<size_t>(i)]->ProcessTX(message.counter,txBuff.get()+config.GetPortBuffOffset(i));
         if(request.type==ReqType::Open || request.type==ReqType::Close || request.type==ReqType::Reset)
             useTCP=true;
         Request::Write(request,i,txBuff.get());
     }
+
+    //write counter to package header
+    WritePackageCounter(message.counter,txBuff.get());
 
     if(!config.GetUDPEnabled())
         useTCP=true;

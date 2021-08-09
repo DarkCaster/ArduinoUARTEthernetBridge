@@ -29,7 +29,7 @@ static UARTWorker uartWorker[UART_COUNT];
 //current client state
 static bool tcpClientState;
 static unsigned long uartPollTimes[UART_COUNT];
-static int segmentCounter;
+static uint8_t segmentCounter;
 static ClientEvent clientEvent;
 
 static void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)

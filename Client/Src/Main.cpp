@@ -16,7 +16,6 @@
 #include "PortWorker.h"
 #include "RemoteBufferTracker.h"
 
-#include <memory>
 #include <cstdint>
 #include <memory>
 #include <vector>

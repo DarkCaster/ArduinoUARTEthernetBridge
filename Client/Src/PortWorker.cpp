@@ -130,7 +130,7 @@ void PortWorker::ProcessRX(const Response& response, const uint8_t* rxBuff)
     //client operations must be interlocked
     {
         std::lock_guard<std::mutex> clientGuard(clientLock);
-        remoteBufferTracker.ConfirmPackage(response.counter,(response.arg&0x80)>0);
+        remoteBufferTracker.ConfirmPackage(response.counter,(response.arg&0x80)!=0);
         if(client==nullptr)
             return;
         if(sessionId!=(response.arg&0x7F))

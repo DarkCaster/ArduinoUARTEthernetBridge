@@ -7,6 +7,7 @@ RemoteBufferTracker::RemoteBufferTracker(std::shared_ptr<ILogger>& _logger, cons
     bufferLimit(_bufferLimit)
 {
     isBlocked=false;
+    //logger->Info()<<"Configured remote buffer size: "<<bufferLimit<<" bytes";
 }
 
 void RemoteBufferTracker::AddPackage(size_t size, uint32_t counter)
@@ -17,6 +18,8 @@ void RemoteBufferTracker::AddPackage(size_t size, uint32_t counter)
 void RemoteBufferTracker::ConfirmPackage(uint32_t refCounter, bool writeBlocked)
 {
     isBlocked=writeBlocked;
+    //if(isBlocked)
+    //    logger->Error()<<"Write blocked!";
     while (!dataSent.empty() && dataSent.front().counter<=refCounter)
         dataSent.pop_front();
 }

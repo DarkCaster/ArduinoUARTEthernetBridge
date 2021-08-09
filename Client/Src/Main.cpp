@@ -57,7 +57,6 @@ void usage(const std::string &self)
     std::cerr<<"    -us <1-65535> hw uart-buffer size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
     std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 2"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
-    std::cerr<<"    -cmax <seconds> max total time for establishing connection, default: 20"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
     std::cerr<<"    -cf <seconds> timeout for flushing data when closing sockets, -1 to disable, 0 - close without flushing, default: 30"<<std::endl;
@@ -197,16 +196,6 @@ int main (int argc, char *argv[])
         if(!IPAddress(args["-la"]).isValid||IPAddress(args["-la"]).isV6)
             return param_error(argv[0],"listen IP address is invalid!");
         localAddr.Set(IPAddress(args["-la"]));
-    }
-
-    //connection timeouts
-    config.SetMaxCTimeSec(20);
-    if(args.find("-cmax")!=args.end())
-    {
-        auto time=std::atoi(args["-cmax"].c_str());
-        if(time>120)
-            return param_error(argv[0],"Maximum connection timeout is invalid");
-        config.SetMaxCTimeSec(time);
     }
 
     //tcp buff size

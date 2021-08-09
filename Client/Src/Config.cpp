@@ -20,11 +20,6 @@ void Config::SetLingerSec(int sz)
     linger=sz;
 }
 
-void Config::SetMaxCTimeSec(int time)
-{
-    maxCtSec=time;
-}
-
 void Config::SetPortCount(int _portCount)
 {
     portCount=_portCount;
@@ -83,11 +78,6 @@ int Config::GetTCPBuffSz() const
 int Config::GetLingerSec() const
 {
     return linger;
-}
-
-int Config::GetMaxCTimeSec() const
-{
-    return maxCtSec;
 }
 
 int Config::GetPortCount() const

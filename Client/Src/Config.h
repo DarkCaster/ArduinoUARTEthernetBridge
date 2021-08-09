@@ -24,7 +24,6 @@ class Config final : public IConfig
         int incomingDataBufferSec=2;
         int TCPBuffSz;
         int linger;
-        int maxCtSec;
         int hwUARTSize=64; //default UART hw buffer size for arduino-atmega boards
         int nwMult=2; //default package aggregation multiplier
         int portCount;
@@ -39,7 +38,6 @@ class Config final : public IConfig
         void SetServiceIntervalMS(int intervalMS);
         void SetTCPBuffSz(int sz);
         void SetLingerSec(int sz);
-        void SetMaxCTimeSec(int time);
         void SetPortCount(int portCount);
         void SetHwUARTSz(int sz);
         void SetNwMult(int mult);
@@ -54,7 +52,6 @@ class Config final : public IConfig
         int GetIncomingDataBufferSec() const final;
         int GetTCPBuffSz() const final;
         int GetLingerSec() const final;
-        int GetMaxCTimeSec() const final;
         int GetPortCount() const final;
         int GetPackageMetaSz() const final;
         int GetPackageSz() const final;

@@ -16,7 +16,6 @@ class IConfig
 
         virtual int GetTCPBuffSz() const = 0;
         virtual int GetLingerSec() const = 0;
-        virtual int GetMaxCTimeSec() const = 0;
 
         virtual int GetPortCount() const = 0;
         virtual int GetPackageMetaSz() const = 0;

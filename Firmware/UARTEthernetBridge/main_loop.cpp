@@ -71,7 +71,7 @@ void setup()
     HardwareSerial *extUARTs[] = UART_DEFS;
     uint8_t extUARTPins[] = UART_RX_PINS;
     uint8_t extRSTPins[] = UART_RST_PINS;
-    for(int i=0;i<UART_COUNT;++i)
+    for(uint8_t i=0;i<UART_COUNT;++i)
     {
         uartPollTimes[i]=IDLE_POLL_INTERVAL_US;
         pinMode(extUARTPins[i],INPUT_PULLUP);
@@ -93,13 +93,13 @@ void setup()
     //perform reset of connected MCUs on cold boot
     if(!watchdog.IsSystemResetBoot())
     {
-        for(int i=0;i<UART_COUNT;++i)
+        for(uint8_t i=0;i<UART_COUNT;++i)
             rstHelper[i].StartReset(RESET_TIME_MS);
         bool rstComplete=true;
         do
         {
             rstComplete=true;
-            for(int i=0;i<UART_COUNT;++i)
+            for(uint8_t i=0;i<UART_COUNT;++i)
                 rstComplete&=rstHelper[i].ResetComplete();
         } while(!rstComplete);
         //blink LED pin indicating hardware setup is complete
@@ -150,7 +150,7 @@ static void check_link_state()
 static unsigned long GetMinPollTime()
 {
     unsigned long minPollTime=IDLE_POLL_INTERVAL_US;
-    for(int i=0;i<UART_COUNT;++i)
+    for(uint8_t i=0;i<UART_COUNT;++i)
         if(uartPollTimes[i]<minPollTime)
             minPollTime=uartPollTimes[i];
     return minPollTime;
@@ -187,7 +187,7 @@ void loop()
     //process incoming request
     if(clientEvent.type==ClientEventType::NewRequest)
     {
-        for(int i=0;i<UART_COUNT;++i)
+        for(uint8_t i=0;i<UART_COUNT;++i)
         {
             auto request=Request::Map(i,rxBuff);
             if(uartWorker[i].ProcessRequest(request))
@@ -197,12 +197,12 @@ void loop()
             }
         }
         //save new counter to the txbuff
-        for(int i=0;i<PKG_CNT_SIZE;++i)
+        for(uint8_t i=0;i<PKG_CNT_SIZE;++i)
             txBuff[PKG_CNT_OFFSET+i]=rxBuff[PKG_CNT_OFFSET+i];
     }
 
     //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
-    for(int i=0;i<UART_COUNT;++i)
+    for(uint8_t i=0;i<UART_COUNT;++i)
         uartWorker[i].ProcessRX();
 
     //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP
@@ -210,11 +210,11 @@ void loop()
     {
         pollTimer.Reset(false);
         segmentCounter++;
-        for(int i=0;i<UART_COUNT;++i)
+        for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].FillTXBuff(segmentCounter==1);
         if(segmentCounter<UART_AGGREGATE_MULT)
             return;
-        for(int i=0;i<UART_COUNT;++i)
+        for(uint8_t i=0;i<UART_COUNT;++i)
         {
             auto response=uartWorker[i].ProcessTX();
             Response::Write(response,i,txBuff);

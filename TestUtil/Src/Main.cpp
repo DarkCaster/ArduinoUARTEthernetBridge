@@ -9,13 +9,23 @@
 #include <cstdint>
 #include <sys/time.h>
 
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <unistd.h>
+#include <netdb.h>
+
+#include "IPAddress.h"
+#include "TCPConnection.h"
 #include "ILogger.h"
 #include "StdioLoggerFactory.h"
 #include "IMessage.h"
 #include "MessageBroker.h"
 #include "ShutdownHandler.h"
+#include "LoopbackTester.h"
 
-void usage(const std::string &self)
+static void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
     std::cerr<<"  mandatory parameters:"<<std::endl;
@@ -27,11 +37,47 @@ void usage(const std::string &self)
     std::cerr<<"    -cf <seconds> timeout for flushing data when closing sockets, -1 to disable, 0 - close without flushing, default: 30"<<std::endl;
 }
 
-int param_error(const std::string &self, const std::string &message)
+static int param_error(const std::string &self, const std::string &message)
 {
     std::cerr<<message<<std::endl;
     usage(self);
     return 1;
+}
+
+
+static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const int lingerTime,const int tcpBuffSize)
+{
+    //set linger
+    linger cLinger={0,0};
+    cLinger.l_onoff=lingerTime>=0;
+    cLinger.l_linger=cLinger.l_onoff?lingerTime:0;
+    if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &cLinger, sizeof(linger))!=0)
+        logger->Warning()<<"Failed to set SO_LINGER option to socket: "<<strerror(errno);
+    //set buffer size
+    auto bsz=tcpBuffSize;
+    if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &bsz, sizeof(bsz)))
+        logger->Warning()<<"Failed to set SO_SNDBUF option to socket: "<<strerror(errno);
+    bsz=tcpBuffSize;
+    if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &bsz, sizeof(bsz)))
+        logger->Warning()<<"Failed to set SO_RCVBUF option to socket: "<<strerror(errno);
+    int tcpNoDelay=1;
+    if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &tcpNoDelay, sizeof(tcpNoDelay)))
+        logger->Warning()<<"Failed to set TCP_NODELAY option to socket: "<<strerror(errno);
+    int tcpQuickAck=1;
+    if(setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &tcpQuickAck, sizeof(tcpQuickAck)))
+        logger->Warning()<<"Failed to set TCP_QUICKACK option to socket: "<<strerror(errno);
+    if(fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
+        logger->Error()<<"Failed to set O_NONBLOCK option to socket: "<<strerror(errno);
+}
+
+static void SetSocketCustomTimeouts(std::shared_ptr<ILogger> &logger, int fd, const timeval &tv)
+{
+    timeval rtv=tv;
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &rtv, sizeof(rtv))!=0)
+        logger->Warning()<<"Failed to set SO_RCVTIMEO option to socket: "<<strerror(errno);
+    timeval stv=tv;
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &stv, sizeof(stv))!=0)
+        logger->Warning()<<"Failed to set SO_SNDTIMEO option to socket: "<<strerror(errno);
 }
 
 int main (int argc, char *argv[])
@@ -109,7 +155,7 @@ int main (int argc, char *argv[])
     }
 
     //linger
-     int linger=30;
+    int linger=30;
     if(args.find("-cf")!=args.end())
     {
         auto time=std::atoi(args["-cf"].c_str());
@@ -138,9 +184,49 @@ int main (int argc, char *argv[])
         return 1;
     }
 
-    mainLogger->Info()<<"Startup"<<std::endl;
+    std::vector<std::shared_ptr<LoopbackTester>> lbTesters;
+
+    //create target connections
+    std::vector<std::shared_ptr<Connection>> connections;
+    for(auto const& port: localPorts)
+    {
+        //create socket
+        auto fd=socket(AF_INET,SOCK_STREAM,0);
+        if(fd<0)
+        {
+            mainLogger->Error()<<"Failed to create new socket: "<<strerror(errno);
+            return 1;
+        }
+
+        TuneSocketBaseParams(mainLogger,fd,linger,tcpBuffSize);
+        auto interval=timeval{mgInterval/1000,(mgInterval-mgInterval/1000*1000)*1000};
+        SetSocketCustomTimeouts(mainLogger,fd,interval);
+
+        int cr=-1;
+        sockaddr_in v4sa={};
+        IPAddress("127.0.0.1").ToSA(&v4sa);
+        v4sa.sin_port=htons(static_cast<uint16_t>(port));
+        cr=connect(fd,reinterpret_cast<sockaddr*>(&v4sa), sizeof(v4sa));
+
+        if(cr<0)
+        {
+            mainLogger->Error()<<"Failed to connect: "<<strerror(errno);
+            if(close(fd)!=0)
+            {
+                mainLogger->Error()<<"Failed to perform proper socket close after connection failure: "<<strerror(errno);
+                return 1;
+            }
+            return 1;
+        }
+
+        auto target=std::make_shared<TCPConnection>(fd,static_cast<uint16_t>(port));
+        auto lbLogger=logFactory.CreateLogger("Test:"+std::to_string(port));
+        lbTesters.push_back(std::make_shared<LoopbackTester>(lbLogger,*(target.get()),100));//TODO: test block size
+        connections.push_back(target);
+    }
 
     //startup
+    mainLogger->Info()<<"Test starting-up"<<std::endl;
 
     //main loop, awaiting for signal
     while(true)

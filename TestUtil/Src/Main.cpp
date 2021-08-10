@@ -24,6 +24,7 @@
 #include "MessageBroker.h"
 #include "ShutdownHandler.h"
 #include "LoopbackTester.h"
+#include "TestWorker.h"
 
 static void usage(const std::string &self)
 {
@@ -31,6 +32,8 @@ static void usage(const std::string &self)
     std::cerr<<"  mandatory parameters:"<<std::endl;
     std::cerr<<"    -pc <count> UART port count"<<std::endl;
     std::cerr<<"    -lp{n} <port> TCP ports UARTClient util is listening at"<<std::endl;
+    std::cerr<<"    -tsz <bytes> test block size, default: 4096 bytes"<<std::endl;
+    std::cerr<<"    -tto <ms> timeout for sending the whole block, and for receiving answer, default: 5000 ms"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
@@ -43,7 +46,6 @@ static int param_error(const std::string &self, const std::string &message)
     usage(self);
     return 1;
 }
-
 
 static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const int lingerTime,const int tcpBuffSize)
 {
@@ -164,6 +166,24 @@ int main (int argc, char *argv[])
         linger=time;
     }
 
+    int testBlockSize=4096;
+    if(args.find("-tsz")!=args.end())
+    {
+        auto bsz=std::atoi(args["-tsz"].c_str());
+        if(bsz<1||bsz>1000000000)
+            return param_error(argv[0],"Test block size is invalid");
+        testBlockSize=bsz;
+    }
+
+    int testTimeout=5000;
+    if(args.find("-tto")!=args.end())
+    {
+        auto to=std::atoi(args["-tto"].c_str());
+        if(to<1||to>3600000)
+            return param_error(argv[0],"Test timeout is too big");
+        testTimeout=to;
+    }
+
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");
     auto messageBrokerLogger=logFactory.CreateLogger("MSGBroker");
@@ -185,6 +205,7 @@ int main (int argc, char *argv[])
     }
 
     std::vector<std::shared_ptr<LoopbackTester>> lbTesters;
+    std::vector<std::shared_ptr<TestWorker>> testWorkers;
 
     //create target connections
     std::vector<std::shared_ptr<Connection>> connections;
@@ -221,12 +242,20 @@ int main (int argc, char *argv[])
 
         auto target=std::make_shared<TCPConnection>(fd,static_cast<uint16_t>(port));
         auto lbLogger=logFactory.CreateLogger("Test:"+std::to_string(port));
-        lbTesters.push_back(std::make_shared<LoopbackTester>(lbLogger,*(target.get()),100));//TODO: test block size
+        auto twLogger=logFactory.CreateLogger("TestWorker:"+std::to_string(port));
+        auto lbTester=std::make_shared<LoopbackTester>(lbLogger,*(target.get()),testBlockSize,testTimeout);
+        auto tWorker=std::make_shared<TestWorker>(twLogger,*(lbTester.get()));
+        lbTesters.push_back(lbTester);
+        testWorkers.push_back(tWorker);
         connections.push_back(target);
     }
 
     //startup
     mainLogger->Info()<<"Test starting-up"<<std::endl;
+    for(auto const& tester:lbTesters)
+        tester->Startup();
+    for(auto const& worker:testWorkers)
+        worker->Startup();
 
     //main loop, awaiting for signal
     while(true)
@@ -255,8 +284,16 @@ int main (int argc, char *argv[])
     }
 
     //request shutdown of background workers
+    for(auto const& worker:testWorkers)
+        worker->RequestShutdown();
+    for(auto const& tester:lbTesters)
+        tester->RequestShutdown();
 
     //wait for background workers shutdown complete
+    for(auto const& worker:testWorkers)
+        worker->Shutdown();
+    for(auto const& tester:lbTesters)
+        tester->Shutdown();
 
     mainLogger->Info()<<"Clean shutdown"<<std::endl;
 

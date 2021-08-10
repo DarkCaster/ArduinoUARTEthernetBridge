@@ -9,13 +9,17 @@
 
 class LoopbackTester final : public WorkerBase
 {
-    private: //fields setup via constructor
+    private:
         std::shared_ptr<ILogger> logger;
         Connection& target;
+        const size_t testBlockSize;
+        const uint64_t timeoutMS;
+        std::unique_ptr<uint8_t[]> source;
+        std::unique_ptr<uint8_t[]> test;
         std::atomic<bool> shutdownPending;
-        size_t testBlockSize;
     public:
-        LoopbackTester(std::shared_ptr<ILogger>& logger, Connection& target, size_t testBlockSize);
+        LoopbackTester(std::shared_ptr<ILogger>& logger, Connection& target, size_t testBlockSize, uint64_t timeoutMS);
+        bool ProcessTX();
     protected:
         //WorkerBase
         void Worker() final;

@@ -4,8 +4,11 @@
 #include "ILogger.h"
 #include "WorkerBase.h"
 #include "Connection.h"
+
 #include <memory>
 #include <atomic>
+#include <condition_variable>
+#include <chrono>
 
 class LoopbackTester final : public WorkerBase
 {
@@ -17,6 +20,10 @@ class LoopbackTester final : public WorkerBase
         std::unique_ptr<uint8_t[]> source;
         std::unique_ptr<uint8_t[]> test;
         std::atomic<bool> shutdownPending;
+        std::mutex startTriggerLock;
+        std::chrono::time_point<std::chrono::steady_clock> startPoint;
+        std::condition_variable startTrigger;
+        bool testStarted;
     public:
         LoopbackTester(std::shared_ptr<ILogger>& logger, Connection& target, size_t testBlockSize, uint64_t timeoutMS);
         bool ProcessTX();

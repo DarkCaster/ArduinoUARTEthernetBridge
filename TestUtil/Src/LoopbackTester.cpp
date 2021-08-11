@@ -18,12 +18,20 @@ LoopbackTester::LoopbackTester(std::shared_ptr<ILogger>& _logger, Connection& _t
         test[i]=0;
     }
     shutdownPending.store(false);
+    testStarted=false;
 }
 
 bool LoopbackTester::ProcessTX()
 {
     //make time mark
+    {
+        std::lock_guard<std::mutex> triggerGuard(startTriggerLock);
+        startPoint=std::chrono::steady_clock::now();
+        testStarted=false;
+    }
     //notify worker about start with time_mark
+    startTrigger.notify_one();
+
     //counter how much to send
     //read until it done, or until timed_out
     return false;
@@ -34,6 +42,13 @@ void LoopbackTester::Worker()
     logger->Info()<<"Reader started";
     while(!shutdownPending.load())
     {
+        std::unique_lock<std::mutex> lock(startTriggerLock);
+        while(!testStarted && !shutdownPending.load())
+            startTrigger.wait(lock);
+        auto start=startPoint;
+        lock.unlock();
+
+        //try to read requested amount of data, exit if this takes too long, calculate latency, compare data,
 
     }
     if(shutdownPending.load())

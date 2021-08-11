@@ -20,6 +20,7 @@ class LoopbackTester final : public WorkerBase
         std::unique_ptr<uint8_t[]> source;
         std::unique_ptr<uint8_t[]> test;
         std::atomic<bool> shutdownPending;
+        size_t dataToWrite;
         std::mutex startTriggerLock;
         std::chrono::time_point<std::chrono::steady_clock> startPoint;
         std::condition_variable startTrigger;

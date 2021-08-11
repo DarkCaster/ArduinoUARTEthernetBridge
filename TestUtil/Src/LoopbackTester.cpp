@@ -36,12 +36,14 @@ bool LoopbackTester::ProcessTX()
     //make time mark
     if(!testStarted)
     {
+        logger->Info()<<"Starting to send data";
         std::lock_guard<std::mutex> triggerGuard(startTriggerLock);
         startPoint=std::chrono::steady_clock::now();
         testStarted=true;
+        startTrigger.notify_one();
     }
     //notify worker about start with time_mark
-    startTrigger.notify_one();
+
 
     auto dw=send(target.fd,source.get()+testBlockSize-dataToWrite,dataToWrite,0);
     if(dw<=0)
@@ -89,17 +91,19 @@ void LoopbackTester::Worker()
             target.Dispose();
             return;
         }
+        else
+            break;
     }
-
-    auto firstByteTime=std::chrono::steady_clock::now();
-    auto latency=std::chrono::duration_cast<std::chrono::milliseconds>(firstByteTime-startTime);
-    logger->Info()<<"Loopback latency: "<<latency.count()<<" ms";
 
     if(shutdownPending.load())
     {
         logger->Warning()<<"Reader stopped by external shutdown request!";
         return;
     }
+
+    auto firstByteTime=std::chrono::steady_clock::now();
+    auto latency=std::chrono::duration_cast<std::chrono::milliseconds>(firstByteTime-startTime);
+    logger->Info()<<"Loopback latency: "<<latency.count()<<" ms";
 
     auto readLeft=testBlockSize-1;
     while(!shutdownPending.load())
@@ -116,11 +120,9 @@ void LoopbackTester::Worker()
             return;
         }
         readLeft-=static_cast<size_t>(dr);
+        if(readLeft<1)
+            break;
     }
-
-    auto endTime=std::chrono::steady_clock::now();
-    auto fullTime=std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime);
-    logger->Info()<<"Full time to send and receive package: "<<fullTime.count()<<" ms";
 
     //try to read requested amount of data, exit if this takes too long, calculate latency, compare data,
     if(shutdownPending.load())
@@ -128,6 +130,10 @@ void LoopbackTester::Worker()
         logger->Warning()<<"Reader stopped by external shutdown request!";
         logger->Warning()<<"Received bytes so far: "<<testBlockSize-readLeft;
     }
+
+    auto endTime=std::chrono::steady_clock::now();
+    auto fullTime=std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime);
+    logger->Info()<<"Full time to send and receive package: "<<fullTime.count()<<" ms";
 }
 
 void LoopbackTester::OnShutdown()

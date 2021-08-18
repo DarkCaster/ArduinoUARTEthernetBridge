@@ -8,6 +8,7 @@ endif()
 
 project(UARTEthernetBridge C CXX ASM)
 
+#definitions for atmega 2560
 add_definitions(-DARDUINO_MEGA2560_CONFIG)
 set(ARDUINO_AVRDUDE_BAUD "115200" CACHE STRING "avrdude baud-rate (for optiboot)")
 set(ARDUINO_AVRDUDE_MCU "atmega2560" CACHE STRING "avrdude mcu")
@@ -16,6 +17,7 @@ set(ARDUINO_F_CPU "16000000L" CACHE STRING "-DF_CPU define")
 set(ARDUINO_MODEL "ARDUINO_AVR_MEGA2560" CACHE STRING "-DARDUINO_* define")
 set(ARDUINO_VARIANT "mega" CACHE STRING "arduino variant")
 
+#definitions for atmega 328p, experimental
 #add_definitions(-DARDUINO_PRO_MINI_CONFIG)
 #add_definitions(-DUIP_SOCKET_NUMPACKETS=2)
 #set(ARDUINO_AVRDUDE_BAUD "115200" CACHE STRING "avrdude baud-rate (for optiboot)")
@@ -29,6 +31,10 @@ include(ArduinoCmakeBuilder/arduino-avr-config.cmake)
 include(ArduinoCmakeBuilder/arduino-build-helper.cmake)
 
 set_avr_compiler_flags()
+
+#cruical for acceptable performance on atmega 2560
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 
 #override some config definitions for UIP library to reduce RAM footprint and TCP latency
 #this is cruical for arduino pro mini / atmega 328p, project will not fit into 2KiB ram without these options

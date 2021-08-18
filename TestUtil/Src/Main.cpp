@@ -35,6 +35,7 @@ static void usage(const std::string &self)
     std::cerr<<"    -tsz <bytes> test block size, default: 4096 bytes"<<std::endl;
     std::cerr<<"    -tto <ms> timeout for sending the whole block, and for receiving answer, default: 5000 ms"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
+    std::cerr<<"    -pt <time, ms> pause (msec) before starting up tests"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
     std::cerr<<"    -cf <seconds> timeout for flushing data when closing sockets, -1 to disable, 0 - close without flushing, default: 30"<<std::endl;
@@ -106,6 +107,15 @@ int main (int argc, char *argv[])
 
     if(args.empty())
         return param_error(argv[0],"Mandatory parameters are missing!");
+
+    int pause=1000;
+    if(args.find("-pt")!=args.end())
+    {
+        auto pt=std::atoi(args["-pt"].c_str());
+        if(pt<0||pt>60000)
+            return param_error(argv[0],"pause time is invalid");
+        pause=static_cast<size_t>(pt);
+    }
 
     size_t portCount=0;
     if(args.find("-pc")!=args.end())
@@ -241,7 +251,7 @@ int main (int argc, char *argv[])
         auto target=std::make_shared<TCPConnection>(fd,static_cast<uint16_t>(port));
         auto lbLogger=logFactory.CreateLogger("Test:"+std::to_string(port));
         auto twLogger=logFactory.CreateLogger("TestWorker:"+std::to_string(port));
-        auto lbTester=std::make_shared<LoopbackTester>(lbLogger,*(target.get()),testBlockSize,testTimeout);
+        auto lbTester=std::make_shared<LoopbackTester>(lbLogger,*(target.get()),testBlockSize,testTimeout,pause);
         auto tWorker=std::make_shared<TestWorker>(twLogger,*(lbTester.get()));
         lbTesters.push_back(lbTester);
         testWorkers.push_back(tWorker);

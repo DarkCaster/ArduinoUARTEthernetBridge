@@ -1,5 +1,6 @@
 #include "LoopbackTester.h"
 
+#include <chrono>
 #include <random>
 #include <cstring>
 #include <cerrno>
@@ -10,11 +11,12 @@
 #include <unistd.h>
 #include <netdb.h>
 
-LoopbackTester::LoopbackTester(std::shared_ptr<ILogger>& _logger, Connection& _target, size_t _testBlockSize, uint64_t _timeoutMS):
+LoopbackTester::LoopbackTester(std::shared_ptr<ILogger>& _logger, Connection& _target, size_t _testBlockSize, uint64_t _timeoutMS, uint64_t _warmupMS):
     logger(_logger),
     target(_target),
     testBlockSize(_testBlockSize),
-    timeoutMS(_timeoutMS)
+    timeoutMS(_timeoutMS),
+    warmupMS(_warmupMS)
 {
     source=std::make_unique<uint8_t[]>(testBlockSize);
     test=std::make_unique<uint8_t[]>(testBlockSize);
@@ -36,6 +38,9 @@ bool LoopbackTester::ProcessTX()
     //make time mark
     if(!testStarted)
     {
+        //pause
+        logger->Info()<<"Warming up";
+        std::this_thread::sleep_for(std::chrono::milliseconds(warmupMS));
         logger->Info()<<"Starting to send data";
         std::lock_guard<std::mutex> triggerGuard(startTriggerLock);
         startPoint=std::chrono::steady_clock::now();

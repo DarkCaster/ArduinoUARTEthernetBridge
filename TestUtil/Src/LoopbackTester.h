@@ -17,6 +17,7 @@ class LoopbackTester final : public WorkerBase
         Connection& target;
         const size_t testBlockSize;
         const uint64_t timeoutMS;
+        const uint64_t warmupMS;
         std::unique_ptr<uint8_t[]> source;
         std::unique_ptr<uint8_t[]> test;
         std::atomic<bool> shutdownPending;
@@ -26,7 +27,7 @@ class LoopbackTester final : public WorkerBase
         std::condition_variable startTrigger;
         bool testStarted;
     public:
-        LoopbackTester(std::shared_ptr<ILogger>& logger, Connection& target, size_t testBlockSize, uint64_t timeoutMS);
+        LoopbackTester(std::shared_ptr<ILogger>& logger, Connection& target, size_t testBlockSize, uint64_t timeoutMS, uint64_t warmupMS);
         bool ProcessTX();
     protected:
         //WorkerBase

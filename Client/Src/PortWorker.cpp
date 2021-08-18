@@ -1,8 +1,8 @@
 #include "PortWorker.h"
 
 #include <unistd.h>
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <poll.h>
 
 PortWorker::PortWorker(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const PortConfig& _portConfig, RemoteBufferTracker& _remoteBufferTracker):
@@ -42,6 +42,9 @@ void PortWorker::OnConnected(const IConnectedMessage&)
 
 void PortWorker::OnPortOpen(const IPortOpenMessage& message)
 {
+    //only process message from corresponding client connection
+    if(message.id!=portConfig.portID)
+        return;
     std::lock_guard<std::mutex> clientGuard(clientLock);
     //get rid of old client if it still not closed
     if(client!=nullptr)

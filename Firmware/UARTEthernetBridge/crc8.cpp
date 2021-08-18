@@ -1,6 +1,11 @@
 #include "crc8.h"
 
-static const PROGMEM uint8_t Crc8Table[256] = {
+#ifdef ARDUINO_AVR_MEGA2560
+static const uint8_t Crc8Table[256] =
+#else
+static const PROGMEM uint8_t Crc8Table[256] =
+#endif
+{
   0x00, 0x31, 0x62, 0x53, 0xC4, 0xF5, 0xA6, 0x97,
   0xB9, 0x88, 0xDB, 0xEA, 0x7D, 0x4C, 0x1F, 0x2E,
   0x43, 0x72, 0x21, 0x10, 0x87, 0xB6, 0xE5, 0xD4,
@@ -35,11 +40,23 @@ static const PROGMEM uint8_t Crc8Table[256] = {
   0x3B, 0x0A, 0x59, 0x68, 0xFF, 0xCE, 0x9D, 0xAC
 };
 
+#ifdef ARDUINO_AVR_MEGA2560
 uint8_t CRC8(const uint8_t *source, size_t len)
 {
-	uint8_t crc = 0xFF;
-	while (len--)
-		crc = pgm_read_byte(Crc8Table + (crc ^ *source++));
-	return crc;
+    uint8_t crc = 0xFF;
+    while (len--)
+        crc = Crc8Table[crc ^ *source++];
+    return crc;
 }
+#else
+uint8_t CRC8(const uint8_t *source, size_t len)
+{
+    uint8_t crc = 0xFF;
+    while (len--)
+        crc = pgm_read_byte(Crc8Table + (crc ^ *source++));
+    return crc;
+}
+#endif
+
+
 

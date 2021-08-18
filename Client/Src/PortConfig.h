@@ -42,11 +42,9 @@ struct PortConfig
         const bool resetOnConnect;
         const IPEndpoint listener;
         const std::string ptsListener;
-        PortConfig(const uint32_t speed,
-                     const SerialMode mode,
-                     const bool resetOnConnect,
-                     const IPEndpoint& listener,
-                     const std::string& ptsSymlink);
+        const size_t portID;
+        PortConfig(const uint32_t _speed, const SerialMode _mode, const bool _resetOnConnect, const IPEndpoint& _listener, const std::string& _ptsSymlink, const size_t _portID):
+            speed(_speed), mode(_mode), resetOnConnect(_resetOnConnect), listener(_listener), ptsListener(_ptsSymlink), portID(_portID) {};
 };
 
 #endif //REMOTE_CONFIG_H

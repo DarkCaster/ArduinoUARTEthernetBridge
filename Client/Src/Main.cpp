@@ -258,7 +258,7 @@ int main (int argc, char *argv[])
                                  rstFlags[i],
                                  //calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
                                  IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
-                                 localFiles[i]));
+                                 localFiles[i],i));
 
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");

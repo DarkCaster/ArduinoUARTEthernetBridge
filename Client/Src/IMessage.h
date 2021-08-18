@@ -70,9 +70,10 @@ class ISendPackageMessage : public IMessage
 class IPortOpenMessage : public IMessage
 {
     protected:
-        IPortOpenMessage(std::shared_ptr<Connection>& _connection):
-            IMessage(MSG_PORT_OPEN),connection(_connection){}
+        IPortOpenMessage(const size_t _id, std::shared_ptr<Connection>& _connection):
+            IMessage(MSG_PORT_OPEN),id(_id),connection(_connection){}
     public:
+        const size_t id;
         std::shared_ptr<Connection>& connection;
 };
 

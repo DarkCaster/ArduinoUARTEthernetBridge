@@ -13,7 +13,7 @@
 #include <fcntl.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
-class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(std::shared_ptr<Connection> _client):IPortOpenMessage(_client){} };
+class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(const size_t _id, std::shared_ptr<Connection> _client):IPortOpenMessage(_id, _client){} };
 
 TCPListener::TCPListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const PortConfig &_remoteConfig):
     logger(_logger),
@@ -176,7 +176,7 @@ void TCPListener::Worker()
         SetSocketCustomTimeouts(logger,cSockFd,config.GetServiceIntervalTV());
 
         logger->Info()<<"New TCP client connected, fd: "<<cSockFd;
-        sender.SendMessage(this, PortOpenMessage(std::make_shared<TCPConnection>(cSockFd,0)));
+        sender.SendMessage(this, PortOpenMessage(remoteConfig.portID, std::make_shared<TCPConnection>(cSockFd,0)));
     }
 
     if(close(lSockFd)!=0)

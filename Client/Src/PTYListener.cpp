@@ -13,7 +13,7 @@
 #include <sys/inotify.h>
 
 class ShutdownMessage: public IShutdownMessage { public: ShutdownMessage(int _ec):IShutdownMessage(_ec){} };
-class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(std::shared_ptr<Connection> _client):IPortOpenMessage(_client){} };
+class PortOpenMessage: public IPortOpenMessage { public: PortOpenMessage(const size_t _id, std::shared_ptr<Connection> _client):IPortOpenMessage(_id, _client){} };
 
 PTYListener::PTYListener(std::shared_ptr<ILogger> &_logger, IMessageSender &_sender, const IConfig &_config, const PortConfig &_remoteConfig):
     logger(_logger),
@@ -159,7 +159,7 @@ void PTYListener::Worker()
         if(openCount==1) //first client connected
         {
             logger->Info()<<"PTY client connected to "<<remoteConfig.ptsListener;
-            sender.SendMessage(this, PortOpenMessage(std::make_shared<PTYConnection>(ptm)));
+            sender.SendMessage(this, PortOpenMessage(remoteConfig.portID,std::make_shared<PTYConnection>(ptm)));
         }
         else if(openCount==0) //last client disconnected
         {

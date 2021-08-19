@@ -4,3 +4,6 @@
 [submodule "Libraries/UIPEthernet"]
 	path = Firmware/Libraries/UIPEthernet
 	url = https://github.com/UIPEthernet/UIPEthernet.git
+[submodule "Firmware/Libraries/EthernetENC"]
+	path = Firmware/Libraries/EthernetENC
+	url = https://github.com/jandrassy/EthernetENC.git

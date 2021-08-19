@@ -28,8 +28,10 @@ static UARTWorker uartWorker[UART_COUNT];
 
 //current client state
 static bool tcpClientState;
-static uint8_t segmentCounter;
 static ClientEvent clientEvent;
+#if UART_AGGREGATE_MULTIPLIER != 1
+static uint8_t segmentCounter;
+#endif
 
 static void blink(uint16_t blinkTime, uint16_t pauseTime, uint8_t count)
 {
@@ -129,7 +131,9 @@ void setup()
     blink(0,0,1);
 
     //setup timers
+#if UART_AGGREGATE_MULTIPLIER != 1
     segmentCounter=0;
+#endif
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
     pollTimer.Reset(true);
@@ -176,7 +180,9 @@ void loop()
     if(clientEvent.type==ClientEventType::Connected)
     {
         tcpClientState=true;
+#if UART_AGGREGATE_MULTIPLIER != 1
         segmentCounter=0;
+#endif
         pollTimer.SetInterval(UART_POLL_INTERVAL_US_TCP);
     }
     else if(clientEvent.type==ClientEventType::Disconnected)
@@ -208,6 +214,7 @@ void loop()
     if(pollTimer.Update())
     {
         pollTimer.Reset(false);
+#if UART_AGGREGATE_MULTIPLIER != 1
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].FillTXBuff(segmentCounter==1);
@@ -215,8 +222,17 @@ void loop()
             return;
         for(uint8_t i=0;i<UART_COUNT;++i)
             WriteResponse(uartWorker[i].ProcessTX(),i,txBuff);
+#else
+        for(uint8_t i=0;i<UART_COUNT;++i)
+        {
+            uartWorker[i].FillTXBuff(true);
+            WriteResponse(uartWorker[i].ProcessTX(),i,txBuff);
+        }
+#endif
         //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
+#if UART_AGGREGATE_MULTIPLIER != 1
         segmentCounter=0;
+#endif
     }
 }

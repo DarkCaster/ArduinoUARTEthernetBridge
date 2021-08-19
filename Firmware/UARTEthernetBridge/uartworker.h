@@ -21,8 +21,7 @@ class UARTWorker
         size_t txUsedSz;
     public:
         void Setup(ResetHelper* const resetHelper, HardwareSerial* const uart, uint8_t * rxDataBuff, uint8_t * txDataBuff);
-        bool ProcessRequest(const Request& request);
-        unsigned long GetPollInterval();
+        void ProcessRequest(const Request& request);
         void ProcessRX();
         void FillTXBuff(bool reset);
         Response ProcessTX();

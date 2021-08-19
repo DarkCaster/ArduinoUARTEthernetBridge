@@ -49,9 +49,7 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
             if(!serverStarted && ctlEvent.data.udpPort>0)
             {
                 serverStarted=udpServer.begin(ctlEvent.data.udpPort)==1;
-                //reset MCU if server was not started
-                if(!serverStarted)
-                    watchDog.SystemReset();
+                return ClientEvent{ClientEventType::NewRequest,{.udpSrvStarted=serverStarted}};
             }
             //nothing more to do at this point
             return ctlEvent;
@@ -82,15 +80,13 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
     alarmTimer.SnoozeAlarm();
 
     //request is ready
-    return ClientEvent{ClientEventType::NewRequest,{.udpSeq=serverSeq}};
+    return ClientEvent{ClientEventType::NewRequest,{.udpSrvStarted=false}};
 }
 
 bool UDPServer::ProcessTX()
 {
     //do not attempt to send anything if we still do not known client's local port
-    if(!serverStarted||clientUDPPort<1)
-        return false;
-    if(udpServer.beginPacket(clientAddr,clientUDPPort)!=1)
+    if(!serverStarted||clientUDPPort<1||udpServer.beginPacket(clientAddr,clientUDPPort)!=1)
         return false;
     //fill-up server sequence
     *(txBuff)=clientSeq&0xFF;

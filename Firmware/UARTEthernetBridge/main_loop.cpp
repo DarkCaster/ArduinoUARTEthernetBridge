@@ -28,7 +28,6 @@ static UARTWorker uartWorker[UART_COUNT];
 
 //current client state
 static bool tcpClientState;
-static unsigned long uartPollTimes[UART_COUNT];
 static uint8_t segmentCounter;
 static ClientEvent clientEvent;
 
@@ -73,7 +72,6 @@ void setup()
     uint8_t extRSTPins[] = UART_RST_PINS;
     for(uint8_t i=0;i<UART_COUNT;++i)
     {
-        uartPollTimes[i]=IDLE_POLL_INTERVAL_US;
         pinMode(extUARTPins[i],INPUT_PULLUP);
         rstHelper[i].Setup(extRSTPins[i]);
         uartWorker[i].Setup(&(rstHelper[i]),extUARTs[i],rxBuff+META_SZ+META_CRC_SZ+DATA_PAYLOAD_SIZE*i,txBuff+META_SZ+META_CRC_SZ+DATA_PAYLOAD_SIZE*i);
@@ -133,7 +131,7 @@ void setup()
     //setup timers
     segmentCounter=0;
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
-    pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
+    pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
     pollTimer.Reset(true);
 }
 
@@ -145,15 +143,6 @@ static void check_link_state()
         blink(500,500,6);
         watchdog.SystemReset();
     }
-}
-
-static unsigned long GetMinPollTime()
-{
-    unsigned long minPollTime=IDLE_POLL_INTERVAL_US;
-    for(uint8_t i=0;i<UART_COUNT;++i)
-        if(uartPollTimes[i]<minPollTime)
-            minPollTime=uartPollTimes[i];
-    return minPollTime;
 }
 
 inline Request MapRequest(const int portIndex, const uint8_t * const rawBuffer)
@@ -188,11 +177,12 @@ void loop()
     {
         tcpClientState=true;
         segmentCounter=0;
+        pollTimer.SetInterval(UART_POLL_INTERVAL_US_TCP);
     }
     else if(clientEvent.type==ClientEventType::Disconnected)
     {
         tcpClientState=false;
-        pollTimer.SetInterval(IDLE_POLL_INTERVAL_US);
+        pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
     }
 
     //process incoming data from UDP, with respect to TCP client event
@@ -201,14 +191,10 @@ void loop()
     //process incoming request
     if(clientEvent.type==ClientEventType::NewRequest)
     {
+        if(clientEvent.data.udpSrvStarted)
+            pollTimer.SetInterval(UART_POLL_INTERVAL_US_UDP);
         for(uint8_t i=0;i<UART_COUNT;++i)
-        {
-            if(uartWorker[i].ProcessRequest(MapRequest(i,rxBuff)))
-            {
-                uartPollTimes[i]=uartWorker[i].GetPollInterval();
-                pollTimer.SetInterval(GetMinPollTime());
-            }
-        }
+            uartWorker[i].ProcessRequest(MapRequest(i,rxBuff));
         //save new counter to the txbuff
         for(uint8_t i=0;i<PKG_CNT_SIZE;++i)
             txBuff[PKG_CNT_OFFSET+i]=rxBuff[PKG_CNT_OFFSET+i];
@@ -225,7 +211,7 @@ void loop()
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].FillTXBuff(segmentCounter==1);
-        if(segmentCounter<UART_AGGREGATE_MULT)
+        if(segmentCounter<UART_AGGREGATE_MULTIPLIER)
             return;
         for(uint8_t i=0;i<UART_COUNT;++i)
             WriteResponse(uartWorker[i].ProcessTX(),i,txBuff);

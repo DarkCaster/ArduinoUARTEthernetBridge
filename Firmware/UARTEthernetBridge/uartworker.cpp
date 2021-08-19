@@ -11,16 +11,13 @@ void UARTWorker::Setup(ResetHelper* const _resetHelper, HardwareSerial* const _u
     uart=_uart;
     rxDataBuff=_rxDataBuff;
     txDataBuff=_txDataBuff;
-    pollInterval=IDLE_POLL_INTERVAL_US;
     curMode=0xFE;
     sessionId=0;
     txUsedSz=0;
 }
 
-bool UARTWorker::ProcessRequest(const Request &request)
+void UARTWorker::ProcessRequest(const Request &request)
 {
-    unsigned long speed=0;
-    bool pollIntervalChanged=false;
     uint8_t szLeft;
     switch (request.type)
     {
@@ -54,12 +51,8 @@ bool UARTWorker::ProcessRequest(const Request &request)
             }
             sessionId=0; //used only on client start, so reset session id
             curMode=request.arg;
-            speed=static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16;
             if(IS_OPEN(curMode))
-                uart->begin(speed,curMode);
-            //re-calculate poll interval for selected data-transfer speed
-            pollInterval=static_cast<unsigned long>(1000000.0f/static_cast<float>(speed)*8.0f*static_cast<float>(UART_BUFFER_SIZE));
-            pollIntervalChanged=true;
+                uart->begin(static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16,curMode);
             break;
         case ReqType::Close:
             if(IS_OPEN(curMode))
@@ -68,19 +61,11 @@ bool UARTWorker::ProcessRequest(const Request &request)
                 rxRingBuff.Reset();
             }
             curMode=MODE_CLOSED;
-            pollInterval=IDLE_POLL_INTERVAL_US;
-            pollIntervalChanged=true;
             break;
         case ReqType::NoCommand:
         default:
             break;
     }
-    return pollIntervalChanged;
-}
-
-unsigned long UARTWorker::GetPollInterval()
-{
-    return pollInterval;
 }
 
 void UARTWorker::ProcessRX()

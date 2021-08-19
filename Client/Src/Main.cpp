@@ -36,7 +36,7 @@
 // Arduino Pro Mini (atmega328p) with 1 uart port:
 //  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1 -rbs 8
 // Arduino Mega 2560 (atmega 2560) with 3 uart ports:
-//  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 255 -ps2 250000 -pm2 255 -ps3 250000 -pm3 255 -rst1 1 -rst2 1 -rst3 1 -rbs 28
+//  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 255 -ps2 250000 -pm2 255 -ps3 250000 -pm3 255 -rst1 1 -rst2 1 -rst3 1 -rbs 20 -nm 1
 
 void usage(const std::string &self)
 {

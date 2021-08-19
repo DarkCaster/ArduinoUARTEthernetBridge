@@ -9,7 +9,9 @@ endif()
 project(UARTEthernetBridge C CXX ASM)
 
 #definitions for atmega 2560
-add_definitions(-DARDUINO_MEGA2560_CONFIG)
+add_definitions(-DUIP_CONF_UDP_CONNS=1)
+add_definitions(-DUIP_CONF_MAX_CONNECTIONS=2)
+add_definitions(-DUIP_UDP_BACKLOG=8)
 set(ARDUINO_AVRDUDE_BAUD "115200" CACHE STRING "avrdude baud-rate (for optiboot)")
 set(ARDUINO_AVRDUDE_MCU "atmega2560" CACHE STRING "avrdude mcu")
 set(ARDUINO_MCU "atmega2560" CACHE STRING "-mmcu define for avr-gcc compiler")
@@ -18,8 +20,10 @@ set(ARDUINO_MODEL "ARDUINO_AVR_MEGA2560" CACHE STRING "-DARDUINO_* define")
 set(ARDUINO_VARIANT "mega" CACHE STRING "arduino variant")
 
 #definitions for atmega 328p, experimental
-#add_definitions(-DARDUINO_PRO_MINI_CONFIG)
 #add_definitions(-DUIP_SOCKET_NUMPACKETS=2)
+#add_definitions(-DUIP_CONF_UDP_CONNS=1)
+#add_definitions(-DUIP_CONF_MAX_CONNECTIONS=2)
+#add_definitions(-DUIP_UDP_BACKLOG=2)
 #set(ARDUINO_AVRDUDE_BAUD "115200" CACHE STRING "avrdude baud-rate (for optiboot)")
 #set(ARDUINO_AVRDUDE_MCU "atmega328p" CACHE STRING "avrdude mcu")
 #set(ARDUINO_MCU "atmega328p" CACHE STRING "-mmcu define for avr-gcc compiler")
@@ -36,20 +40,13 @@ set_avr_compiler_flags()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
 
-#override some config definitions for UIP library to reduce RAM footprint and TCP latency
-#this is cruical for arduino pro mini / atmega 328p, project will not fit into 2KiB ram without these options
-add_definitions(-DUIP_CLIENT_TIMER=0)
-add_definitions(-DUIP_CONF_BROADCAST=0)
-add_definitions(-DUIP_CONF_UDP_CONNS=1)
-add_definitions(-DUIP_CONF_MAX_CONNECTIONS=2)
-
 # add some internal and external libraries
 add_arduino_library(SPI ${ARDUINO_LIBS_PATH})
-add_arduino_library(UIPEthernet ${CMAKE_SOURCE_DIR}/Libraries SPI)
-target_compile_options(UIPEthernet PRIVATE "-Wno-cpp" "-Wno-sign-compare" "-Wno-unused-label")
+add_arduino_library(EthernetENC ${CMAKE_SOURCE_DIR}/Libraries SPI)
+target_compile_options(EthernetENC PRIVATE "-Wno-sign-compare")
 
 # add main sketdh definitions
-add_arduino_sketch(UARTEthernetBridge ${CMAKE_SOURCE_DIR} UIPEthernet)
+add_arduino_sketch(UARTEthernetBridge ${CMAKE_SOURCE_DIR} EthernetENC)
 target_compile_options(UARTEthernetBridge PRIVATE "-Wno-cpp")
 add_arduino_post_target(UARTEthernetBridge)
 add_arduino_upload_target(UARTEthernetBridge)

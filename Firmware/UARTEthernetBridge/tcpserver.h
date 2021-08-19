@@ -2,8 +2,8 @@
 #define TCPSERVER_H
 
 #include <Arduino.h>
-#include <UIPServer.h>
-#include <UIPClient.h>
+#include <EthernetServer.h>
+#include <EthernetClient.h>
 
 #include "alarmtimer.h"
 #include "clientstate.h"
@@ -14,11 +14,10 @@ class TCPServer
         AlarmTimer& alarmTimer;
         const size_t pkgSz;
         const size_t metaSz;
-        const uint16_t netPort;
         uint8_t * const rxBuff;
         uint8_t * const txBuff;
-        UIPServer server=UIPServer(0);
-        UIPClient client;
+        EthernetServer server;
+        EthernetClient client;
 
         bool connected;
         size_t pkgLeft;

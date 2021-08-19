@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <IPAddress.h>
-#include <UIPUdp.h>
+#include <EthernetUdp.h>
 
 #include "alarmtimer.h"
 #include "watchdog.h"
@@ -23,7 +23,7 @@ class UDPServer
         uint16_t clientUDPPort = 0;
         uint16_t clientSeq = 0;
         bool serverStarted = false;
-        UIPUDP udpServer;
+        EthernetUDP udpServer;
     public:
         UDPServer(AlarmTimer& alarmTimer, Watchdog& watchDog, uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
         ClientEvent ProcessRX(const ClientEvent& ctlEvent);

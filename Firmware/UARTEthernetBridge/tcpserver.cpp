@@ -6,9 +6,9 @@ TCPServer::TCPServer(AlarmTimer& _alarmTimer, uint8_t* const _rxBuff, uint8_t* c
     alarmTimer(_alarmTimer),
     pkgSz(_pkgSz),
     metaSz(_metaSz),
-    netPort(_netPort),
     rxBuff(_rxBuff),
-    txBuff(_txBuff)
+    txBuff(_txBuff),
+    server(EthernetServer(_netPort))
 {
     connected=false;
 }
@@ -16,7 +16,7 @@ TCPServer::TCPServer(AlarmTimer& _alarmTimer, uint8_t* const _rxBuff, uint8_t* c
 void TCPServer::Start()
 {
     connected=false;
-    server.begin(netPort);
+    server.begin();
 }
 
 ClientEvent TCPServer::ProcessRX()

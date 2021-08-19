@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <UIPEthernet.h>
+#include <Ethernet.h>
 
 #include "configuration.h"
 #include "main_loop.h"
@@ -109,13 +109,13 @@ void setup()
         blink(10,10,1);
 
     //initialize network, reset if no network cable detected
-    UIPEthernet.init(PIN_SPI_ENC28J60_CS);
+    Ethernet.init(PIN_SPI_ENC28J60_CS);
     uint8_t macaddr[] = ENC28J60_MACADDR;
-    if (UIPEthernet.begin(macaddr) == 0)
+    if (Ethernet.begin(macaddr) == 0)
     {
-        if (UIPEthernet.hardwareStatus() == EthernetNoHardware)
+        if (Ethernet.hardwareStatus() == EthernetNoHardware)
             blink(50,950,6);
-        else if (UIPEthernet.linkStatus() == LinkOFF)
+        else if (Ethernet.linkStatus() == LinkOFF)
             //Cable not inserted
             blink(500,500,6);
         else
@@ -140,7 +140,7 @@ void setup()
 static void check_link_state()
 {
     //check link state
-    if(UIPEthernet.linkStatus()!=LinkON)
+    if(Ethernet.linkStatus()!=LinkON)
     {
         blink(500,500,6);
         watchdog.SystemReset();

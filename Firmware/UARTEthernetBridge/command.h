@@ -22,18 +22,20 @@ enum struct RespType : uint8_t
 
 struct Request
 {
-    static Request Map(const int portIndex, const uint8_t * const rawBuffer);
     ReqType type;
     uint8_t arg;
     uint8_t plSz;
 };
 
+
+
 struct Response
 {
-    static void Write(const Response &source, const int portIndex, uint8_t * const rawBuffer);
     RespType type;
     uint8_t arg;
     uint8_t plSz;
 };
+
+
 
 #endif // COMMAND_H

@@ -156,6 +156,20 @@ static unsigned long GetMinPollTime()
     return minPollTime;
 }
 
+inline Request MapRequest(const int portIndex, const uint8_t * const rawBuffer)
+{
+    const auto offset=PKG_HDR_SZ+portIndex*CMD_HDR_SIZE;
+    return Request{static_cast<ReqType>(*(rawBuffer+offset)),*(rawBuffer+offset+1),*(rawBuffer+offset+2)};
+}
+
+inline void WriteResponse(const Response &source, const int portIndex, uint8_t * const rawBuffer)
+{
+    const auto offset=PKG_HDR_SZ+portIndex*CMD_HDR_SIZE;
+    *(rawBuffer+offset)=static_cast<uint8_t>(source.type);
+    *(rawBuffer+offset+1)=source.arg;
+    *(rawBuffer+offset+2)=source.plSz;
+}
+
 void loop()
 {
     //if client is not connected, check the link state, and reboot on link-failure
@@ -189,8 +203,7 @@ void loop()
     {
         for(uint8_t i=0;i<UART_COUNT;++i)
         {
-            auto request=Request::Map(i,rxBuff);
-            if(uartWorker[i].ProcessRequest(request))
+            if(uartWorker[i].ProcessRequest(MapRequest(i,rxBuff)))
             {
                 uartPollTimes[i]=uartWorker[i].GetPollInterval();
                 pollTimer.SetInterval(GetMinPollTime());
@@ -215,10 +228,7 @@ void loop()
         if(segmentCounter<UART_AGGREGATE_MULT)
             return;
         for(uint8_t i=0;i<UART_COUNT;++i)
-        {
-            auto response=uartWorker[i].ProcessTX();
-            Response::Write(response,i,txBuff);
-        }
+            WriteResponse(uartWorker[i].ProcessTX(),i,txBuff);
         //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
         segmentCounter=0;

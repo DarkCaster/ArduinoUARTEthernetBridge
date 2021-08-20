@@ -57,6 +57,8 @@ void usage(const std::string &self)
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
     std::cerr<<"    -us <1-65535> hw uart-buffer size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
     std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 1"<<std::endl;
+    std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
+    std::cerr<<"    -pmax <time, us> maximum local port poll interval, default: 16384 usec"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
@@ -70,9 +72,10 @@ int param_error(const std::string &self, const std::string &message)
     return 1;
 }
 
-constexpr int64_t calculate_poll_interval(int portSpeed, int uartBuffSize)
+int64_t calculate_poll_interval(const int portSpeed, const int uartBuffSize, const int min, const int max)
 {
-    return static_cast<int64_t>((1000000.0/static_cast<double>(portSpeed))*8.0*static_cast<double>(uartBuffSize));
+    const auto interval=static_cast<int64_t>((1000000.0/static_cast<double>(portSpeed))*8.0*static_cast<double>(uartBuffSize))/2;
+    return interval<min?min:interval>max?max:interval;
 }
 
 int main (int argc, char *argv[])
@@ -247,6 +250,24 @@ int main (int argc, char *argv[])
         config.SetLingerSec(time);
     }
 
+    int pmin=4096;
+    if(args.find("-pmin")!=args.end())
+    {
+        auto time=std::atoi(args["-pmin"].c_str());
+        if(time<1||time>1000000)
+            return param_error(argv[0],"Min poll time is invalid");
+        pmin=time;
+    }
+
+    int pmax=16384;
+    if(args.find("-pmax")!=args.end())
+    {
+        auto time=std::atoi(args["-pmax"].c_str());
+        if(time<1||time>1000000||pmax<pmin)
+            return param_error(argv[0],"Max poll time is invalid");
+        pmax=time;
+    }
+
     //check network payload size, currently it cannot exceed 255 bytes
     if(config.GetNetworkPayloadSz()>255)
         return param_error(argv[0],"Provided UART buffer size or it's multiplier is too big, total payload size (uart size * mult) exceed 255 bytes");
@@ -256,11 +277,11 @@ int main (int argc, char *argv[])
     for(size_t i=0; i<portCount; ++i)
         remoteConfigs.push_back(
                     PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
-                                 static_cast<SerialMode>(uartModes[i]),
-                                 rstFlags[i],
-                                 //calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
-                                 IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
-                                 localFiles[i],i));
+                               static_cast<SerialMode>(uartModes[i]),
+                               rstFlags[i],
+                               //calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
+                               IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
+                               localFiles[i],i));
 
     StdioLoggerFactory logFactory;
     auto mainLogger=logFactory.CreateLogger("Main");
@@ -291,7 +312,7 @@ int main (int argc, char *argv[])
     int64_t minPollTime=INT64_MAX;
     for(size_t i=0;i<portCount;++i)
     {
-        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz());
+        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz(),pmin,pmax);
         if(testTime<minPollTime)
             minPollTime=testTime;
     }

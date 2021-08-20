@@ -202,8 +202,10 @@ void loop()
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].ProcessRequest(MapRequest(i,rxBuff));
         //save new counter to the txbuff
-        for(uint8_t i=0;i<PKG_CNT_SIZE;++i)
-            txBuff[PKG_CNT_OFFSET+i]=rxBuff[PKG_CNT_OFFSET+i];
+        txBuff[PKG_CNT_OFFSET]=rxBuff[PKG_CNT_OFFSET];
+        txBuff[PKG_CNT_OFFSET+1]=rxBuff[PKG_CNT_OFFSET+1];
+        txBuff[PKG_CNT_OFFSET+2]=rxBuff[PKG_CNT_OFFSET+2];
+        txBuff[PKG_CNT_OFFSET+3]=rxBuff[PKG_CNT_OFFSET+3];
     }
 
     //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart

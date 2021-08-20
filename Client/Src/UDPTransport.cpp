@@ -307,7 +307,8 @@ void UDPTransport::OnConnected(const IConnectedMessage& message)
     udpPort=message.udpPort;
     if(remoteConn!=nullptr)
         remoteConn->Dispose();
-    logger->Info()<<"Connection reset pending";
+    if(config.GetUDPEnabled())
+        logger->Info()<<"Connection reset pending";
 }
 
 void UDPTransport::OnShutdown()

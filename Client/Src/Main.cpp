@@ -33,10 +33,10 @@
 #include <fcntl.h>
 
 // example command lines:
-// Arduino Pro Mini (atmega328p) with 1 uart port:
-//  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1 -rbs 8
-// Arduino Mega 2560 (atmega 2560) with 3 uart ports:
-//  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 255 -ps2 250000 -pm2 255 -ps3 250000 -pm3 255 -rst1 1 -rst2 1 -rst3 1 -rbs 25 -nm 1
+// Arduino Pro Mini (atmega328p) with 1 uart port, data aggregation multiplier = 2, remote buffer size = 8 segments:
+//  -ra ENC28J65E366.lan -tp 50000 -up 1 -rbs 8 -nm 2 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1
+// Arduino Mega 2560 (atmega 2560) with 3 uart ports, data aggregation multiplier = 1, remote buffer size = 25 segments:
+//  -ra ENC28J65E366.lan -tp 50000 -up 1 -rbs 25 -nm 1 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 255 -ps2 250000 -pm2 255 -ps3 250000 -pm3 255 -rst1 1 -rst2 1 -rst3 1
 
 void usage(const std::string &self)
 {
@@ -56,7 +56,7 @@ void usage(const std::string &self)
     std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
     std::cerr<<"    -us <1-65535> hw uart-buffer size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
-    std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 2"<<std::endl;
+    std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 1"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
     std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
@@ -218,7 +218,7 @@ int main (int argc, char *argv[])
         config.SetHwUARTSz(bsz);
     }
 
-    config.SetNwMult(2);
+    config.SetNwMult(1);
     if(args.find("-nm")!=args.end())
     {
         auto nsz=std::atoi(args["-nm"].c_str());

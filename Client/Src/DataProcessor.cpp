@@ -31,7 +31,7 @@ void DataProcessor::OnPollEvent(const ITimerMessage& message)
     //caller timer-thread may change if timer interval updated, so lock there as precaution
     std::lock_guard<std::mutex> pollGuard(pollLock);
 
-    //logger->Info()<<"Poll event, time: "<<message.interval;
+    //logger->Info()<<"Poll event, counter: "<<message.counter;
 
     //process data from the local connections, fill-up txBuffer
     bool useTCP=false;

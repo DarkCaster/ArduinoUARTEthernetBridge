@@ -114,7 +114,7 @@ int main (int argc, char *argv[])
         auto pt=std::atoi(args["-pt"].c_str());
         if(pt<0||pt>60000)
             return param_error(argv[0],"pause time is invalid");
-        pause=static_cast<size_t>(pt);
+        pause=pt;
     }
 
     size_t portCount=0;

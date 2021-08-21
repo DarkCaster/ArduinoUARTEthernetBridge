@@ -67,6 +67,7 @@ bool LoopbackTester::ProcessTX()
         return true;
 
     //read until it done, or until timed_out
+    logger->Info()<<"Send complete";
     return false;
 }
 

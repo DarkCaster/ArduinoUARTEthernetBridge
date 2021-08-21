@@ -139,7 +139,7 @@ void setup()
     pollTimer.Reset();
 }
 
-static void check_link_state()
+static bool check_link_state()
 {
     //check link state
     if(Ethernet.linkStatus()!=LinkON)
@@ -147,6 +147,9 @@ static void check_link_state()
         blink(500,500,6);
         watchdog.SystemReset();
     }
+    //add small delay to speed down SPI communication with ethernet adapter while not connected
+    delay(25);
+    return true;
 }
 
 inline Request MapRequest(const int portIndex, const uint8_t * const rawBuffer)
@@ -166,12 +169,7 @@ inline void WriteResponse(const Response &source, const int portIndex, uint8_t *
 void loop()
 {
     //if client is not connected, check the link state, and reboot on link-failure
-    if(!tcpClientState)
-    {
-        check_link_state();
-        //add small delay to speed down SPI communication with ethernet adapter while not connected
-        delay(25);
-    }
+    tcpClientState || check_link_state();
 
     //try to process incoming request via TCP
     clientEvent=tcpServer.ProcessRX();

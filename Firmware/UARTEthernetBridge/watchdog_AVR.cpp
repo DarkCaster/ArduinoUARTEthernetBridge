@@ -3,6 +3,9 @@
 
 const uint8_t rstSig[] PROGMEM = { 0xFE, 0xED, 0xBE, 0xEF };
 
+#pragma GCC push_options
+#pragma GCC optimize ("Os")
+
 // https://forum.arduino.cc/t/watchdog-reset-detection/351423/3
 WatchdogAVR::WatchdogAVR():
     srBootSig(reinterpret_cast<uint8_t*>(malloc(sizeof(rstSig)))),
@@ -74,3 +77,5 @@ void WatchdogAVR::Ping()
     if(isEnabled)
         wdt_reset();
 }
+
+#pragma GCC pop_options

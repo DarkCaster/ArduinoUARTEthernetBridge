@@ -2,9 +2,8 @@
 
 IntervalTimer::IntervalTimer()
 {
-    startTime=micros();
+    checkPoint=micros();
     interval=1;
-    lastDiff=0;
 }
 
 void IntervalTimer::SetInterval(unsigned long intervalUsec)
@@ -15,18 +14,15 @@ void IntervalTimer::SetInterval(unsigned long intervalUsec)
 bool IntervalTimer::Update()
 {
     //will overflow at some point, not a problem in this case
-    lastDiff=micros()-startTime;
-    return lastDiff>=interval;
+    return (micros()-checkPoint)>=interval;
 }
 
-void IntervalTimer::Reset(bool freshStart)
+void IntervalTimer::Reset()
 {
-    if(freshStart)
-    {
-        startTime=micros();
-        lastDiff=0;
-        return;
-    }
-    //time must be rounded down to the interval border
-    startTime+=(lastDiff/interval)*interval;
+    checkPoint=micros();
+}
+
+void IntervalTimer::Next()
+{
+    checkPoint+=interval;
 }

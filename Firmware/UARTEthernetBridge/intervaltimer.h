@@ -8,13 +8,13 @@ class IntervalTimer
 {
     private:
         unsigned long interval;
-        unsigned long startTime;
-        unsigned long lastDiff;
+        unsigned long checkPoint;
     public:
         IntervalTimer();
         void SetInterval(unsigned long intervalUsec);
         bool Update();
-        void Reset(bool freshStart);
+        void Reset();
+        void Next();
 };
 
 #endif // TIMER_H

@@ -136,7 +136,7 @@ void setup()
 #endif
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
-    pollTimer.Reset(true);
+    pollTimer.Reset();
 }
 
 static void check_link_state()
@@ -215,7 +215,7 @@ void loop()
     //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP
     if(pollTimer.Update())
     {
-        pollTimer.Reset(false);
+        pollTimer.Next();
 #if UART_AGGREGATE_MULTIPLIER != 1
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)

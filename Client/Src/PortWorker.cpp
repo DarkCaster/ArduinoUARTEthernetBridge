@@ -113,10 +113,10 @@ Request PortWorker::ProcessTX(uint32_t counter, uint8_t* txBuff)
         auto error=errno;
         if(dataRead==0 || (error!=EINTR && error!=EWOULDBLOCK))
         {
-            if(dataRead==0)
-                logger->Info()<<"Client was disconnected";
+            if(dataRead==0 || !client->GetStatus())
+                logger->Info()<<"Client disconnected while reading";
             else
-                logger->Info()<<"Client read was failed with: "<<strerror(error);
+                logger->Error()<<"Client read failed, error: "<<strerror(error);
             client->Dispose();
             client=nullptr;
         }

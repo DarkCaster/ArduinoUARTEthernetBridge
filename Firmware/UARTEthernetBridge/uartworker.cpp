@@ -76,18 +76,38 @@ void UARTWorker::ProcessRX()
     if(!resetHelper->ResetComplete() || !IS_OPEN(curMode))
         return;
     //write data to uart-port from ring-buffer
-    auto szLeft=uart->availableForWrite();
-    while(szLeft>0)
+    auto uartAvail=uart->availableForWrite();
+    //limit uart-write bandwidth
+    if(uartAvail>UART_BUFFER_SIZE)
+        uartAvail=UART_BUFFER_SIZE;
+    while(uartAvail>0)
     {
         auto tail=rxRingBuff.GetTail();
-        auto szToWrite=static_cast<unsigned int>(szLeft)>tail.maxSz?tail.maxSz:szLeft;
+        auto szToWrite=static_cast<unsigned int>(uartAvail)>tail.maxSz?tail.maxSz:static_cast<unsigned int>(uartAvail);
         if(szToWrite<1)
             return; //nothing to write
         uart->write(tail.buffer,szToWrite);
         rxRingBuff.Commit(tail,szToWrite);
-        szLeft-=szToWrite;
+        uartAvail-=szToWrite;
     }
 }
+
+void UARTWorker::LoopFillTXBuff()
+{
+    auto tail=rxRingBuff.GetTail();
+    size_t sz=tail.maxSz;
+    if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
+        sz=DATA_PAYLOAD_SIZE-txUsedSz;
+    //limit uart-read bandwidth
+    if(sz>UART_BUFFER_SIZE)
+        sz=UART_BUFFER_SIZE;
+    if(sz<1)
+        return;
+    memcpy(txDataBuff+txUsedSz,tail.buffer,sz);
+    rxRingBuff.Commit(tail,sz);
+    txUsedSz+=sz;
+}
+
 
 void UARTWorker::FillTXBuff(bool reset)
 {
@@ -96,22 +116,16 @@ void UARTWorker::FillTXBuff(bool reset)
     if(IS_OPEN(curMode))
     {
         size_t sz=DATA_PAYLOAD_SIZE-txUsedSz;
+        //limit uart-read bandwidth
+        if(sz>UART_BUFFER_SIZE)
+            sz=UART_BUFFER_SIZE;
         if(sz<1)
             return;
         txUsedSz+=uart->readBytes(txDataBuff+txUsedSz,sz);
+        return;
     }
-    else if(curMode==MODE_LOOPBACK)
-    {
-        auto tail=rxRingBuff.GetTail();
-        size_t sz=tail.maxSz;
-        if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
-            sz=DATA_PAYLOAD_SIZE-txUsedSz;
-        if(sz<1)
-            return;
-        memcpy(txDataBuff+txUsedSz,tail.buffer,sz);
-        rxRingBuff.Commit(tail,sz);
-        txUsedSz+=sz;
-    }
+    if(curMode==MODE_LOOPBACK)
+        LoopFillTXBuff();
 }
 
 Response UARTWorker::ProcessTX()

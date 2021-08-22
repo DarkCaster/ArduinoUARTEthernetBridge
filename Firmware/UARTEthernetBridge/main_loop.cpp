@@ -213,15 +213,16 @@ void loop()
             networkProcessingEnabled&=clientEvent.data.pkgReading;
     }
 
-    //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
-    for(uint8_t i=0;i<UART_COUNT;++i)
-        uartWorker[i].ProcessRX();
-
     //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP
     if(pollTimer.Update())
     {
         pollTimer.Next();
         networkProcessingEnabled=true; // allow one round of data-receive
+
+        //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
+        for(uint8_t i=0;i<UART_COUNT;++i)
+            uartWorker[i].ProcessRX();
+
 #if UART_AGGREGATE_MULTIPLIER != 1
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)

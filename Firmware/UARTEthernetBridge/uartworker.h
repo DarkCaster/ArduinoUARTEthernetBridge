@@ -19,6 +19,7 @@ class UARTWorker
         uint8_t* rxDataBuff;
         uint8_t* txDataBuff;
         size_t txUsedSz;
+        void LoopFillTXBuff();
     public:
         void Setup(ResetHelper* const resetHelper, HardwareSerial* const uart, uint8_t * rxDataBuff, uint8_t * txDataBuff);
         void ProcessRequest(const Request& request);

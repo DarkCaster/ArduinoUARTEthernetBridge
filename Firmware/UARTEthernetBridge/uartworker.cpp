@@ -77,10 +77,10 @@ void UARTWorker::ProcessRX()
     while(szLeft>0)
     {
         auto tail=rxRingBuff.GetTail();
-        auto szToWrite=static_cast<unsigned>(szLeft)>tail.maxSz?tail.maxSz:szLeft;
+        auto szToWrite=static_cast<unsigned int>(szLeft)>tail.maxSz?tail.maxSz:szLeft;
         if(szToWrite<1)
             return; //nothing to write
-        szToWrite=uart->write(tail.buffer,szToWrite);
+        uart->write(tail.buffer,szToWrite);
         rxRingBuff.Commit(tail,szToWrite);
         szLeft-=szToWrite;
     }

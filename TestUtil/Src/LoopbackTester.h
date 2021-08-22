@@ -26,6 +26,7 @@ class LoopbackTester final : public WorkerBase
         std::chrono::time_point<std::chrono::steady_clock> startPoint;
         std::condition_variable startTrigger;
         bool testStarted;
+        bool Validate(size_t offset, size_t len);
     public:
         LoopbackTester(std::shared_ptr<ILogger>& logger, Connection& target, size_t testBlockSize, uint64_t timeoutMS, uint64_t warmupMS);
         bool ProcessTX();

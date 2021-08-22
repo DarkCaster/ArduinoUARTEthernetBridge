@@ -71,6 +71,17 @@ bool LoopbackTester::ProcessTX()
     return false;
 }
 
+bool LoopbackTester::Validate(size_t offset, size_t len)
+{
+    for(size_t pos=offset; pos<offset+len; ++pos)
+        if(*(test.get()+pos)!=*(source.get()+pos))
+        {
+            logger->Error()<<"Data validation failed at offset: "<<pos<<"; test: "<<static_cast<int>(*(test.get()+pos))<<"; expected:"<<static_cast<int>(*(source.get()+pos));
+            return true;
+        }
+    return false;
+}
+
 void LoopbackTester::Worker()
 {
     logger->Info()<<"Reader waiting to start";
@@ -82,6 +93,8 @@ void LoopbackTester::Worker()
     lock.unlock();
 
     logger->Info()<<"Reader started";
+    bool validationFailed=false;
+
     //try to raed at least 1-st byte of data, and measure the time
     while(!shutdownPending.load())
     {
@@ -100,6 +113,8 @@ void LoopbackTester::Worker()
         else
             break;
     }
+    if(!validationFailed)
+        validationFailed=Validate(0,1);
 
     if(shutdownPending.load())
     {
@@ -125,6 +140,8 @@ void LoopbackTester::Worker()
             target.Dispose();
             return;
         }
+        if(!validationFailed)
+            validationFailed=Validate(testBlockSize-readLeft,static_cast<size_t>(dr));
         readLeft-=static_cast<size_t>(dr);
         if(readLeft<1)
             break;

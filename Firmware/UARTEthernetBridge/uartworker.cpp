@@ -52,7 +52,10 @@ void UARTWorker::ProcessRequest(const Request &request)
             sessionId=0; //used only on client start, so reset session id
             curMode=request.arg;
             if(IS_OPEN(curMode))
+            {
                 uart->begin(static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16,curMode);
+                uart->setTimeout(0);
+            }
             break;
         case ReqType::Close:
             if(IS_OPEN(curMode))
@@ -92,14 +95,12 @@ void UARTWorker::FillTXBuff(bool reset)
         txUsedSz=0;
     if(IS_OPEN(curMode))
     {
-        size_t sz=uart->available();
-        if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
-            sz=DATA_PAYLOAD_SIZE-txUsedSz;
+        size_t sz=DATA_PAYLOAD_SIZE-txUsedSz;
         if(sz<1)
             return;
         txUsedSz+=uart->readBytes(txDataBuff+txUsedSz,sz);
     }
-    if(curMode==MODE_LOOPBACK)
+    else if(curMode==MODE_LOOPBACK)
     {
         auto tail=rxRingBuff.GetTail();
         size_t sz=tail.maxSz;

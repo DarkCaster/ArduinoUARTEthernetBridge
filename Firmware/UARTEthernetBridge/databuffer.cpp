@@ -30,7 +30,7 @@ void DataBuffer::Commit(const Handle& handle, uint16_t usedSz)
 
 uint16_t DataBuffer::UsedSize()
 {
-    return static_cast<uint16_t>(head>=tail?head-tail:(end-tail)+(head-begin));
+    return static_cast<uint16_t>(head>=tail?head-tail:DATA_BUFFER_SIZE-(tail-head-1));
 }
 
 bool DataBuffer::IsHalfUsed()

@@ -35,8 +35,8 @@
 // example command lines:
 // Arduino Pro Mini (atmega328p) with 1 uart port, data aggregation multiplier = 2, remote buffer size = 8 segments:
 //  -ra ENC28J65E366.lan -tp 50000 -up 1 -rbs 8 -nm 2 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1
-// Arduino Mega 2560 (atmega 2560) with 3 uart ports, data aggregation multiplier = 1, remote buffer size = 25 segments:
-//  -ra ENC28J65E366.lan -tp 50000 -up 1 -rbs 25 -nm 1 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 255 -ps2 250000 -pm2 255 -ps3 250000 -pm3 255 -rst1 1 -rst2 1 -rst3 1
+// Arduino Mega 2560 (atmega 2560) with 3 uart ports, data aggregation multiplier = 4, remote buffer size = 100 segments, uart-segment size 16, local poll speed limited to 8192 usec:
+//  -ra ENC28J65E366.lan -tp 50000 -up 1 -us 16 -nm 4 -rbs 100 -pmin 8192 -pmax 8192 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 6 -ps2 250000 -pm2 6 -ps3 250000 -pm3 6 -rst1 0 -rst2 0 -rst3 0
 
 void usage(const std::string &self)
 {
@@ -55,7 +55,7 @@ void usage(const std::string &self)
     std::cerr<<"    -up <0,1> 1 - enable use of less reliable UDP transport with lower latency and jitter, default: 0 - disabled"<<std::endl;
     std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
-    std::cerr<<"    -us <1-65535> hw uart-buffer size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
+    std::cerr<<"    -us <1-65535> uart-buffer/segment size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
     std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 1"<<std::endl;
     std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
     std::cerr<<"    -pmax <time, us> maximum local port poll interval, default: 16384 usec"<<std::endl;

@@ -9,6 +9,7 @@ endif()
 project(UARTEthernetBridge C CXX ASM)
 
 #definitions for atmega 2560
+add_definitions(-DUIP_SOCKET_NUMPACKETS=5)
 add_definitions(-DUIP_CONF_UDP_CONNS=1)
 add_definitions(-DUIP_CONF_MAX_CONNECTIONS=2)
 add_definitions(-DUIP_UDP_BACKLOG=1)

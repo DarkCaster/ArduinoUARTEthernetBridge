@@ -76,7 +76,7 @@ bool LoopbackTester::Validate(size_t offset, size_t len)
     for(size_t pos=offset; pos<offset+len; ++pos)
         if(*(test.get()+pos)!=*(source.get()+pos))
         {
-            logger->Error()<<"Data validation failed at offset: "<<pos<<"; test: "<<static_cast<int>(*(test.get()+pos))<<"; expected:"<<static_cast<int>(*(source.get()+pos));
+            logger->Error()<<"Data validation failed at offset: "<<pos<<"; test: "<<std::hex<<static_cast<int>(*(test.get()+pos))<<"; expected:"<<static_cast<int>(*(source.get()+pos))<<std::dec;
             return true;
         }
     return false;
@@ -152,7 +152,6 @@ void LoopbackTester::Worker()
     {
         logger->Warning()<<"Reader stopped by external shutdown request!";
         logger->Warning()<<"Received bytes so far: "<<testBlockSize-readLeft;
-        return;
     }
 
     auto endTime=std::chrono::steady_clock::now();
@@ -160,7 +159,7 @@ void LoopbackTester::Worker()
     logger->Info()<<"Full time to send and receive package: "<<fullTime.count()<<" ms";
     auto recvTime=std::chrono::duration_cast<std::chrono::milliseconds>(endTime-firstByteTime);
     logger->Info()<<"Time between receiving first and last byte of incoming package: "<<recvTime.count()<<" ms";
-    auto speed=static_cast<double>(testBlockSize)/static_cast<double>(recvTime.count())*8.0*1000.0;
+    auto speed=static_cast<double>(testBlockSize-readLeft)/static_cast<double>(recvTime.count())*8.0*1000.0;
     logger->Info()<<"Calculated speed: "<<speed<<" bits/sec";
     logger->Info()<<"Test complete!";
 }

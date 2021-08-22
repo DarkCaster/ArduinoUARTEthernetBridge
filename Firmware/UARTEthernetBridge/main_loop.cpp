@@ -28,7 +28,7 @@ static UARTWorker uartWorker[UART_COUNT];
 
 //current client state
 static bool tcpClientState;
-static bool networkProcessingEnabled;
+static bool networkReadPending;
 static ClientEvent clientEvent;
 #if UART_AGGREGATE_MULTIPLIER != 1
 static uint8_t segmentCounter;
@@ -135,7 +135,7 @@ void setup()
 #if UART_AGGREGATE_MULTIPLIER != 1
     segmentCounter=0;
 #endif
-    networkProcessingEnabled=true;
+    networkReadPending=true;
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
     pollTimer.Reset();
@@ -173,7 +173,7 @@ void loop()
     //if client is not connected, check the link state, and reboot on link-failure
     tcpClientState || check_link_state();
 
-    if(networkProcessingEnabled||!tcpClientState)
+    if(networkReadPending||!tcpClientState)
     {
         //try to process incoming request via TCP
         clientEvent=tcpServer.ProcessRX();
@@ -208,16 +208,18 @@ void loop()
             txBuff[PKG_CNT_OFFSET+1]=rxBuff[PKG_CNT_OFFSET+1];
             txBuff[PKG_CNT_OFFSET+2]=rxBuff[PKG_CNT_OFFSET+2];
             txBuff[PKG_CNT_OFFSET+3]=rxBuff[PKG_CNT_OFFSET+3];
+            //wait for a next round
+            networkReadPending=false;
         }
         else if(clientEvent.type==ClientEventType::NoEvent)
-            networkProcessingEnabled&=clientEvent.data.pkgReading;
+            networkReadPending&=clientEvent.data.pkgReading;
     }
 
     //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP
     if(pollTimer.Update())
     {
         pollTimer.Next();
-        networkProcessingEnabled=true; // allow one round of data-receive
+        networkReadPending=true; //allow check for incoming data
 
         //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
         for(uint8_t i=0;i<UART_COUNT;++i)

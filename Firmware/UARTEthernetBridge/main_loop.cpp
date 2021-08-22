@@ -222,6 +222,7 @@ void loop()
             return;
         for(uint8_t i=0;i<UART_COUNT;++i)
             WriteResponse(uartWorker[i].ProcessTX(),i,txBuff);
+        segmentCounter=0;
 #else
         for(uint8_t i=0;i<UART_COUNT;++i)
         {
@@ -231,8 +232,5 @@ void loop()
 #endif
         //if tcpClientConnected, try to send data via UDP first, and via TCP if send via UDP is not possible;
         !tcpClientState||udpServer.ProcessTX()||tcpServer.ProcessTX();
-#if UART_AGGREGATE_MULTIPLIER != 1
-        segmentCounter=0;
-#endif
     }
 }

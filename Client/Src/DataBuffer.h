@@ -22,6 +22,7 @@ class DataBuffer
         uint8_t *tail;
     public:
         DataBuffer(size_t size);
+        size_t GetSize();
         Handle GetHead();
         Handle GetTail();
         void Commit(const Handle &handle, size_t usedSz);

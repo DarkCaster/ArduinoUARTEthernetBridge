@@ -9,6 +9,11 @@ DataBuffer::DataBuffer(size_t _size):
     Reset();
 }
 
+size_t DataBuffer::GetSize()
+{
+    return size;
+}
+
 Handle DataBuffer::GetHead()
 {
     Handle result={head,static_cast<size_t>(head<tail?tail-head-1:end-head-(tail>begin?0:1))};
@@ -31,7 +36,7 @@ void DataBuffer::Commit(const Handle& handle, size_t usedSz)
 
 size_t DataBuffer::UsedSize()
 {
-    return static_cast<size_t>(head>=tail?head-tail:(end-tail)+(head-begin));
+    return static_cast<size_t>(head>=tail?static_cast<size_t>(head-tail):size-static_cast<size_t>(tail-head-1));
 }
 
 bool DataBuffer::IsHalfUsed()

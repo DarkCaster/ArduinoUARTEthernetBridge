@@ -64,13 +64,12 @@ ClientEvent UDPServer::ProcessRX(const ClientEvent &ctlEvent)
     //parse and read the packet, flush it as fast as possible
     size_t inSz=udpServer.parsePacket();
     if(inSz<1)
-        return ClientEvent{ClientEventType::NoEvent,{}};
+        return ClientEvent{ClientEventType::NoEvent,{.pkgReading=false}};
     auto dr=static_cast<size_t>(udpServer.read(rxBuff,pkgSz));
     udpServer.flush();
 
-    //if(udpServer.remoteIP()!=clientAddr) //check remote address not really needed
     if(dr!=pkgSz||CRC8(rxBuff,metaSz)!=*(rxBuff+metaSz)||DropOldSeq())
-        return ClientEvent{ClientEventType::NoEvent,{}};
+        return ClientEvent{ClientEventType::NoEvent,{.pkgReading=false}};
 
     //record client's port if all OK
     if(clientUDPPort<1)

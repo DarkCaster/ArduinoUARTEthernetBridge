@@ -201,12 +201,14 @@ void PortWorker::Worker()
             pfd.revents=0;
             if(poll(&pfd,1,config.GetServiceIntervalMS())<0)
             {
-                logger->Error()<<"Write poll failed with error: "<<strerror(errno);
+                logger->Warning()<<"Write poll failed, bytes lost: "<<szToWrite<<"; error: "<<strerror(errno);
+                client->Dispose();
                 std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
             }
             else if (pfd.revents & (POLLHUP|POLLNVAL|POLLERR))
             {
-                logger->Error()<<"Write poll failed, client being disconnected";
+                logger->Warning()<<"Client disconnected while preparing write, bytes lost: "<<szToWrite;
+                client->Dispose();
                 std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
             }
             else if (pfd.revents & POLLOUT)
@@ -214,9 +216,8 @@ void PortWorker::Worker()
                 auto dw=write(client->fd,tail.buffer,szToWrite);
                 if(dw<0)
                 {
-                    logger->Error()<<"Write failed with error: "<<strerror(errno);
+                    logger->Warning()<<"Write failed, bytes lost: "<<szToWrite<<"; error: "<<strerror(errno);
                     client->Dispose();
-                    szToWrite=0;
                 }
                 else
                     szToWrite=static_cast<size_t>(dw);
@@ -224,7 +225,7 @@ void PortWorker::Worker()
         }
         else
         {
-            logger->Warning()<<"Write failed - client is not connected, bytes lost: "<<szToWrite;
+            logger->Warning()<<"Write failed: client is not connected, bytes lost: "<<szToWrite;
             std::this_thread::sleep_for(std::chrono::milliseconds(config.GetServiceIntervalMS()));
         }
         //free data that was read from ringBuffer

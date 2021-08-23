@@ -22,7 +22,7 @@ static WatchdogAVR watchdog;
 static IntervalTimer pollTimer;
 static AlarmTimer alarmTimer;
 static TCPServer tcpServer(alarmTimer,rxBuff,txBuff,PACKAGE_SIZE,META_SZ,TCP_PORT);
-static UDPServer udpServer(alarmTimer,watchdog,rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
+static UDPServer udpServer(alarmTimer,rxBuff,txBuff,PACKAGE_SIZE,META_SZ);
 static ResetHelper rstHelper[UART_COUNT];
 static UARTWorker uartWorker[UART_COUNT];
 

@@ -1,9 +1,8 @@
 #include "udpserver.h"
 #include "crc8.h"
 
-UDPServer::UDPServer(AlarmTimer& _alarmTimer, Watchdog& _watchDog, uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
+UDPServer::UDPServer(AlarmTimer& _alarmTimer, uint8_t* const _rxBuff, uint8_t* const _txBuff, const uint16_t _pkgSz, const uint16_t _metaSz):
     alarmTimer(_alarmTimer),
-    watchDog(_watchDog),
     pkgSz(_pkgSz),
     metaSz(_metaSz),
     rxBuff(_rxBuff),

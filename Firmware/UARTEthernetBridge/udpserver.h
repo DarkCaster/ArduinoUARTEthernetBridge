@@ -13,7 +13,6 @@ class UDPServer
 {
     private:
         AlarmTimer& alarmTimer;
-        Watchdog& watchDog;
         const size_t pkgSz;
         const size_t metaSz;
         uint8_t * const rxBuff;
@@ -25,7 +24,7 @@ class UDPServer
         bool serverStarted = false;
         EthernetUDP udpServer;
     public:
-        UDPServer(AlarmTimer& alarmTimer, Watchdog& watchDog, uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
+        UDPServer(AlarmTimer& alarmTimer, uint8_t * const rxBuff, uint8_t * const txBuff, const uint16_t pkgSz, const uint16_t metaSz);
         ClientEvent ProcessRX(const ClientEvent& ctlEvent);
         bool ProcessTX();
     private:

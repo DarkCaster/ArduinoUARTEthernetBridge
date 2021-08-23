@@ -1,8 +1,7 @@
 #include "uartworker.h"
 #include "configuration.h"
 
-#define MODE_CLOSED 0xFE
-#define MODE_LOOPBACK 0xFF
+#define MODE_CLOSED 0xFF
 #define IS_OPEN(mode) (mode<MODE_CLOSED)
 
 void UARTWorker::Setup(ResetHelper* const _resetHelper, HardwareSerial* const _uart, uint8_t* _rxDataBuff, uint8_t* _txDataBuff)
@@ -27,7 +26,7 @@ void UARTWorker::ProcessRequest(const Request &request)
             while(szLeft>0)
             {
                 auto head=rxRingBuff.GetHead();
-                uint8_t szToWrite=szLeft>head.maxSz?head.maxSz:szLeft;
+                uint8_t szToWrite=szLeft>head.maxSz?static_cast<uint8_t>(head.maxSz):szLeft;
                 if(szToWrite<1)
                     break; //no space left for storing data at ring-buffer, data will be lost
                 memcpy(head.buffer,rxDataBuff+request.plSz-szLeft,szToWrite);
@@ -113,24 +112,21 @@ void UARTWorker::FillTXBuff(bool reset)
 {
     if(reset)
         txUsedSz=0;
-    if(IS_OPEN(curMode))
-    {
-        size_t sz=DATA_PAYLOAD_SIZE-txUsedSz;
-        //limit uart-read bandwidth
-        if(sz>UART_BUFFER_SIZE)
-            sz=UART_BUFFER_SIZE;
-        if(sz<1)
-            return;
-        txUsedSz+=uart->readBytes(txDataBuff+txUsedSz,sz);
+    if(!IS_OPEN(curMode))
         return;
-    }
-    if(curMode==MODE_LOOPBACK)
-        LoopFillTXBuff();
+    size_t sz=DATA_PAYLOAD_SIZE-txUsedSz;
+    //limit uart-read bandwidth
+    if(sz>UART_BUFFER_SIZE)
+        sz=UART_BUFFER_SIZE;
+    if(sz<1)
+        return;
+    txUsedSz+=uart->readBytes(txDataBuff+txUsedSz,sz);
+    return;
 }
 
 Response UARTWorker::ProcessTX()
 {
     if(txUsedSz>0)
-       return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(txUsedSz)};
+        return Response{RespType::Data,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),static_cast<uint8_t>(txUsedSz)};
     return Response{RespType::NoCommand,static_cast<uint8_t>(rxRingBuff.IsHalfUsed()<<7|(sessionId&0x7F)),0};
 }

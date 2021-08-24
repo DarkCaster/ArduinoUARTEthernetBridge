@@ -31,7 +31,6 @@
 #define UART_RST_PINS { 26, 24, 22 }
 #endif
 
-#define UART_POLL_INTERVAL_US_IDLE 1000000
 #define DEFAULT_ALARM_INTERVAL_MS 1000
 
 //params for ENC28J60 ethernet shield

@@ -139,7 +139,7 @@ void setup()
     pollIntervalSetPending=false;
     networkReadPending=true;
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
-    pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
+    pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
     pollTimer.Reset();
 }
 
@@ -192,7 +192,7 @@ void loop()
         }
         else if(clientEvent.type==ClientEventType::Disconnected)
         {
-            pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
+            pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
             tcpClientState=false;
             pollIntervalSetPending=false;
         }

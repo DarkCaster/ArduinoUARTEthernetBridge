@@ -77,8 +77,8 @@ void UARTWorker::ProcessRX()
     //write data to uart-port from ring-buffer
     auto uartAvail=uart->availableForWrite();
     //limit uart-write bandwidth
-    if(uartAvail>UART_BUFFER_SIZE)
-        uartAvail=UART_BUFFER_SIZE;
+    if(uartAvail>PORT_IO_SIZE)
+        uartAvail=PORT_IO_SIZE;
     while(uartAvail>0)
     {
         auto tail=rxRingBuff.GetTail();
@@ -98,8 +98,8 @@ void UARTWorker::LoopFillTXBuff()
     if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
         sz=DATA_PAYLOAD_SIZE-txUsedSz;
     //limit uart-read bandwidth
-    if(sz>UART_BUFFER_SIZE)
-        sz=UART_BUFFER_SIZE;
+    if(sz>PORT_IO_SIZE)
+        sz=PORT_IO_SIZE;
     if(sz<1)
         return;
     memcpy(txDataBuff+txUsedSz,tail.buffer,sz);
@@ -116,8 +116,8 @@ void UARTWorker::FillTXBuff(bool reset)
         return;
     size_t sz=DATA_PAYLOAD_SIZE-txUsedSz;
     //limit uart-read bandwidth
-    if(sz>UART_BUFFER_SIZE)
-        sz=UART_BUFFER_SIZE;
+    if(sz>PORT_IO_SIZE)
+        sz=PORT_IO_SIZE;
     if(sz<1)
         return;
     txUsedSz+=uart->readBytes(txDataBuff+txUsedSz,sz);

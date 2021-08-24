@@ -31,7 +31,7 @@ static bool tcpClientState;
 static bool pollIntervalSetPending;
 static bool networkReadPending;
 static ClientEvent clientEvent;
-#if UART_AGGREGATE_MULTIPLIER != 1
+#if IO_AGGREGATE_MULTIPLIER > 1
 static uint8_t segmentCounter;
 #endif
 
@@ -133,7 +133,7 @@ void setup()
     blink(0,0,1);
 
     //setup timers
-#if UART_AGGREGATE_MULTIPLIER != 1
+#if IO_AGGREGATE_MULTIPLIER > 1
     segmentCounter=0;
 #endif
     pollIntervalSetPending=false;
@@ -186,7 +186,7 @@ void loop()
             pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
             tcpClientState=true;
             pollIntervalSetPending=true;
-#if UART_AGGREGATE_MULTIPLIER > 1
+#if IO_AGGREGATE_MULTIPLIER > 1
             segmentCounter=0;
 #endif
         }
@@ -217,7 +217,7 @@ void loop()
                 txBuff[PKG_CNT_OFFSET]=txBuff[PKG_CNT_OFFSET+1]=txBuff[PKG_CNT_OFFSET+2]=txBuff[PKG_CNT_OFFSET+3]=0;
                 auto interval=(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET]))|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+1])<<8)|
                         (static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<16)|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<24);
-                interval/=UART_AGGREGATE_MULTIPLIER;
+                interval/=IO_AGGREGATE_MULTIPLIER;
                 if(interval>0)
                     pollTimer.SetInterval(interval);
             }
@@ -238,11 +238,11 @@ void loop()
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].ProcessRX();
 
-#if UART_AGGREGATE_MULTIPLIER > 1
+#if IO_AGGREGATE_MULTIPLIER > 1
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].FillTXBuff(segmentCounter==1);
-        if(segmentCounter<UART_AGGREGATE_MULTIPLIER)
+        if(segmentCounter<IO_AGGREGATE_MULTIPLIER)
             return;
         for(uint8_t i=0;i<UART_COUNT;++i)
             WriteResponse(uartWorker[i].ProcessTX(),i,txBuff);

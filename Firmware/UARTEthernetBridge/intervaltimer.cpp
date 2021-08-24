@@ -9,6 +9,7 @@ IntervalTimer::IntervalTimer()
 void IntervalTimer::SetInterval(unsigned long intervalUsec)
 {
     interval=intervalUsec>0?intervalUsec:1;
+    checkPoint=micros();
 }
 
 bool IntervalTimer::Update()

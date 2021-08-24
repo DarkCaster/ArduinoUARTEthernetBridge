@@ -28,6 +28,7 @@ static UARTWorker uartWorker[UART_COUNT];
 
 //current client state
 static bool tcpClientState;
+static bool pollIntervalSetPending;
 static bool networkReadPending;
 static ClientEvent clientEvent;
 #if UART_AGGREGATE_MULTIPLIER != 1
@@ -135,6 +136,7 @@ void setup()
 #if UART_AGGREGATE_MULTIPLIER != 1
     segmentCounter=0;
 #endif
+    pollIntervalSetPending=false;
     networkReadPending=true;
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
@@ -181,9 +183,10 @@ void loop()
         //process TCP client event
         if (clientEvent.type==ClientEventType::Connected)
         {
-            pollTimer.SetInterval(UART_POLL_INTERVAL_US_TCP);
+            pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
             tcpClientState=true;
-#if UART_AGGREGATE_MULTIPLIER != 1
+            pollIntervalSetPending=true;
+#if UART_AGGREGATE_MULTIPLIER > 1
             segmentCounter=0;
 #endif
         }
@@ -191,6 +194,7 @@ void loop()
         {
             pollTimer.SetInterval(UART_POLL_INTERVAL_US_IDLE);
             tcpClientState=false;
+            pollIntervalSetPending=false;
         }
 
         //process incoming data from UDP, with respect to TCP client event
@@ -199,8 +203,6 @@ void loop()
         //process incoming request
         if(clientEvent.type==ClientEventType::NewRequest)
         {
-            if(clientEvent.data.udpSrvStarted)
-                pollTimer.SetInterval(UART_POLL_INTERVAL_US_UDP);
             for(uint8_t i=0;i<UART_COUNT;++i)
                 uartWorker[i].ProcessRequest(MapRequest(i,rxBuff));
             //save new counter to the txbuff
@@ -208,6 +210,17 @@ void loop()
             txBuff[PKG_CNT_OFFSET+1]=rxBuff[PKG_CNT_OFFSET+1];
             txBuff[PKG_CNT_OFFSET+2]=rxBuff[PKG_CNT_OFFSET+2];
             txBuff[PKG_CNT_OFFSET+3]=rxBuff[PKG_CNT_OFFSET+3];
+            //or save new poll interval
+            if(pollIntervalSetPending)
+            {
+                pollIntervalSetPending=false;
+                txBuff[PKG_CNT_OFFSET]=txBuff[PKG_CNT_OFFSET+1]=txBuff[PKG_CNT_OFFSET+2]=txBuff[PKG_CNT_OFFSET+3]=0;
+                auto interval=(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET]))|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+1])<<8)|
+                        (static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<16)|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<24);
+                interval/=UART_AGGREGATE_MULTIPLIER;
+                if(interval>0)
+                    pollTimer.SetInterval(interval);
+            }
             //wait for a next round
             networkReadPending=false;
         }
@@ -225,7 +238,7 @@ void loop()
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].ProcessRX();
 
-#if UART_AGGREGATE_MULTIPLIER != 1
+#if UART_AGGREGATE_MULTIPLIER > 1
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)
             uartWorker[i].FillTXBuff(segmentCounter==1);

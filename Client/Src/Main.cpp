@@ -168,9 +168,15 @@ int main (int argc, char *argv[])
         if(options.CheckParamPresent("lp"+strIdx,false,""))
         {
             if(options.CheckIsInteger("lp"+strIdx,1,65535,false,""))
+            {
                 localPorts.push_back(options.GetInteger("lp"+strIdx));
+                localFiles.push_back("");
+            }
             else
+            {
+                localPorts.push_back(0);
                 localFiles.push_back(options.GetString("lp"+strIdx));
+            }
         }
 
         //ps - port speed

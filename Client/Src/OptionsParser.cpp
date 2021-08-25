@@ -14,7 +14,7 @@ OptionsParser::OptionsParser(int argc, char *argv[], std::function<void (std::st
     {
         if(isArgValue)
         {
-            args[argv[i-1]]=argv[i];
+            args[curArg]=argv[i];
             isArgValue=false;
             continue;
         }

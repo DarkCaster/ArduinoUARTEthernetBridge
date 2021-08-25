@@ -1,3 +1,4 @@
+#include "OptionsParser.h"
 #include "ILogger.h"
 #include "StdioLoggerFactory.h"
 #include "ImmutableStorage.h"
@@ -38,6 +39,14 @@
 // Arduino Mega 2560 (atmega 2560) with 3 uart ports, data aggregation multiplier = 4, remote buffer size = 100 segments, uart-segment size 16, local poll speed limited to 8192 usec:
 //  -ra ENC28J65E366.lan -tp 50000 -up 1 -us 32 -nm 2 -rbs 50 -pmin 8600 -pmax 8600 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 6 -ps2 250000 -pm2 6 -ps3 250000 -pm3 6 -rst1 0 -rst2 0 -rst3 0
 
+
+//TODO:
+//mode 255 == port close, assume this mode by default if omited. do not start listener for such mode
+//do not start listener if -lp{n} param is not provided, hovewer send port-open command for selected port if requested with mode param
+//implement providing remote and local poll interval in useconds, set remote poll interval in the first package sent
+//provide ring-buffer size in bytes
+//remove -nm multiplier from client, provide full remote io-size with -us param
+
 void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
@@ -45,7 +54,9 @@ void usage(const std::string &self)
     std::cerr<<"   remote:"<<std::endl;
     std::cerr<<"    -ra <ip address, or host name> remote address to connect"<<std::endl;
     std::cerr<<"    -tp <port> remote TCP port"<<std::endl;
-    std::cerr<<"    -pc <count> UART port count configured at remote side, this param is cruical for normal operation"<<std::endl;
+    std::cerr<<"    -pc <count> UART port count configured at remote side, must match remote side for normal operaion"<<std::endl;
+    std::cerr<<"    -us <1-65535> uart-buffer/segment size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
+
     std::cerr<<"    -rbs <1-256> remote ring-buffer size as multiplier to hw-buffer size, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
     std::cerr<<"   local:"<<std::endl;
     std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
@@ -55,14 +66,12 @@ void usage(const std::string &self)
     std::cerr<<"    -up <0,1> 1 - enable use of less reliable UDP transport with lower latency and jitter, default: 0 - disabled"<<std::endl;
     std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
-    std::cerr<<"    -us <1-65535> uart-buffer/segment size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
+
     std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 1"<<std::endl;
     std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
     std::cerr<<"    -pmax <time, us> maximum local port poll interval, default: 16384 usec"<<std::endl;
     std::cerr<<"  experimental and optimization parameters:"<<std::endl;
     std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
-    std::cerr<<"    -mt <time, ms> management interval used for some internal routines, default: 500"<<std::endl;
-    std::cerr<<"    -cf <seconds> timeout for flushing data when closing sockets, -1 to disable, 0 - close without flushing, default: 30"<<std::endl;
 }
 
 int param_error(const std::string &self, const std::string &message)
@@ -80,201 +89,133 @@ int64_t calculate_poll_interval(const int portSpeed, const int uartBuffSize, con
 
 int main (int argc, char *argv[])
 {
-    //timeout for main thread waiting for external signals
-    const timespec sigTs={2,0};
-
-    std::unordered_map<std::string,std::string> args;
-    bool isArgValue=false;
-    for(auto i=1;i<argc;++i)
-    {
-        if(isArgValue)
-        {
-            args[argv[i-1]]=argv[i];
-            isArgValue=false;
-            continue;
-        }
-        if(std::string(argv[i]).length()<2||std::string(argv[i]).front()!='-')
-        {
-            std::cerr<<"Invalid cmdline argument: "<<argv[i]<<std::endl;
-            usage(argv[0]);
-            return 1;
-        }
-        isArgValue=true;
-    }
-
-    if(args.empty())
-        return param_error(argv[0],"Mandatory parameters are missing!");
+    //parse command-line options, fillup config
+    OptionsParser options(argc,argv,usage);
+    options.CheckEmpty(true,"Mandatory parameters are missing!");
 
     Config config;
 
-    if(args.find("-rbs")==args.end())
-        return param_error(argv[0],"remote ring-buffer size is missing");
-    config.SetRingBuffSegCount(std::atoi(args["-rbs"].c_str()));
-    if(config.GetRingBuffSegCount()<1||config.GetRingBuffSegCount()>256)
-        return param_error(argv[0],"remote ring-buffer size is invalid!");
+    options.CheckParamPresent("rbs",true,"remote ring-buffer size is missing");
+    options.CheckIsInteger("rbs",1,256,true,"remote ring-buffer size is invalid!");
+    config.SetRingBuffSegCount(options.GetInteger("rbs"));
 
-    if(args.find("-ra")==args.end())
-        return param_error(argv[0],"remote address or DNS-name is missing");
-    config.SetRemoteAddr(args["-ra"]);
+    options.CheckParamPresent("ra",true,"remote address or DNS-name is missing");
+    config.SetRemoteAddr(options.GetString("ra"));
 
-    size_t portCount=0;
-    if(args.find("-pc")!=args.end())
-    {
-        auto pc=std::atoi(args["-pc"].c_str());
-        if(pc<1||pc>32)
-            return param_error(argv[0],"port count value is invalid");
-        portCount=static_cast<size_t>(pc);
-        config.SetPortCount(pc);
-    }
+    options.CheckParamPresent("pc",true,"port count must be provided");
+    options.CheckIsInteger("pc",1,32,true,"port count value is invalid");
+    config.SetPortCount(options.GetInteger("pc"));
+
+    options.CheckParamPresent("tp",true,"TCP port must be provided");
+    options.CheckIsInteger("tp",1,65535,true,"TCP port is invalid");
+    config.SetTCPPort(static_cast<uint16_t>(options.GetInteger("tp")));
+
+    if(!options.CheckParamPresent("up",false,""))
+        config.SetUDPEnabled(false);
     else
-        return param_error(argv[0],"port count must be provided");
-
-    if(args.find("-tp")!=args.end())
     {
-        auto tp=std::atoi(args["-tp"].c_str());
-        if(tp<1||tp>65535)
-            return param_error(argv[0],"TCP port is invalid");
-        config.SetTCPPort(static_cast<uint16_t>(tp));
+        options.CheckIsBoolean("up",true,"UDP mode parameter is invalid");
+        config.SetUDPEnabled(options.GetBoolean("up"));
     }
-    else
-        return param_error(argv[0],"TCP port must be provided");
 
-    config.SetUDPEnabled(false);
-    if(args.find("-up")!=args.end())
-        config.SetUDPEnabled(std::atoi(args["-up"].c_str())==1);
+    options.CheckParamPresent("us",true,"HW UART buffer size must be provided");
+    options.CheckIsInteger("us",1,1024,true,"HW UART buffer size is invalid");
+    config.SetHwUARTSz(options.GetInteger("us"));
 
-    //parse local ports numbers
-    std::vector<int> localPorts;
-    std::vector<std::string> localFiles;
-    while(args.find("-lp"+std::to_string(localPorts.size()+1))!=args.end())
+    options.CheckParamPresent("nm",true,"Package aggregation multiplier must be provided");
+    options.CheckIsInteger("nm",1,10,true,"Package aggregation multiplier is invalid");
+    config.SetNwMult(options.GetInteger("nm"));
+
+    config.SetTCPBuffSz(65536);
+    if(options.CheckParamPresent("bsz",false,""))
     {
-        auto sockFile=args["-lp"+std::to_string(localPorts.size()+1)];
-        auto port=std::atoi(sockFile.c_str());
-        if(port<1||port>65535)
-            port=0;
-        else
-            sockFile="";
-        localPorts.push_back(port);
-        localFiles.push_back(sockFile);
+        options.CheckIsInteger("bsz",128,524288,true,"TCP buffer size is invalid");
+        config.SetTCPBuffSz(options.GetInteger("bsz"));
     }
-    if(localPorts.size()<portCount)
-        return param_error(argv[0],"local ports count must be equals to remote ports count");
-
-    //parse uart speeds
-    std::vector<int> uartSpeeds;
-    while(args.find("-ps"+std::to_string(uartSpeeds.size()+1))!=args.end())
-    {
-        auto port=std::atoi(args["-ps"+std::to_string(uartSpeeds.size()+1)].c_str());
-        if(port<1)
-            return param_error(argv[0],"uart speed is invalid!");
-        uartSpeeds.push_back(port);
-    }
-    if(uartSpeeds.size()<portCount)
-        return param_error(argv[0],"provided uart speeds count must be equal to remote ports count");
-
-    //parse uart modes
-    std::vector<int> uartModes;
-    bool timingProfilingEnabled=false;
-    while(args.find("-pm"+std::to_string(uartModes.size()+1))!=args.end())
-    {
-        auto mode=std::atoi(args["-pm"+std::to_string(uartModes.size()+1)].c_str());
-        if(mode<0)
-            return param_error(argv[0],"uart mode is invalid!");
-        if(mode==255)
-            timingProfilingEnabled=true;
-        uartModes.push_back(mode);
-    }
-    if(uartModes.size()<portCount)
-        return param_error(argv[0],"provided uart modes count must be equal to remote ports count");
-
-    //parse reset-needed flag
-    std::vector<bool> rstFlags;
-    while(args.find("-rst"+std::to_string(rstFlags.size()+1))!=args.end())
-        rstFlags.push_back(std::atoi(args["-rst"+std::to_string(rstFlags.size()+1)].c_str())==1);
-    if(rstFlags.size()<portCount)
-        return param_error(argv[0],"provided reset-flags count must be equal to remote ports count");
 
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
-    if(args.find("-la")!=args.end())
+    if(options.CheckParamPresent("la",false,""))
     {
-        if(!IPAddress(args["-la"]).isValid||IPAddress(args["-la"]).isV6)
-            return param_error(argv[0],"listen IP address is invalid!");
-        localAddr.Set(IPAddress(args["-la"]));
-    }
-
-    //tcp buff size
-    config.SetTCPBuffSz(65536);
-    if(args.find("-bsz")!=args.end())
-    {
-        auto bsz=std::atoi(args["-bsz"].c_str());
-        if(bsz<128||bsz>524288)
-            return param_error(argv[0],"TCP buffer size is invalid");
-        config.SetTCPBuffSz(bsz);
-    }
-
-    config.SetHwUARTSz(64);
-    if(args.find("-us")!=args.end())
-    {
-        auto bsz=std::atoi(args["-us"].c_str());
-        if(bsz<1||bsz>65535)
-            return param_error(argv[0],"HW UART buffer size is invalid");
-        config.SetHwUARTSz(bsz);
-    }
-
-    config.SetNwMult(1);
-    if(args.find("-nm")!=args.end())
-    {
-        auto nsz=std::atoi(args["-nm"].c_str());
-        if(nsz<1||nsz>10)
-            return param_error(argv[0],"Package aggregation multiplier is invalid");
-        config.SetNwMult(nsz);
-    }
-
-    //management interval
-    config.SetServiceIntervalMS(500);
-    if(args.find("-mt")!=args.end())
-    {
-        int cnt=std::atoi(args["-mt"].c_str());
-        if(cnt<100 || cnt>10000)
-            return param_error(argv[0],"workers management interval is invalid!");
-        config.SetServiceIntervalMS(cnt);
-    }
-
-    //linger
-    config.SetLingerSec(30);
-    if(args.find("-cf")!=args.end())
-    {
-        auto time=std::atoi(args["-cf"].c_str());
-        if(time<-1||time>600)
-            return param_error(argv[0],"Flush timeout value is invalid");
-        config.SetLingerSec(time);
+        options.CheckIsIPAddress("la",true,"listen IP address is invalid!");
+        localAddr.Set(IPAddress(options.GetString("la")));
     }
 
     int pmin=4096;
-    if(args.find("-pmin")!=args.end())
+    if(options.CheckParamPresent("pmin",false,""))
     {
-        auto time=std::atoi(args["-pmin"].c_str());
-        if(time<1||time>1000000)
-            return param_error(argv[0],"Min poll time is invalid");
-        pmin=time;
+        options.CheckIsInteger("pmin",256,1000000,true,"Min poll time is invalid");
+        pmin=options.GetInteger("pmin");
     }
 
     int pmax=16384;
-    if(args.find("-pmax")!=args.end())
+    if(options.CheckParamPresent("pmax",false,""))
     {
-        auto time=std::atoi(args["-pmax"].c_str());
-        if(time<1||time>1000000||pmax<pmin)
-            return param_error(argv[0],"Max poll time is invalid");
-        pmax=time;
+        options.CheckIsInteger("pmax",pmin,1000000,true,"Max poll time is invalid");
+        pmin=options.GetInteger("pmax");
     }
+
+    std::vector<int> localPorts;
+    std::vector<std::string> localFiles;
+    std::vector<int> uartSpeeds;
+    std::vector<int> uartModes;
+    std::vector<bool> rstFlags;
+    bool timingProfilingEnabled=false;
+    for(size_t i=0;i<static_cast<size_t>(config.GetPortCount());++i)
+    {
+        auto strIdx=std::to_string(i+1);
+
+        //lp - local port, sock or port number
+        if(options.CheckParamPresent("lp"+strIdx,false,""))
+        {
+            if(options.CheckIsInteger("lp"+strIdx,1,65535,false,""))
+                localPorts.push_back(options.GetInteger("lp"+strIdx));
+            else
+                localFiles.push_back(options.GetString("lp"+strIdx));
+        }
+
+        //ps - port speed
+        if(options.CheckParamPresent("ps"+strIdx,false,""))
+        {
+            options.CheckIsInteger("ps"+strIdx,1,1000000,true,"uart speed is invalid!");
+            uartSpeeds.push_back(options.GetInteger("ps"+strIdx));
+        }
+        else
+            uartSpeeds.push_back(0);
+
+        //pm - port mode
+        if(options.CheckParamPresent("pm"+strIdx,false,"") && uartSpeeds[i]>0)
+        {
+            options.CheckIsInteger("pm"+strIdx,0,255,true,"uart mode is invalid!");
+            uartModes.push_back(options.GetInteger("pm"+strIdx));
+            if(options.GetInteger("pm"+strIdx)==255)
+                timingProfilingEnabled=true;
+        }
+        else
+            uartModes.push_back(255);
+
+        //rst - reset
+        if(options.CheckParamPresent("rst"+strIdx,false,""))
+        {
+            options.CheckIsBoolean("rst"+strIdx,true,"reset-needed value is invalid!");
+            rstFlags.push_back(options.GetBoolean("rst"+strIdx));
+        }
+        else
+            rstFlags.push_back(false);
+    }
+
+    config.SetServiceIntervalMS(500); //management interval
+    config.SetLingerSec(30); //linger
 
     //check network payload size, currently it cannot exceed 255 bytes
     if(config.GetNetworkPayloadSz()>255)
         return param_error(argv[0],"Provided UART buffer size or it's multiplier is too big, total payload size (uart size * mult) exceed 255 bytes");
 
+    //timeout for main thread waiting for external signals
+    const timespec sigTs={2,0};
+
     //create remote-config objects
     std::vector<PortConfig> remoteConfigs;
-    for(size_t i=0; i<portCount; ++i)
+    for(size_t i=0; i<static_cast<size_t>(config.GetPortCount()); ++i)
         remoteConfigs.push_back(
                     PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                static_cast<SerialMode>(uartModes[i]),
@@ -310,7 +251,7 @@ int main (int argc, char *argv[])
 
     //Port polling timer
     int64_t minPollTime=INT64_MAX;
-    for(size_t i=0;i<portCount;++i)
+    for(size_t i=0;i<static_cast<size_t>(config.GetPortCount());++i)
     {
         auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz(),pmin,pmax);
         if(testTime<minPollTime)

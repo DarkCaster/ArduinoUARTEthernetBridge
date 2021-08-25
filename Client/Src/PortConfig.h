@@ -31,7 +31,7 @@ enum class SerialMode : uint8_t
     SERIAL_6O2=0x3A,
     SERIAL_7O2=0x3C,
     SERIAL_8O2=0x3E,
-    SERIAL_LOOPBACK=0xFF,
+    SERIAL_CLOSED=0xFF,
 };
 
 struct PortConfig

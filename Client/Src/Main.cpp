@@ -41,8 +41,6 @@
 
 
 //TODO:
-//mode 255 == port close, assume this mode by default if omited. do not start listener for such mode
-//do not start listener if -lp{n} param is not provided, hovewer send port-open command for selected port if requested with mode param
 //implement providing remote and local poll interval in useconds, set remote poll interval in the first package sent
 //provide ring-buffer size in bytes
 //remove -nm multiplier from client, provide full remote io-size with -us param
@@ -178,6 +176,11 @@ int main (int argc, char *argv[])
                 localFiles.push_back(options.GetString("lp"+strIdx));
             }
         }
+        else
+        {
+            localPorts.push_back(0);
+            localFiles.push_back("");
+        }
 
         //ps - port speed
         if(options.CheckParamPresent("ps"+strIdx,false,""))
@@ -220,9 +223,9 @@ int main (int argc, char *argv[])
     const timespec sigTs={2,0};
 
     //create remote-config objects
-    std::vector<PortConfig> remoteConfigs;
+    std::vector<PortConfig> portConfigs;
     for(size_t i=0; i<static_cast<size_t>(config.GetPortCount()); ++i)
-        remoteConfigs.push_back(
+        portConfigs.push_back(
                     PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                static_cast<SerialMode>(uartModes[i]),
                                rstFlags[i],
@@ -267,31 +270,48 @@ int main (int argc, char *argv[])
     messageBroker.AddSubscriber(pollTimer);
 
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;
-    for(size_t i=0;i<remoteConfigs.size();++i)
+    std::vector<std::shared_ptr<PTYListener>> ptyListeners;
+    bool listenersCreated=false;
+    for(size_t i=0;i<portConfigs.size();++i)
     {
-        if(remoteConfigs[i].listener.port==0)
+        if(portConfigs[i].speed==0 || portConfigs[i].mode==SerialMode::SERIAL_CLOSED)
+        {
+            mainLogger->Info()<<"Port "<<i<<" will not be used, remote uart speed or mode parameters are not configured properly";
             continue;
-        auto logger=logFactory.CreateLogger("TCPListener:"+std::to_string(i));
-        tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,remoteConfigs[i]));
+        }
+        if(!portConfigs[i].ptsListener.empty())
+        {
+            listenersCreated=true;
+            auto logger=logFactory.CreateLogger("PTYListener:"+std::to_string(i));
+            ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,portConfigs[i]));
+        }
+        else if(portConfigs[i].listener.address.isValid && portConfigs[i].listener.port>0)
+        {
+            listenersCreated=true;
+            auto logger=logFactory.CreateLogger("TCPListener:"+std::to_string(i));
+            tcpListeners.push_back(std::make_shared<TCPListener>(logger,messageBroker,config,portConfigs[i]));
+        }
+        else
+        {
+            mainLogger->Info()<<"Port "<<i<<" will not be used, local ipaddr/port or pty parameters are not configured properly";
+            continue;
+        }
     }
 
-    std::vector<std::shared_ptr<PTYListener>> ptyListeners;
-    for(size_t i=0;i<remoteConfigs.size();++i)
+    if(!listenersCreated)
     {
-        if(remoteConfigs[i].ptsListener.empty())
-            continue;
-        auto logger=logFactory.CreateLogger("PTYListener:"+std::to_string(i));
-        ptyListeners.push_back(std::make_shared<PTYListener>(logger,messageBroker,config,remoteConfigs[i]));
+        mainLogger->Error()<<"No valid port listeners defined!";
+        return 1;
     }
 
     std::vector<std::shared_ptr<PortWorker>> portWorkers;
     std::vector<std::shared_ptr<RemoteBufferTracker>> buffTrackers;
-    for(size_t i=0;i<remoteConfigs.size();++i)
+    for(size_t i=0;i<portConfigs.size();++i)
     {
         auto rTrackerLogger=logFactory.CreateLogger("BuffTracker:"+std::to_string(i));
         auto rTracker=std::make_shared<RemoteBufferTracker>(rTrackerLogger,config,config.GetHwUARTSz()*config.GetRingBuffSegCount());
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
-        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,remoteConfigs[i],*(rTracker));
+        auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,portConfigs[i],*(rTracker));
         messageBroker.AddSubscriber(portWorker);
         portWorkers.push_back(portWorker);
         buffTrackers.push_back(rTracker);
@@ -306,7 +326,7 @@ int main (int argc, char *argv[])
     sigemptyset(&sigset);
     if(sigaddset(&sigset,SIGHUP)!=0||sigaddset(&sigset,SIGTERM)!=0||sigaddset(&sigset,SIGUSR1)!=0||sigaddset(&sigset,SIGUSR2)!=0||sigaddset(&sigset,SIGPIPE)!=0||pthread_sigmask(SIG_BLOCK,&sigset,nullptr)!=0)
     {
-        mainLogger->Error()<<"Failed to setup signal-handling"<<std::endl;
+        mainLogger->Error()<<"Failed to setup signal-handling";
         return 1;
     }
 

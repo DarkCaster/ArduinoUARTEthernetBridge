@@ -10,7 +10,7 @@ void UARTWorker::Setup(ResetHelper* const _resetHelper, HardwareSerial* const _u
     uart=_uart;
     rxDataBuff=_rxDataBuff;
     txDataBuff=_txDataBuff;
-    curMode=0xFE;
+    curMode=MODE_CLOSED;
     sessionId=0;
     txUsedSz=0;
 }
@@ -52,8 +52,14 @@ void UARTWorker::ProcessRequest(const Request &request)
             curMode=request.arg;
             if(IS_OPEN(curMode))
             {
-                uart->begin(static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16,curMode);
-                uart->setTimeout(0);
+                auto speed=static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16;
+                if(speed<1)
+                    curMode=MODE_CLOSED;
+                else
+                {
+                    uart->begin(speed,curMode);
+                    uart->setTimeout(0);
+                }
             }
             break;
         case ReqType::Close:

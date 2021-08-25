@@ -49,10 +49,11 @@ void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
     std::cerr<<"  mandatory parameters:"<<std::endl;
-    std::cerr<<"   remote:"<<std::endl;
     std::cerr<<"    -ra <ip address, or host name> remote address to connect"<<std::endl;
     std::cerr<<"    -tp <port> remote TCP port"<<std::endl;
-    std::cerr<<"    -pc <count> UART port count configured at remote side, must match remote side for normal operaion"<<std::endl;
+    std::cerr<<"    -pc <count> UART port count configured at remote side, this value is required to match for operation"<<std::endl;
+
+
     std::cerr<<"    -us <1-65535> uart-buffer/segment size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
 
     std::cerr<<"    -rbs <1-256> remote ring-buffer size as multiplier to hw-buffer size, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
@@ -68,8 +69,7 @@ void usage(const std::string &self)
     std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 1"<<std::endl;
     std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
     std::cerr<<"    -pmax <time, us> maximum local port poll interval, default: 16384 usec"<<std::endl;
-    std::cerr<<"  experimental and optimization parameters:"<<std::endl;
-    std::cerr<<"    -bsz <bytes> size of TCP buffer used for transferring data, default: 64k"<<std::endl;
+
 }
 
 int param_error(const std::string &self, const std::string &message)
@@ -123,13 +123,6 @@ int main (int argc, char *argv[])
     options.CheckParamPresent("nm",true,"Package aggregation multiplier must be provided");
     options.CheckIsInteger("nm",1,10,true,"Package aggregation multiplier is invalid");
     config.SetNwMult(options.GetInteger("nm"));
-
-    config.SetTCPBuffSz(65536);
-    if(options.CheckParamPresent("bsz",false,""))
-    {
-        options.CheckIsInteger("bsz",128,524288,true,"TCP buffer size is invalid");
-        config.SetTCPBuffSz(options.GetInteger("bsz"));
-    }
 
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
     if(options.CheckParamPresent("la",false,""))
@@ -212,6 +205,7 @@ int main (int argc, char *argv[])
             rstFlags.push_back(false);
     }
 
+    config.SetTCPBuffSz(65536);
     config.SetServiceIntervalMS(500); //management interval
     config.SetLingerSec(30); //linger
 

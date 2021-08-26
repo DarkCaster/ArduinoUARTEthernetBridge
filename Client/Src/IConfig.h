@@ -23,7 +23,7 @@ class IConfig
         virtual int GetPortBuffOffset(int portIndex) const = 0;
         virtual int GetNetworkPayloadSz() const = 0;
         virtual int GetHwUARTSz() const = 0;
-        virtual int GetRingBuffSegCount() const = 0;
+        virtual int GetRingBuffSize() const = 0;
         virtual int GetIdleTimerInterval() const = 0;
         virtual std::string GetRemoteAddr() const = 0;
         virtual uint16_t GetTCPPort() const = 0;

@@ -27,7 +27,7 @@ class Config final : public IConfig
         int hwUARTSize=64; //default UART hw buffer size for arduino-atmega boards
         int nwMult=2; //default package aggregation multiplier
         int portCount;
-        int ringBuffSegCount;
+        int ringBuffSize;
         int idleTimerInterval=1000000;
         bool enableUDP;
         uint16_t tcpPort;
@@ -41,7 +41,7 @@ class Config final : public IConfig
         void SetPortCount(int portCount);
         void SetHwUARTSz(int sz);
         void SetNwMult(int mult);
-        void SetRingBuffSegCount(int cnt);
+        void SetRingBuffSize(int size);
         void SetRemoteAddr(const std::string &addr);
         void SetUDPEnabled(bool enableUDP);
         void SetTCPPort(uint16_t port);
@@ -58,7 +58,7 @@ class Config final : public IConfig
         int GetPortBuffOffset(int portIndex) const final;
         int GetNetworkPayloadSz() const final;
         int GetHwUARTSz() const final;
-        int GetRingBuffSegCount() const final;
+        int GetRingBuffSize() const final;
         int GetIdleTimerInterval() const final;
         std::string GetRemoteAddr() const final;
         uint16_t GetTCPPort() const final;

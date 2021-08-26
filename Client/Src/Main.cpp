@@ -52,11 +52,11 @@ void usage(const std::string &self)
     std::cerr<<"    -ra <ip address, or host name> remote address to connect"<<std::endl;
     std::cerr<<"    -tp <port> remote TCP port"<<std::endl;
     std::cerr<<"    -pc <count> UART port count configured at remote side, this value is required to match for operation"<<std::endl;
-
+    std::cerr<<"    -rbs <bytes> remote ring-buffer size for incoming data, this value should match remote to prevent data loss"<<std::endl;
 
     std::cerr<<"    -us <1-65535> uart-buffer/segment size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
 
-    std::cerr<<"    -rbs <1-256> remote ring-buffer size as multiplier to hw-buffer size, used for scheduling outgoing packages - cruical for stable operation"<<std::endl;
+
     std::cerr<<"   local:"<<std::endl;
     std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
     std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
@@ -94,8 +94,8 @@ int main (int argc, char *argv[])
     Config config;
 
     options.CheckParamPresent("rbs",true,"remote ring-buffer size is missing");
-    options.CheckIsInteger("rbs",1,256,true,"remote ring-buffer size is invalid!");
-    config.SetRingBuffSegCount(options.GetInteger("rbs"));
+    options.CheckIsInteger("rbs",1,65535,true,"remote ring-buffer size is invalid!");
+    config.SetRingBuffSize(options.GetInteger("rbs"));
 
     options.CheckParamPresent("ra",true,"remote address or DNS-name is missing");
     config.SetRemoteAddr(options.GetString("ra"));
@@ -303,7 +303,7 @@ int main (int argc, char *argv[])
     for(size_t i=0;i<portConfigs.size();++i)
     {
         auto rTrackerLogger=logFactory.CreateLogger("BuffTracker:"+std::to_string(i));
-        auto rTracker=std::make_shared<RemoteBufferTracker>(rTrackerLogger,config,config.GetHwUARTSz()*config.GetRingBuffSegCount());
+        auto rTracker=std::make_shared<RemoteBufferTracker>(rTrackerLogger,config,config.GetRingBuffSize());
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
         auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,portConfigs[i],*(rTracker));
         messageBroker.AddSubscriber(portWorker);

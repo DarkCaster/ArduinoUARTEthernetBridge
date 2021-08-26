@@ -35,9 +35,9 @@ void Config::SetNwMult(int mult)
     nwMult=mult;
 }
 
-void Config::SetRingBuffSegCount(int cnt)
+void Config::SetRingBuffSize(int size)
 {
-    ringBuffSegCount=cnt;
+    ringBuffSize=size;
 }
 
 void Config::SetRemoteAddr(const std::string& addr)
@@ -110,9 +110,9 @@ int Config::GetHwUARTSz() const
     return hwUARTSize;
 }
 
-int Config::GetRingBuffSegCount() const
+int Config::GetRingBuffSize() const
 {
-    return ringBuffSegCount;
+    return ringBuffSize;
 }
 
 int Config::GetIdleTimerInterval() const

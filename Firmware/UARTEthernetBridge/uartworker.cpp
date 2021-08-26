@@ -52,7 +52,7 @@ void UARTWorker::ProcessRequest(const Request &request)
             curMode=request.arg;
             if(IS_OPEN(curMode))
             {
-                auto speed=static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16;
+                auto speed=static_cast<unsigned long>(rxDataBuff[0])|static_cast<unsigned long>(rxDataBuff[1])<<8|static_cast<unsigned long>(rxDataBuff[2])<<16|static_cast<unsigned long>(rxDataBuff[3])<<24;
                 if(speed<1)
                     curMode=MODE_CLOSED;
                 else

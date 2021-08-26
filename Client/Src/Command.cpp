@@ -24,3 +24,9 @@ void WriteU32Value(const uint32_t value, uint8_t* const target)
     *(target+2)=static_cast<uint8_t>((value>>16)&0xFF);
     *(target+3)=static_cast<uint8_t>((value>>24)&0xFF);
 }
+
+void WriteU16Value(const uint16_t value, uint8_t* const target)
+{
+    *(target+0)=static_cast<uint8_t>(value&0xFF);
+    *(target+1)=static_cast<uint8_t>((value>>8)&0xFF);
+}

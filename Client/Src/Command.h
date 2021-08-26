@@ -36,5 +36,6 @@ struct Response
 };
 
 void WriteU32Value(const uint32_t value, uint8_t* const target);
+void WriteU16Value(const uint16_t value, uint8_t* const target);
 
 #endif // COMMAND_H

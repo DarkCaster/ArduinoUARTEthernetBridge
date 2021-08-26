@@ -2,6 +2,7 @@
 #include "ImmutableStorage.h"
 #include "TCPConnection.h"
 #include "CRC8.h"
+#include "Command.h"
 
 #include <cstring>
 #include <sys/socket.h>
@@ -223,12 +224,9 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
         return;
     //write UDP transport port to header and calculate CRC
     if(config.GetUDPEnabled())
-    {
-        *(txBuff)=static_cast<uint8_t>(conn->GetUDPTransportPort()&0xFF);
-        *(txBuff+1)=static_cast<uint8_t>((conn->GetUDPTransportPort()>>8)&0xFF);
-    }
+        WriteU16Value(conn->GetUDPTransportPort(),txBuff);
     else
-        *(txBuff)=*(txBuff+1)=0;
+        WriteU16Value(0,txBuff);
     *(txBuff+config.GetNetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetNetPackageMetaSz()));
     //send package
     const size_t pkgSz=static_cast<size_t>(config.GetNetPackageSz());

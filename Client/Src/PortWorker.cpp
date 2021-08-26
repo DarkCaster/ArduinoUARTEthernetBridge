@@ -78,11 +78,9 @@ Request PortWorker::ProcessTX(uint32_t counter, uint8_t* txBuff)
     {
         openPending=false;
         //write port speed to txBuff;
-        txBuff[0]=portConfig.speed&0xFF;
-        txBuff[1]=(portConfig.speed>>8)&0xFF;
-        txBuff[2]=(portConfig.speed>>16)&0xFF;
+        WriteU32Value(portConfig.speed,txBuff);
         logger->Info()<<"Sending port open request, speed: "<<portConfig.speed<<"; mode: "<< static_cast<int>(portConfig.mode);
-        return Request{ReqType::Open,static_cast<uint8_t>(portConfig.mode),3};
+        return Request{ReqType::Open,static_cast<uint8_t>(portConfig.mode),4};
     }
 
     //client operations must be interlocked, client's FD must be in non-blocking mode

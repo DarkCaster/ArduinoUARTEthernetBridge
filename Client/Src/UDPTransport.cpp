@@ -2,6 +2,7 @@
 #include "ImmutableStorage.h"
 #include "UDPConnection.h"
 #include "CRC8.h"
+#include "Command.h"
 
 #include <cstring>
 #include <fcntl.h>
@@ -276,9 +277,7 @@ void UDPTransport::OnSendPackage(const ISendPackageMessage& message)
         return;
 
     //write UDP sequence
-    auto txs=conn->TXSeqIncrement();
-    *(txBuff)=static_cast<uint8_t>(txs&0xFF);
-    *(txBuff+1)=static_cast<uint8_t>((txs>>8)&0xFF);
+    WriteU16Value(conn->TXSeqIncrement(),txBuff);
 
     //generate checksum
     *(txBuff+config.GetNetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetNetPackageMetaSz()));

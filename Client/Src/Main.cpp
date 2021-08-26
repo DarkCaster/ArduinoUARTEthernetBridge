@@ -42,7 +42,6 @@
 
 //TODO:
 //implement providing remote and local poll interval in useconds, set remote poll interval in the first package sent
-//remove -nm multiplier from client, provide full remote io-size with -us param
 
 void usage(const std::string &self)
 {
@@ -53,15 +52,13 @@ void usage(const std::string &self)
     std::cerr<<"    -pc <count> UART port count configured at remote side, required to match for operation"<<std::endl;
     std::cerr<<"    -pls <bytes> network payload size for single port in bytes, required to match for operation"<<std::endl;
     std::cerr<<"    -rbs <bytes> remote ring-buffer size for incoming data, should match to prevent data loss"<<std::endl;
-
-
-    std::cerr<<"   local:"<<std::endl;
-    std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40000 -lp2 40001 -lp2 /tmp/port2.sock"<<std::endl;
-    std::cerr<<"    -ps{n} <speed in bits-per-second> remote uart port speeds"<<std::endl;
-    std::cerr<<"    -pm{n} <mode number> remote uart port modes, '6' equals to SERIAL_8N1 arduino-define, '255' - loopback mode for testing"<<std::endl;
+    std::cerr<<"  uart port related parameters:"<<std::endl;
+    std::cerr<<"    -ps{n} <speed in bits-per-second> open remote uart port #n at provided speed, example: -ps1 57600"<<std::endl;
+    std::cerr<<"    -pm{n} <mode number> set mode for remote uart port #n, example: -pm1 6 (equals to SERIAL_8N1 arduino-define)"<<std::endl;
+    std::cerr<<"    -rst{n} <0,1> perform reset on connection to port #n, default: 0 - do not perform reset"<<std::endl;
+    std::cerr<<"    -lp{n} <port> local TCP port number OR file path for creating PTS symlink, example -lp1 40001 -lp2 40002 -lp3 /tmp/usbETH3"<<std::endl;
     std::cerr<<"  optional parameters:"<<std::endl;
     std::cerr<<"    -up <0,1> 1 - enable use of less reliable UDP transport with lower latency and jitter, default: 0 - disabled"<<std::endl;
-    std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
 
     std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
@@ -90,20 +87,26 @@ int main (int argc, char *argv[])
 
     Config config;
 
-    options.CheckParamPresent("rbs",true,"remote ring-buffer size is missing");
-    options.CheckIsInteger("rbs",1,65535,true,"remote ring-buffer size is invalid!");
-    config.SetRemoteRingBuffSize(options.GetInteger("rbs"));
-
     options.CheckParamPresent("ra",true,"remote address or DNS-name is missing");
     config.SetRemoteAddr(options.GetString("ra"));
+
+    options.CheckParamPresent("tp",true,"TCP port must be provided");
+    options.CheckIsInteger("tp",1,65535,true,"TCP port is invalid");
+    config.SetTCPPort(static_cast<uint16_t>(options.GetInteger("tp")));
 
     options.CheckParamPresent("pc",true,"port count must be provided");
     options.CheckIsInteger("pc",1,32,true,"port count value is invalid");
     config.SetPortCount(options.GetInteger("pc"));
 
-    options.CheckParamPresent("tp",true,"TCP port must be provided");
-    options.CheckIsInteger("tp",1,65535,true,"TCP port is invalid");
-    config.SetTCPPort(static_cast<uint16_t>(options.GetInteger("tp")));
+    options.CheckParamPresent("pls",true,"Network payload size must be provided");
+    options.CheckIsInteger("pls",1,255,true,"Network payload size must be provided");
+    config.SetPortPayloadSize(options.GetInteger("pls"));
+
+    options.CheckParamPresent("rbs",true,"remote ring-buffer size is missing");
+    options.CheckIsInteger("rbs",1,65535,true,"remote ring-buffer size is invalid!");
+    config.SetRemoteRingBuffSize(options.GetInteger("rbs"));
+
+    //ps, pm, rst, lp params parsed below
 
     if(!options.CheckParamPresent("up",false,""))
         config.SetUDPEnabled(false);
@@ -112,10 +115,6 @@ int main (int argc, char *argv[])
         options.CheckIsBoolean("up",true,"UDP mode parameter is invalid");
         config.SetUDPEnabled(options.GetBoolean("up"));
     }
-
-    options.CheckParamPresent("pls",true,"Network payload size must be provided");
-    options.CheckIsInteger("pls",1,255,true,"Network payload size must be provided");
-    config.SetPortPayloadSize(options.GetInteger("pls"));
 
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
     if(options.CheckParamPresent("la",false,""))

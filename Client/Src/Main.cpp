@@ -290,6 +290,12 @@ int main (int argc, char *argv[])
         return 1;
     }
 
+    auto outSpeed=static_cast<int>(1000000.0/static_cast<double>(ptl)*static_cast<double>(config.GetPortPayloadSz())*8.0);
+    auto inSpeed=static_cast<int>(1000000.0/static_cast<double>(config.GetRemotePollIntervalUS())*static_cast<double>(config.GetPortPayloadSz())*8.0);
+
+    mainLogger->Info()<<"Maximum calculated TX speed: "<<outSpeed<<" bps";
+    mainLogger->Info()<<"Maximum calculated RX speed: "<<inSpeed<<" bps";
+
     //startup
     for(auto &portWorker:portWorkers)
         portWorker->Startup();

@@ -10,24 +10,22 @@
 class IConfig
 {
     public:
-        virtual int GetServiceIntervalMS() const = 0;
-        virtual timeval GetServiceIntervalTV() const = 0;
-        virtual int GetIncomingDataBufferSec() const = 0;
+        virtual std::string GetRemoteAddr() const = 0; //-ra
+        virtual uint16_t GetTCPPort() const = 0; //-tp
+        virtual int GetPortCount() const = 0; //-pc
+        virtual int GetPortPayloadSz() const = 0; //-pls
+        virtual int GetRemoteRingBuffSize() const = 0; //-rbs
+        virtual int GetLocalRingBufferSec() const = 0; //TODO
+        virtual bool GetUDPEnabled() const = 0; //-udp
 
-        virtual int GetTCPBuffSz() const = 0;
-        virtual int GetLingerSec() const = 0;
+        virtual int GetServiceIntervalMS() const = 0; //service param, not configurable for now
+        virtual timeval GetServiceIntervalTV() const = 0; //service param, not configurable for now
+        virtual int GetTCPBuffSz() const = 0; //service param, not configurable for now
+        virtual int GetLingerSec() const = 0; //service param, not configurable for now
 
-        virtual int GetPortCount() const = 0;
-        virtual int GetPackageMetaSz() const = 0;
-        virtual int GetPackageSz() const = 0;
-        virtual int GetPortBuffOffset(int portIndex) const = 0;
-        virtual int GetNetworkPayloadSz() const = 0;
-        virtual int GetHwUARTSz() const = 0;
-        virtual int GetRingBuffSize() const = 0;
-        virtual int GetIdleTimerInterval() const = 0;
-        virtual std::string GetRemoteAddr() const = 0;
-        virtual uint16_t GetTCPPort() const = 0;
-        virtual bool GetUDPEnabled() const = 0;
+        virtual int GetNetPackageMetaSz() const = 0; //auto-calculated
+        virtual int GetNetPackageSz() const = 0; //auto-calculated
+        virtual int GetPortBuffOffset(int portIndex) const = 0; //auto-calculated
 };
 
 #endif

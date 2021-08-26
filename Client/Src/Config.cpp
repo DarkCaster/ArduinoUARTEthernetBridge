@@ -25,19 +25,19 @@ void Config::SetPortCount(int _portCount)
     portCount=_portCount;
 }
 
-void Config::SetHwUARTSz(int sz)
+void Config::SetPortPayloadSize(int sz)
 {
-    hwUARTSize=sz;
+    portPLSize=sz;
 }
 
-void Config::SetNwMult(int mult)
+void Config::SetRemoteRingBuffSize(int size)
 {
-    nwMult=mult;
+    remoteRingBuffSize=size;
 }
 
-void Config::SetRingBuffSize(int size)
+void Config::SetLocalRingBuffSec(int size)
 {
-    ringBuffSize=size;
+    localRingBuffSec=size;
 }
 
 void Config::SetRemoteAddr(const std::string& addr)
@@ -65,9 +65,9 @@ timeval Config::GetServiceIntervalTV() const
     return timeval{serviceInterval/1000,(serviceInterval-serviceInterval/1000*1000)*1000};
 }
 
-int Config::GetIncomingDataBufferSec() const
+int Config::GetLocalRingBufferSec() const
 {
-    return incomingDataBufferSec;
+    return localRingBuffSec;
 }
 
 int Config::GetTCPBuffSz() const
@@ -85,39 +85,29 @@ int Config::GetPortCount() const
     return portCount;
 }
 
-int Config::GetPackageMetaSz() const
+int Config::GetNetPackageMetaSz() const
 {
     return META_SZ(portCount);
 }
 
-int Config::GetPackageSz() const
+int Config::GetNetPackageSz() const
 {
-    return PACKAGE_SIZE(portCount,(hwUARTSize*nwMult));
+    return PACKAGE_SIZE(portCount,portPLSize);
 }
 
 int Config::GetPortBuffOffset(int portIndex) const
 {
-    return PORT_OFFSET(portCount,(hwUARTSize*nwMult),portIndex);
+    return PORT_OFFSET(portCount,portPLSize,portIndex);
 }
 
-int Config::GetNetworkPayloadSz() const
+int Config::GetPortPayloadSz() const
 {
-    return hwUARTSize*nwMult;
+    return portPLSize;
 }
 
-int Config::GetHwUARTSz() const
+int Config::GetRemoteRingBuffSize() const
 {
-    return hwUARTSize;
-}
-
-int Config::GetRingBuffSize() const
-{
-    return ringBuffSize;
-}
-
-int Config::GetIdleTimerInterval() const
-{
-    return idleTimerInterval;
+    return remoteRingBuffSize;
 }
 
 std::string Config::GetRemoteAddr() const

@@ -8,7 +8,7 @@ DataProcessor::DataProcessor(std::shared_ptr<ILogger>& _logger, IMessageSender& 
     sender(_sender),
     config(_config),
     portWorkers(_portWorkers),
-    txBuff(std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz())))
+    txBuff(std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetNetPackageSz())))
 {
 }
 

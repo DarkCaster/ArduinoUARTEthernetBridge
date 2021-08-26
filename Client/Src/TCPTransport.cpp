@@ -19,7 +19,7 @@ TCPTransport::TCPTransport(std::shared_ptr<ILogger>& _logger, IMessageSender& _s
     logger(_logger),
     sender(_sender),
     config(_config),
-    rxBuff(std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz())))
+    rxBuff(std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetNetPackageSz())))
 {
     shutdownPending.store(false);
     remoteConn=nullptr;
@@ -51,7 +51,7 @@ static void TuneSocketBaseParams(std::shared_ptr<ILogger> &logger, int fd, const
     if (setsockopt(fd, SOL_SOCKET, SO_LINGER, &cLinger, sizeof(linger))!=0)
         logger->Warning()<<"Failed to set SO_LINGER option to socket: "<<strerror(errno);
     //set buffer size
-    auto sbsz=config.GetPackageSz();
+    auto sbsz=config.GetNetPackageSz();
     if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sbsz, sizeof(sbsz)))
         logger->Warning()<<"Failed to set SO_SNDBUF option to socket: "<<strerror(errno);
     auto rbsz=config.GetTCPBuffSz();
@@ -172,7 +172,7 @@ void TCPTransport::Worker()
             continue;
         }
 
-        const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
+        const size_t pkgSz=static_cast<size_t>(config.GetNetPackageSz());
         auto dataLeft=pkgSz;
         while(!shutdownPending.load())
         {
@@ -195,7 +195,7 @@ void TCPTransport::Worker()
             if(dataLeft>0)
                 continue;
             //verify CRC, disconnect on failure and drop data
-            if(*(rxBuff.get()+config.GetPackageMetaSz())!=CRC8(rxBuff.get(),static_cast<size_t>(config.GetPackageMetaSz())))
+            if(*(rxBuff.get()+config.GetNetPackageMetaSz())!=CRC8(rxBuff.get(),static_cast<size_t>(config.GetNetPackageMetaSz())))
             {
                 logger->Error()<<"Package CRC mismatch! This should not happen normally, check your configuration!";
                 conn->Dispose();
@@ -229,9 +229,9 @@ void TCPTransport::OnSendPackage(const ISendPackageMessage& message)
     }
     else
         *(txBuff)=*(txBuff+1)=0;
-    *(txBuff+config.GetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetPackageMetaSz()));
+    *(txBuff+config.GetNetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetNetPackageMetaSz()));
     //send package
-    const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
+    const size_t pkgSz=static_cast<size_t>(config.GetNetPackageSz());
     auto dataLeft=pkgSz;
     while(dataLeft>0)
     {

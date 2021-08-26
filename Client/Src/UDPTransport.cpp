@@ -18,7 +18,7 @@ UDPTransport::UDPTransport(std::shared_ptr<ILogger>& _logger, IMessageSender& _s
     logger(_logger),
     sender(_sender),
     config(_config),
-    rxBuff(std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetPackageSz())))
+    rxBuff(std::make_unique<uint8_t[]>(static_cast<size_t>(config.GetNetPackageSz())))
 {
     shutdownPending.store(false);
     remoteConn=nullptr;
@@ -178,7 +178,7 @@ void UDPTransport::Worker()
             continue;
         }
 
-        const size_t pkgSz=static_cast<size_t>(config.GetPackageSz());
+        const size_t pkgSz=static_cast<size_t>(config.GetNetPackageSz());
         iovec pkgVec={rxBuff.get(),pkgSz};
         msghdr pkgHdr={};
         pkgHdr.msg_iov=&pkgVec;
@@ -211,7 +211,7 @@ void UDPTransport::Worker()
         //TODO: check remote port if needed
 
         //verify CRC, disconnect on failure and drop data
-        if(*(rxBuff.get()+config.GetPackageMetaSz())!=CRC8(rxBuff.get(),static_cast<size_t>(config.GetPackageMetaSz())))
+        if(*(rxBuff.get()+config.GetNetPackageMetaSz())!=CRC8(rxBuff.get(),static_cast<size_t>(config.GetNetPackageMetaSz())))
         {
             logger->Warning()<<"Dropping package with invalid control block checksum";
             continue;
@@ -281,10 +281,10 @@ void UDPTransport::OnSendPackage(const ISendPackageMessage& message)
     *(txBuff+1)=static_cast<uint8_t>((txs>>8)&0xFF);
 
     //generate checksum
-    *(txBuff+config.GetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetPackageMetaSz()));
+    *(txBuff+config.GetNetPackageMetaSz())=CRC8(txBuff,static_cast<size_t>(config.GetNetPackageMetaSz()));
 
     //send package
-    auto dw=send(conn->fd,txBuff,static_cast<size_t>(config.GetPackageSz()),0);
+    auto dw=send(conn->fd,txBuff,static_cast<size_t>(config.GetNetPackageSz()),0);
     if(dw<=0)
     {
         auto error=errno;
@@ -296,8 +296,8 @@ void UDPTransport::OnSendPackage(const ISendPackageMessage& message)
         return;
     }
 
-    if(dw<config.GetPackageMetaSz())
-        logger->Warning()<<"Partial send detected: "<<dw<<" bytes; instead of: "<<config.GetPackageMetaSz()<<" bytes";
+    if(dw<config.GetNetPackageMetaSz())
+        logger->Warning()<<"Partial send detected: "<<dw<<" bytes; instead of: "<<config.GetNetPackageMetaSz()<<" bytes";
 }
 
 void UDPTransport::OnConnected(const IConnectedMessage& message)

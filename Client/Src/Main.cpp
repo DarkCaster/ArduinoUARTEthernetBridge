@@ -42,19 +42,17 @@
 
 //TODO:
 //implement providing remote and local poll interval in useconds, set remote poll interval in the first package sent
-//provide ring-buffer size in bytes
 //remove -nm multiplier from client, provide full remote io-size with -us param
 
 void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
-    std::cerr<<"  mandatory parameters:"<<std::endl;
+    std::cerr<<"  mandatory parameters, must match the values hardcoded at server firmware:"<<std::endl;
     std::cerr<<"    -ra <ip address, or host name> remote address to connect"<<std::endl;
     std::cerr<<"    -tp <port> remote TCP port"<<std::endl;
-    std::cerr<<"    -pc <count> UART port count configured at remote side, this value is required to match for operation"<<std::endl;
-    std::cerr<<"    -rbs <bytes> remote ring-buffer size for incoming data, this value should match remote to prevent data loss"<<std::endl;
-
-    std::cerr<<"    -us <1-65535> uart-buffer/segment size in bytes used at server, cruical for timings and network payload size calculation, default: 64"<<std::endl;
+    std::cerr<<"    -pc <count> UART port count configured at remote side, required to match for operation"<<std::endl;
+    std::cerr<<"    -pls <bytes> network payload size for single port in bytes, required to match for operation"<<std::endl;
+    std::cerr<<"    -rbs <bytes> remote ring-buffer size for incoming data, should match to prevent data loss"<<std::endl;
 
 
     std::cerr<<"   local:"<<std::endl;
@@ -66,7 +64,6 @@ void usage(const std::string &self)
     std::cerr<<"    -rst{n} <0,1> perform reset on connection, default: 0 - do not perform reset"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
 
-    std::cerr<<"    -nm <1-10> multiplier to uart-buffer size, used to aggregate data before sending it over network, cruical for operation, default: 1"<<std::endl;
     std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
     std::cerr<<"    -pmax <time, us> maximum local port poll interval, default: 16384 usec"<<std::endl;
 
@@ -95,7 +92,7 @@ int main (int argc, char *argv[])
 
     options.CheckParamPresent("rbs",true,"remote ring-buffer size is missing");
     options.CheckIsInteger("rbs",1,65535,true,"remote ring-buffer size is invalid!");
-    config.SetRingBuffSize(options.GetInteger("rbs"));
+    config.SetRemoteRingBuffSize(options.GetInteger("rbs"));
 
     options.CheckParamPresent("ra",true,"remote address or DNS-name is missing");
     config.SetRemoteAddr(options.GetString("ra"));
@@ -116,13 +113,9 @@ int main (int argc, char *argv[])
         config.SetUDPEnabled(options.GetBoolean("up"));
     }
 
-    options.CheckParamPresent("us",true,"HW UART buffer size must be provided");
-    options.CheckIsInteger("us",1,1024,true,"HW UART buffer size is invalid");
-    config.SetHwUARTSz(options.GetInteger("us"));
-
-    options.CheckParamPresent("nm",true,"Package aggregation multiplier must be provided");
-    options.CheckIsInteger("nm",1,10,true,"Package aggregation multiplier is invalid");
-    config.SetNwMult(options.GetInteger("nm"));
+    options.CheckParamPresent("pls",true,"Network payload size must be provided");
+    options.CheckIsInteger("pls",1,255,true,"Network payload size must be provided");
+    config.SetPortPayloadSize(options.GetInteger("pls"));
 
     ImmutableStorage<IPAddress> localAddr(IPAddress("127.0.0.1"));
     if(options.CheckParamPresent("la",false,""))
@@ -209,10 +202,6 @@ int main (int argc, char *argv[])
     config.SetServiceIntervalMS(500); //management interval
     config.SetLingerSec(30); //linger
 
-    //check network payload size, currently it cannot exceed 255 bytes
-    if(config.GetNetworkPayloadSz()>255)
-        return param_error(argv[0],"Provided UART buffer size or it's multiplier is too big, total payload size (uart size * mult) exceed 255 bytes");
-
     //timeout for main thread waiting for external signals
     const timespec sigTs={2,0};
 
@@ -256,7 +245,7 @@ int main (int argc, char *argv[])
     int64_t minPollTime=INT64_MAX;
     for(size_t i=0;i<static_cast<size_t>(config.GetPortCount());++i)
     {
-        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz(),pmin,pmax);
+        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetPortPayloadSz(),pmin,pmax);
         if(testTime<minPollTime)
             minPollTime=testTime;
     }
@@ -303,7 +292,7 @@ int main (int argc, char *argv[])
     for(size_t i=0;i<portConfigs.size();++i)
     {
         auto rTrackerLogger=logFactory.CreateLogger("BuffTracker:"+std::to_string(i));
-        auto rTracker=std::make_shared<RemoteBufferTracker>(rTrackerLogger,config,config.GetRingBuffSize());
+        auto rTracker=std::make_shared<RemoteBufferTracker>(rTrackerLogger,config,config.GetRemoteRingBuffSize());
         auto portLogger=logFactory.CreateLogger("PortWorker:"+std::to_string(i));
         auto portWorker=std::make_shared<PortWorker>(portLogger,messageBroker,config,portConfigs[i],*(rTracker));
         messageBroker.AddSubscriber(portWorker);

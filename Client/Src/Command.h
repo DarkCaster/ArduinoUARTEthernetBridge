@@ -35,6 +35,6 @@ struct Response
     uint32_t counter;
 };
 
-void WritePackageCounter(const uint32_t counter, uint8_t* const rawBuffer);
+void WriteU32Value(const uint32_t value, uint8_t* const target);
 
 #endif // COMMAND_H

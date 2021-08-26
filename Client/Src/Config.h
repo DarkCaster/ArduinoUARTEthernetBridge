@@ -26,6 +26,7 @@ class Config final : public IConfig
         int portPLSize;
         int portCount;
         int remoteRingBuffSize;
+        int remotePollInterval;
         bool enableUDP;
         uint16_t tcpPort;
         std::string remoteAddr;
@@ -37,6 +38,7 @@ class Config final : public IConfig
         void SetRemoteRingBuffSize(int size);
         void SetLocalRingBuffSec(int size);
         void SetUDPEnabled(bool enableUDP);
+        void SetRemotePollIntervalUS(int intervalUS);
         void SetServiceIntervalMS(int intervalMS);
         void SetTCPBuffSz(int sz);
         void SetLingerSec(int sz);
@@ -48,6 +50,7 @@ class Config final : public IConfig
         int GetRemoteRingBuffSize() const final;
         int GetLocalRingBufferSec() const final;
         bool GetUDPEnabled() const final;
+        int GetRemotePollIntervalUS() const final;
 
         int GetServiceIntervalMS() const final;
         timeval GetServiceIntervalTV() const final;

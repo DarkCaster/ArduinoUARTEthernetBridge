@@ -17,6 +17,7 @@ class IConfig
         virtual int GetRemoteRingBuffSize() const = 0; //-rbs
         virtual int GetLocalRingBufferSec() const = 0; //TODO
         virtual bool GetUDPEnabled() const = 0; //-udp
+        virtual int GetRemotePollIntervalUS() const = 0;//-ptr
 
         virtual int GetServiceIntervalMS() const = 0; //service param, not configurable for now
         virtual timeval GetServiceIntervalTV() const = 0; //service param, not configurable for now

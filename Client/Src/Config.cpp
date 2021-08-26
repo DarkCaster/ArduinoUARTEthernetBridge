@@ -50,6 +50,11 @@ void Config::SetUDPEnabled(bool _enableUDP)
     enableUDP=_enableUDP;
 }
 
+void Config::SetRemotePollIntervalUS(int intervalUS)
+{
+    remotePollInterval=intervalUS;
+}
+
 void Config::SetTCPPort(uint16_t port)
 {
     tcpPort=port;
@@ -118,6 +123,11 @@ std::string Config::GetRemoteAddr() const
 bool Config::GetUDPEnabled() const
 {
     return enableUDP;
+}
+
+int Config::GetRemotePollIntervalUS() const
+{
+    return remotePollInterval;
 }
 
 uint16_t Config::GetTCPPort() const

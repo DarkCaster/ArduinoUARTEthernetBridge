@@ -17,10 +17,10 @@ Response Response::Map(const int portIndex, const uint8_t* const rawBuffer)
     return Response{static_cast<RespType>(*(rawBuffer+offset)),*(rawBuffer+offset+1),*(rawBuffer+offset+2),counter};
 }
 
-void WritePackageCounter(const uint32_t counter, uint8_t* const rawBuffer)
+void WriteU32Value(const uint32_t value, uint8_t* const target)
 {
-    *(rawBuffer+PKG_CNT_OFFSET+0)=static_cast<uint8_t>(counter&0xFF);
-    *(rawBuffer+PKG_CNT_OFFSET+1)=static_cast<uint8_t>((counter>>8)&0xFF);
-    *(rawBuffer+PKG_CNT_OFFSET+2)=static_cast<uint8_t>((counter>>16)&0xFF);
-    *(rawBuffer+PKG_CNT_OFFSET+3)=static_cast<uint8_t>((counter>>24)&0xFF);
+    *(target+0)=static_cast<uint8_t>(value&0xFF);
+    *(target+1)=static_cast<uint8_t>((value>>8)&0xFF);
+    *(target+2)=static_cast<uint8_t>((value>>16)&0xFF);
+    *(target+3)=static_cast<uint8_t>((value>>24)&0xFF);
 }

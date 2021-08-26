@@ -35,16 +35,22 @@ void DataProcessor::OnPollEvent(const ITimerMessage& message)
 
     //process data from the local connections, fill-up txBuffer
     bool useTCP=false;
+    bool openTriggered=false;
     for(int i=0;i<config.GetPortCount();++i)
     {
         auto request=portWorkers[static_cast<size_t>(i)]->ProcessTX(message.counter,txBuff.get()+config.GetPortBuffOffset(i));
         if(request.type==ReqType::Open || request.type==ReqType::Close || request.type==ReqType::Reset)
             useTCP=true;
+        if(request.type==ReqType::Open)
+            openTriggered=true;
         Request::Write(request,i,txBuff.get());
     }
 
     //write counter to package header
-    WritePackageCounter(message.counter,txBuff.get());
+    if(openTriggered)
+        WriteU32Value(static_cast<uint32_t>(config.GetRemotePollIntervalUS()),txBuff.get()+PKG_CNT_OFFSET);
+    else
+        WriteU32Value(message.counter,txBuff.get()+PKG_CNT_OFFSET);
 
     if(!config.GetUDPEnabled())
         useTCP=true;

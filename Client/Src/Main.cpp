@@ -39,10 +39,6 @@
 // Arduino Mega 2560 (atmega 2560) with 3 uart ports, data aggregation multiplier = 4, remote buffer size = 100 segments, uart-segment size 16, local poll speed limited to 8192 usec:
 //  -ra ENC28J65E366.lan -tp 50000 -up 1 -us 32 -nm 2 -rbs 50 -pmin 8600 -pmax 8600 -pc 3 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 6 -ps2 250000 -pm2 6 -ps3 250000 -pm3 6 -rst1 0 -rst2 0 -rst3 0
 
-
-//TODO:
-//implement providing remote and local poll interval in useconds, set remote poll interval in the first package sent
-
 void usage(const std::string &self)
 {
     std::cerr<<"Usage: "<<self<<" [parameters]"<<std::endl;
@@ -123,11 +119,11 @@ int main (int argc, char *argv[])
         ptl=options.GetInteger("ptl");
     }
 
-    int ptr=8192;
+    config.SetRemotePollIntervalUS(8192);
     if(options.CheckParamPresent("ptr",false,""))
     {
         options.CheckIsInteger("ptr",256,1000000,true,"Remote poll time is invalid");
-        ptl=options.GetInteger("ptr");
+        config.SetRemotePollIntervalUS(options.GetInteger("ptr"));
     }
 
     std::vector<int> localPorts;

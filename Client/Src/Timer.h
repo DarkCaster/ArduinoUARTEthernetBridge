@@ -17,12 +17,11 @@ class Timer : public WorkerBase, public IMessageSubscriber
         IMessageSender& sender;
         const IConfig &config;
         const int64_t reqIntervalUsec;
-        const bool profilingEnabled;
         std::atomic<bool> shutdownPending;
         std::atomic<bool> connectPending;
         uint32_t eventCounter;
     public:
-        Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const int64_t intervalUsec, const bool profilingEnabled);
+        Timer(std::shared_ptr<ILogger>& logger, IMessageSender& sender, const IConfig& config, const int64_t intervalUsec);
         //methods for ISubscriber
         bool ReadyForMessage(const MsgType msgType) final;
         void OnMessage(const void* const source, const IMessage& message) final;

@@ -3,12 +3,11 @@
 
 class TimerMessage: public ITimerMessage { public: TimerMessage(uint32_t _counter):ITimerMessage(_counter){} };
 
-Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const int64_t _intervalUsec, const bool _profilingEnabled):
+Timer::Timer(std::shared_ptr<ILogger>& _logger, IMessageSender& _sender, const IConfig& _config, const int64_t _intervalUsec):
     logger(_logger),
     sender(_sender),
     config(_config),
-    reqIntervalUsec(_intervalUsec),
-    profilingEnabled(_profilingEnabled)
+    reqIntervalUsec(_intervalUsec)
 {
     shutdownPending.store(false);
     connectPending.store(true);
@@ -28,8 +27,6 @@ void Timer::OnMessage(const void* const /*source*/, const IMessage& /*message*/)
 void Timer::Worker()
 {
     logger->Info()<<"Starting up with interval: "<<reqIntervalUsec<<" usec";
-    if(profilingEnabled)
-        logger->Info()<<"Package processing-time profiling enabled";
 
     const auto reqInterval=std::chrono::microseconds(reqIntervalUsec);
     const auto startTime=std::chrono::steady_clock::now();
@@ -46,12 +43,12 @@ void Timer::Worker()
         sender.SendMessage(this,TimerMessage(++eventCounter));
 
         auto now=std::chrono::steady_clock::now();
-        if(profilingEnabled)
-        {
-            auto processTime=now-prev;
-            if(processTime>reqInterval && !connectPending.load())
-                logger->Warning()<<"Processing takes too long: "<<std::chrono::duration_cast<std::chrono::microseconds>(processTime).count()<<" usec; event: "<<eventCounter;
-        }
+        //if(profilingEnabled)
+        //{
+        auto processTime=now-prev;
+        if(processTime>reqInterval && !connectPending.load())
+            logger->Warning()<<"Processing takes too long: "<<std::chrono::duration_cast<std::chrono::microseconds>(processTime).count()<<" usec; event: "<<eventCounter;
+        //}
 
         //tune wait interval for next round and start over
         interval=std::chrono::duration_cast<std::chrono::microseconds>(reqInterval-(now-startTime)%reqInterval);

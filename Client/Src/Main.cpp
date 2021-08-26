@@ -60,9 +60,8 @@ void usage(const std::string &self)
     std::cerr<<"  optional parameters:"<<std::endl;
     std::cerr<<"    -up <0,1> 1 - enable use of less reliable UDP transport with lower latency and jitter, default: 0 - disabled"<<std::endl;
     std::cerr<<"    -la <ip-addr> local IP to listen for TCP channels enabled by -lp{n} option, default: 127.0.0.1"<<std::endl;
-
-    std::cerr<<"    -pmin <time, us> minimal local port poll interval, default: 4096 usec (with hw uart-buffer size of 64bytes - equals to 125kbit/s throughput per port)"<<std::endl;
-    std::cerr<<"    -pmax <time, us> maximum local port poll interval, default: 16384 usec"<<std::endl;
+    std::cerr<<"    -ptl <time, us> interval in micro-seconds between polling+sending data operations, limits outgoing throughput, default: 8192, invalid values will result in data loss"<<std::endl;
+    std::cerr<<"    -ptr <time, us> remote poll interval, limits incoming throughput, default: 8192, invalid values will result in data loss"<<std::endl;
 
 }
 
@@ -71,12 +70,6 @@ int param_error(const std::string &self, const std::string &message)
     std::cerr<<message<<std::endl;
     usage(self);
     return 1;
-}
-
-int64_t calculate_poll_interval(const int portSpeed, const int uartBuffSize, const int min, const int max)
-{
-    const auto interval=static_cast<int64_t>((1000000.0/static_cast<double>(portSpeed))*8.0*static_cast<double>(uartBuffSize))/2;
-    return interval<min?min:interval>max?max:interval;
 }
 
 int main (int argc, char *argv[])
@@ -123,18 +116,18 @@ int main (int argc, char *argv[])
         localAddr.Set(IPAddress(options.GetString("la")));
     }
 
-    int pmin=4096;
-    if(options.CheckParamPresent("pmin",false,""))
+    int ptl=8192;
+    if(options.CheckParamPresent("ptl",false,""))
     {
-        options.CheckIsInteger("pmin",256,1000000,true,"Min poll time is invalid");
-        pmin=options.GetInteger("pmin");
+        options.CheckIsInteger("ptl",256,1000000,true,"Local poll time is invalid");
+        ptl=options.GetInteger("ptl");
     }
 
-    int pmax=16384;
-    if(options.CheckParamPresent("pmax",false,""))
+    int ptr=8192;
+    if(options.CheckParamPresent("ptr",false,""))
     {
-        options.CheckIsInteger("pmax",pmin,1000000,true,"Max poll time is invalid");
-        pmin=options.GetInteger("pmax");
+        options.CheckIsInteger("ptr",256,1000000,true,"Remote poll time is invalid");
+        ptl=options.GetInteger("ptr");
     }
 
     std::vector<int> localPorts;
@@ -142,7 +135,6 @@ int main (int argc, char *argv[])
     std::vector<int> uartSpeeds;
     std::vector<int> uartModes;
     std::vector<bool> rstFlags;
-    bool timingProfilingEnabled=false;
     for(size_t i=0;i<static_cast<size_t>(config.GetPortCount());++i)
     {
         auto strIdx=std::to_string(i+1);
@@ -181,8 +173,6 @@ int main (int argc, char *argv[])
         {
             options.CheckIsInteger("pm"+strIdx,0,255,true,"uart mode is invalid!");
             uartModes.push_back(options.GetInteger("pm"+strIdx));
-            if(options.GetInteger("pm"+strIdx)==255)
-                timingProfilingEnabled=true;
         }
         else
             uartModes.push_back(255);
@@ -211,7 +201,6 @@ int main (int argc, char *argv[])
                     PortConfig(static_cast<uint32_t>(uartSpeeds[i]),
                                static_cast<SerialMode>(uartModes[i]),
                                rstFlags[i],
-                               //calculate_poll_interval(uartSpeeds[i],config.GetNetworkPayloadSz()),
                                IPEndpoint(localAddr.Get(),static_cast<uint16_t>(localPorts[i])),
                                localFiles[i],i));
 
@@ -241,14 +230,7 @@ int main (int argc, char *argv[])
     messageBroker.AddSubscriber(udpTransport);
 
     //Port polling timer
-    int64_t minPollTime=INT64_MAX;
-    for(size_t i=0;i<static_cast<size_t>(config.GetPortCount());++i)
-    {
-        auto testTime=calculate_poll_interval(uartSpeeds[i],config.GetPortPayloadSz(),pmin,pmax);
-        if(testTime<minPollTime)
-            minPollTime=testTime;
-    }
-    Timer pollTimer(timerLogger,messageBroker,config,minPollTime,timingProfilingEnabled);
+    Timer pollTimer(timerLogger,messageBroker,config,ptl);
     messageBroker.AddSubscriber(pollTimer);
 
     std::vector<std::shared_ptr<TCPListener>> tcpListeners;

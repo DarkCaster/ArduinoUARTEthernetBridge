@@ -33,11 +33,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-// example command lines:
-// Arduino Pro Mini (atmega328p) with 1 uart port, data aggregation multiplier = 2, remote buffer size = 8 segments:
-//  -ra ENC28J65E366.lan -tp 50000 -up 1 -rbs 8 -nm 2 -pc 1 -lp1 65001 -ps1 250000 -pm1 255 -rst1 1
-// Arduino Mega 2560 (atmega 2560) with 3 uart ports, data aggregation multiplier = 4, remote buffer size = 100 segments, uart-segment size 16, local poll speed limited to 8192 usec:
-//  -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -pls 64 -rbs 1600 -ptl 8600 -ptr 8600 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 6 -ps2 250000 -pm2 6 -ps3 250000 -pm3 6 -rst1 1 -rst2 1 -rst3 1
+// examples
+
+// Arduino Mega 2560 (atmega 2560) with 3 uart ports:
+//  1) throughput of ~60 kbitps full-duplex on 3 ports (Serial1,Serial2,Serial3) simultaneously, uart-port interface speed set to 250000 8N1, triggering of reset pins is disabled:
+//   -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -pls 64 -rbs 1600 -ptl 8600 -ptr 8600 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 6 -ps2 250000 -pm2 6 -ps3 250000 -pm3 6 -rst1 0 -rst2 0 -rst3 0
+//  2) throughput of ~100 kbitps full-duplex only on 1 port at time, uart-port interface speed set to 115200 8N1, triggering of reset pins is enabled:
+//  sutable for flashing arduino atmega firmware over uart with optiboot+avrdude
+//   -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -pls 64 -rbs 1600 -ptl 5150 -ptr 5150 -lp1 /tmp/ttyETH1 -lp2 /tmp/ttyETH2 -lp3 /tmp/ttyETH3 -ps1 115200 -pm1 6 -ps2 115200 -pm2 6 -ps3 115200 -pm3 6 -rst1 1 -rst2 1 -rst3 1
 
 void usage(const std::string &self)
 {

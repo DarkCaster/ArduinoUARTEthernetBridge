@@ -20,7 +20,7 @@ class Config final : public IConfig
 {
     private:
         int serviceInterval;
-        int localRingBuffSec=2;
+        int localRingBuffSec=1;
         int TCPBuffSz;
         int linger;
         int portPLSize;

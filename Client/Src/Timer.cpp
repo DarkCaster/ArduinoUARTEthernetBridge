@@ -26,8 +26,6 @@ void Timer::OnMessage(const void* const /*source*/, const IMessage& /*message*/)
 
 void Timer::Worker()
 {
-    logger->Info()<<"Starting up with interval: "<<reqIntervalUsec<<" usec";
-
     const auto reqInterval=std::chrono::microseconds(reqIntervalUsec);
     const auto startTime=std::chrono::steady_clock::now();
     auto prev = startTime;

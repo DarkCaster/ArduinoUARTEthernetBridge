@@ -114,7 +114,7 @@ Request PortWorker::ProcessTX(uint32_t counter, uint8_t* txBuff)
             if(dataRead==0 || !client->GetStatus())
                 logger->Info()<<"Client disconnected while reading";
             else
-                logger->Error()<<"Client read failed, error: "<<strerror(error);
+                logger->Info()<<"Client read failed, error: "<<strerror(error);
             client->Dispose();
             client=nullptr;
         }

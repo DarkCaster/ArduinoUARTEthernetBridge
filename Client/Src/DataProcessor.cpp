@@ -48,7 +48,10 @@ void DataProcessor::OnPollEvent(const ITimerMessage& message)
 
     //write counter to package header
     if(openTriggered)
+    {
+        logger->Info()<<"Sending remote poll interval: "<<config.GetRemotePollIntervalUS();
         WriteU32Value(static_cast<uint32_t>(config.GetRemotePollIntervalUS()),txBuff.get()+PKG_CNT_OFFSET);
+    }
     else
         WriteU32Value(message.counter,txBuff.get()+PKG_CNT_OFFSET);
 

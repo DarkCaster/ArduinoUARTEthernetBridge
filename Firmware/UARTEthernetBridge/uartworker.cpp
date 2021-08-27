@@ -97,23 +97,6 @@ void UARTWorker::ProcessRX()
     }
 }
 
-void UARTWorker::LoopFillTXBuff()
-{
-    auto tail=rxRingBuff.GetTail();
-    size_t sz=tail.maxSz;
-    if(sz>(DATA_PAYLOAD_SIZE-txUsedSz))
-        sz=DATA_PAYLOAD_SIZE-txUsedSz;
-    //limit uart-read bandwidth
-    if(sz>PORT_IO_SIZE)
-        sz=PORT_IO_SIZE;
-    if(sz<1)
-        return;
-    memcpy(txDataBuff+txUsedSz,tail.buffer,sz);
-    rxRingBuff.Commit(tail,sz);
-    txUsedSz+=sz;
-}
-
-
 void UARTWorker::FillTXBuff(bool reset)
 {
     if(reset)

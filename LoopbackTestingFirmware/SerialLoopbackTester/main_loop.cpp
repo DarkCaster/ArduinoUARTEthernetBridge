@@ -8,7 +8,6 @@ void setup()
 {
     pinMode(LED_BUILTIN,OUTPUT);
     digitalWrite(LED_BUILTIN,0);
-    delay(1000); //wait for a sec as precaution
     Serial.begin(250000,SERIAL_8N1);
     digitalWrite(LED_BUILTIN,1);
 }

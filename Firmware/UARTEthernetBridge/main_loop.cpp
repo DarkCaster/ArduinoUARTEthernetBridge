@@ -175,57 +175,52 @@ void loop()
     //if client is not connected, check the link state, and reboot on link-failure
     tcpClientState || check_link_state();
 
-    if(networkReadPending||!tcpClientState)
+    //try to process incoming request via TCP
+    clientEvent=tcpServer.ProcessRX();
+
+    //process TCP client event
+    if (clientEvent.type==ClientEventType::Connected)
     {
-        //try to process incoming request via TCP
-        clientEvent=tcpServer.ProcessRX();
-
-        //process TCP client event
-        if (clientEvent.type==ClientEventType::Connected)
-        {
-            pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
-            tcpClientState=true;
-            pollIntervalSetPending=true;
+        pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
+        tcpClientState=true;
+        pollIntervalSetPending=true;
 #if IO_AGGREGATE_MULTIPLIER > 1
-            segmentCounter=0;
+        segmentCounter=0;
 #endif
-        }
-        else if(clientEvent.type==ClientEventType::Disconnected)
+    }
+    else if(clientEvent.type==ClientEventType::Disconnected)
+    {
+        pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
+        tcpClientState=false;
+        pollIntervalSetPending=false;
+    }
+
+    //process incoming data from UDP, with respect to TCP client event
+    clientEvent=udpServer.ProcessRX(clientEvent);
+
+    //process incoming request
+    if(clientEvent.type==ClientEventType::NewRequest)
+    {
+        for(uint8_t i=0;i<UART_COUNT;++i)
+            uartWorker[i].ProcessRequest(MapRequest(i,rxBuff));
+        //save new counter to the txbuff
+        txBuff[PKG_CNT_OFFSET]=rxBuff[PKG_CNT_OFFSET];
+        txBuff[PKG_CNT_OFFSET+1]=rxBuff[PKG_CNT_OFFSET+1];
+        txBuff[PKG_CNT_OFFSET+2]=rxBuff[PKG_CNT_OFFSET+2];
+        txBuff[PKG_CNT_OFFSET+3]=rxBuff[PKG_CNT_OFFSET+3];
+        //or save new poll interval
+        if(pollIntervalSetPending)
         {
-            pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
-            tcpClientState=false;
             pollIntervalSetPending=false;
+            txBuff[PKG_CNT_OFFSET]=txBuff[PKG_CNT_OFFSET+1]=txBuff[PKG_CNT_OFFSET+2]=txBuff[PKG_CNT_OFFSET+3]=0;
+            auto interval=(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET]))|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+1])<<8)|
+                    (static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<16)|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<24);
+            interval/=IO_AGGREGATE_MULTIPLIER;
+            if(interval>0)
+                pollTimer.SetInterval(interval);
         }
-
-        //process incoming data from UDP, with respect to TCP client event
-        clientEvent=udpServer.ProcessRX(clientEvent);
-
-        //process incoming request
-        if(clientEvent.type==ClientEventType::NewRequest)
-        {
-            for(uint8_t i=0;i<UART_COUNT;++i)
-                uartWorker[i].ProcessRequest(MapRequest(i,rxBuff));
-            //save new counter to the txbuff
-            txBuff[PKG_CNT_OFFSET]=rxBuff[PKG_CNT_OFFSET];
-            txBuff[PKG_CNT_OFFSET+1]=rxBuff[PKG_CNT_OFFSET+1];
-            txBuff[PKG_CNT_OFFSET+2]=rxBuff[PKG_CNT_OFFSET+2];
-            txBuff[PKG_CNT_OFFSET+3]=rxBuff[PKG_CNT_OFFSET+3];
-            //or save new poll interval
-            if(pollIntervalSetPending)
-            {
-                pollIntervalSetPending=false;
-                txBuff[PKG_CNT_OFFSET]=txBuff[PKG_CNT_OFFSET+1]=txBuff[PKG_CNT_OFFSET+2]=txBuff[PKG_CNT_OFFSET+3]=0;
-                auto interval=(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET]))|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+1])<<8)|
-                        (static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<16)|(static_cast<unsigned long>(rxBuff[PKG_CNT_OFFSET+2])<<24);
-                interval/=IO_AGGREGATE_MULTIPLIER;
-                if(interval>0)
-                    pollTimer.SetInterval(interval);
-            }
-            //wait for a next round
-            networkReadPending=false;
-        }
-        else if(clientEvent.type==ClientEventType::NoEvent)
-            networkReadPending&=clientEvent.data.pkgReading;
+        //wait for a next round
+        networkReadPending=false;
     }
 
     //if poll interval has passed, read available data from UART and send it to the client via UDP or TCP

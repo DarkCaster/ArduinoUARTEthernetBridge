@@ -29,7 +29,6 @@ static UARTWorker uartWorker[UART_COUNT];
 //current client state
 static bool tcpClientState;
 static bool pollIntervalSetPending;
-static bool networkReadPending;
 static ClientEvent clientEvent;
 #if IO_AGGREGATE_MULTIPLIER > 1
 static uint8_t segmentCounter;
@@ -137,7 +136,6 @@ void setup()
     segmentCounter=0;
 #endif
     pollIntervalSetPending=false;
-    networkReadPending=true;
     alarmTimer.SetAlarmDelay(DEFAULT_ALARM_INTERVAL_MS);
     pollTimer.SetInterval(UART_POLL_INTERVAL_US_DEFAULT);
     pollTimer.Reset();
@@ -219,8 +217,6 @@ void loop()
             if(interval>0)
                 pollTimer.SetInterval(interval);
         }
-        //wait for a next round
-        networkReadPending=false;
     }
 
     //process other tasks of UART worker -> finish running reset, write data from ring-buffer to uart
@@ -231,8 +227,6 @@ void loop()
     if(pollTimer.Update())
     {
         pollTimer.Next();
-        networkReadPending=true; //allow check for incoming data
-
 #if IO_AGGREGATE_MULTIPLIER > 1
         segmentCounter++;
         for(uint8_t i=0;i<UART_COUNT;++i)

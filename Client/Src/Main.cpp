@@ -36,11 +36,22 @@
 // examples
 
 // Arduino Mega 2560 (atmega 2560) with 3 uart ports:
-//  1) throughput of ~57 kbitps full-duplex on 3 ports (Serial1,Serial2,Serial3) simultaneously, uart-port interface speed set to 250000 8N1, triggering of reset pins is disabled:
+//  1) throughput of ~57 kbitps full-duplex on 3 ports (Serial1,Serial2,Serial3) simultaneously, uart-port interface speed set to 250000 8N1, triggering of reset pins is disabled.
 //   -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -pls 50 -rbs 1600 -ptl 7000 -ptr 7000 -lp1 65001 -lp2 65002 -lp3 65003 -ps1 250000 -pm1 6 -ps2 250000 -pm2 6 -ps3 250000 -pm3 6 -rst1 0 -rst2 0 -rst3 0
-//  2) throughput of ~90 kbitps full-duplex only on 1 port at time, uart-port interface speed set to 115200 8N1, triggering of reset pins is enabled:
-//  sutable for flashing arduino atmega firmware over uart with optiboot+avrdude
+//  2) throughput of ~90 kbitps full-duplex only on 1 port at time, uart-port interface speed set to 115200 8N1, triggering of reset pins is enabled.
+//  Sutable for flashing arduino atmega firmware over uart with optiboot/avrdude.
+//  Currenlty only baud rate 115200 and up is working properly for optiboot flashing due to higher latency added by TCP/UDP transfer.
 //   -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 3 -pls 50 -rbs 1600 -ptl 4400 -ptr 4400 -lp1 /tmp/ttyETH1 -lp2 /tmp/ttyETH2 -lp3 /tmp/ttyETH3 -ps1 115200 -pm1 6 -ps2 115200 -pm2 6 -ps3 115200 -pm3 6 -rst1 1 -rst2 1 -rst3 1
+
+// Arduino Pro Mini (atmega 328p) with 1 uart port:
+//  1) network throughput 250 kbitsps full-duplex, uart interface set to 57600 8N1, triggering of reset pins is disabled, client connection awaits at tcp://127.0.0.1:40000.
+//   -ra ENC28J65E366.lan -tp 50000 -up 1 -pc 1 -pls 128 -rbs 512 -ptl 4096 -ptr 4096 -lp1 40000 -ps1 57600 -pm1 6 -rst1 0
+//  2) remote and local timings set to provide throughput of 500 kbitsps to reduce transfer latency, this exceeds sw and hw limits - so real netwotk throughput will be lower,
+//  using TCP connection to communicate with remote, uart-port set to 115200 8N1, triggering of reset pins is enabled.
+//  This configuration is sutable to flash connected arduino device with optiboot/avrdude.
+//  Currenlty only baud rate 115200 and up is working properly for optiboot flashing due to higher latency added by TCP/UDP transfer.
+//   -ra ENC28J65E366.lan -tp 50000 -up 0 -pc 1 -pls 128 -rbs 512 -ptl 2048 -ptr 2048 -lp1 /tmp/ttyETH1 -ps1 115200 -pm1 6 -rst1 1
+
 
 void usage(const std::string &self)
 {

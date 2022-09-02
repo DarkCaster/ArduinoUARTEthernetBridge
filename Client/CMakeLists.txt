@@ -46,7 +46,7 @@ if(CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES)
   include_directories("${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
 endif(CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES)
 
-file(GLOB SOURCE_FILES ${PROJECT_SOURCE_DIR}/Src/*.cpp)
+file(GLOB SOURCE_FILES ${PROJECT_SOURCE_DIR}/Src/*.cpp ${PROJECT_SOURCE_DIR}/Src/*.h)
 
 add_executable(uartclient ${SOURCE_FILES})
 target_link_libraries(uartclient PRIVATE util Threads::Threads)
